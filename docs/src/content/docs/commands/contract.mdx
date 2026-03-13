@@ -108,3 +108,52 @@ title = "Async Key-Value Store with TTL Support"
 ```
 
 See [`lexicon generate`](/commands/generate) for more on AI artifact generation.
+
+### `lexicon contract infer`
+
+Infer a contract from the public API surface.
+
+```bash
+lexicon contract infer
+lexicon contract infer --path crates/my-crate/src
+```
+
+Scans the public API (traits, methods, structs, error types, documentation) and has AI propose a draft contract based on observed behavior. Useful for bootstrapping contracts on existing codebases.
+
+Requires authentication (`lexicon auth login`).
+
+| Flag | Description |
+|------|-------------|
+| `--path <dir>` | Source directory to scan (defaults to `src/`) |
+
+**Example:**
+
+```bash
+lexicon contract infer
+```
+
+```
+Infer Contract from API
+  Scanning public API surface...
+────────────────────────────────────────────
+
+Patch Preview
+  File: specs/contracts/inferred-contract.toml
+────────────────────────────────────────────
+id = "inferred-contract"
+title = "Inferred Contract"
+...
+────────────────────────────────────────────
+? What would you like to do?
+> Accept
+  Edit
+  Reject
+```
+
+The inferred contract is a starting point -- use **Edit** to refine the AI's suggestions before accepting.
+
+## See also
+
+- [`lexicon conformance`](/commands/conformance) -- generate tests from contracts
+- [`lexicon coverage`](/commands/coverage) -- check how well tests cover contracts
+- [Contracts](/concepts/contracts) -- contract design and semantics

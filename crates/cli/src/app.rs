@@ -138,6 +138,12 @@ pub enum ContractAction {
         /// Natural language description (e.g. "async key-value store with TTL")
         intent: String,
     },
+    /// Infer a contract from the public API surface
+    Infer {
+        /// Path to source directory (defaults to src/)
+        #[arg(long)]
+        path: Option<String>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -153,6 +159,26 @@ pub enum ConformanceAction {
     Generate {
         /// Natural language description (e.g. "cache trait with async get/set/delete")
         intent: String,
+    },
+    /// Generate conformance tests from an existing contract
+    FromContract {
+        /// Contract ID (e.g. "key-value-store")
+        contract_id: String,
+    },
+    /// Generate property-based tests from a contract's invariants
+    Property {
+        /// Contract ID
+        contract_id: String,
+    },
+    /// Generate a fuzz test harness from a contract
+    Fuzz {
+        /// Contract ID
+        contract_id: String,
+    },
+    /// Generate edge case tests from a contract
+    EdgeCases {
+        /// Contract ID
+        contract_id: String,
     },
 }
 
@@ -209,6 +235,12 @@ pub enum CoverageAction {
         /// Output as JSON
         #[arg(long)]
         json: bool,
+    },
+    /// AI-generate tests to fill coverage gaps
+    Improve {
+        /// Only improve coverage for this contract
+        #[arg(long)]
+        contract: Option<String>,
     },
 }
 

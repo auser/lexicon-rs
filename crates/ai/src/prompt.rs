@@ -1,5 +1,7 @@
 //! Prompt templates for AI artifact generation.
 
+use lexicon_spec::contract::Contract;
+
 /// Build a system prompt for generating a specific artifact type.
 pub fn system_prompt(artifact_kind: ArtifactKind) -> &'static str {
     match artifact_kind {
@@ -7,6 +9,10 @@ pub fn system_prompt(artifact_kind: ArtifactKind) -> &'static str {
         ArtifactKind::Conformance => CONFORMANCE_SYSTEM,
         ArtifactKind::Behavior => BEHAVIOR_SYSTEM,
         ArtifactKind::Improve => IMPROVE_SYSTEM,
+        ArtifactKind::PropertyTest => PROPERTY_TEST_SYSTEM,
+        ArtifactKind::Fuzz => FUZZ_SYSTEM,
+        ArtifactKind::EdgeCase => EDGE_CASE_SYSTEM,
+        ArtifactKind::InferContract => INFER_CONTRACT_SYSTEM,
     }
 }
 
@@ -17,6 +23,10 @@ pub fn intent_prompt(artifact_kind: ArtifactKind, intent: &str, context: &str) -
         ArtifactKind::Conformance => "conformance test suite",
         ArtifactKind::Behavior => "behavior scenario",
         ArtifactKind::Improve => "improvement suggestions",
+        ArtifactKind::PropertyTest => "property test suite",
+        ArtifactKind::Fuzz => "fuzz test harness",
+        ArtifactKind::EdgeCase => "edge case test suite",
+        ArtifactKind::InferContract => "inferred contract",
     };
 
     let template = match artifact_kind {
@@ -24,6 +34,10 @@ pub fn intent_prompt(artifact_kind: ArtifactKind, intent: &str, context: &str) -
         ArtifactKind::Conformance => CONFORMANCE_TEMPLATE,
         ArtifactKind::Behavior => BEHAVIOR_TEMPLATE,
         ArtifactKind::Improve => "",
+        ArtifactKind::PropertyTest => PROPERTY_TEST_TEMPLATE,
+        ArtifactKind::Fuzz => FUZZ_TEMPLATE,
+        ArtifactKind::EdgeCase => EDGE_CASE_TEMPLATE,
+        ArtifactKind::InferContract => CONTRACT_TEMPLATE,
     };
 
     let mut msg = String::new();
@@ -67,6 +81,103 @@ pub fn improve_prompt(context: &str, current_artifact: &str, goal: Option<&str>)
     msg
 }
 
+/// Build a prompt for generating conformance tests from a parsed contract.
+pub fn contract_based_prompt(contract: &Contract, context: &str) -> String {
+    let mut msg = String::new();
+    msg.push_str("## Repository Context\n");
+    msg.push_str(context);
+    msg.push_str("\n\n## Contract Under Test\n");
+
+    msg.push_str(&format!("**ID:** {}\n", contract.id));
+    msg.push_str(&format!("**Title:** {}\n", contract.title));
+    msg.push_str(&format!("**Scope:** {}\n\n", contract.scope));
+
+    if !contract.invariants.is_empty() {
+        msg.push_str("### Invariants\n");
+        for inv in &contract.invariants {
+            msg.push_str(&format!("- **{}**: {} (severity: {:?})\n", inv.id, inv.description, inv.severity));
+            if !inv.test_tags.is_empty() {
+                msg.push_str(&format!("  tags: {}\n", inv.test_tags.join(", ")));
+            }
+        }
+        msg.push('\n');
+    }
+
+    if !contract.required_semantics.is_empty() {
+        msg.push_str("### Required Semantics\n");
+        for sem in &contract.required_semantics {
+            msg.push_str(&format!("- **{}**: {}\n", sem.id, sem.description));
+            if !sem.test_tags.is_empty() {
+                msg.push_str(&format!("  tags: {}\n", sem.test_tags.join(", ")));
+            }
+        }
+        msg.push('\n');
+    }
+
+    if !contract.forbidden_semantics.is_empty() {
+        msg.push_str("### Forbidden Semantics\n");
+        for sem in &contract.forbidden_semantics {
+            msg.push_str(&format!("- **{}**: {}\n", sem.id, sem.description));
+        }
+        msg.push('\n');
+    }
+
+    if !contract.edge_cases.is_empty() {
+        msg.push_str("### Edge Cases\n");
+        for ec in &contract.edge_cases {
+            msg.push_str(&format!("- **{}**: {} → {}\n", ec.id, ec.scenario, ec.expected_behavior));
+        }
+        msg.push('\n');
+    }
+
+    if !contract.examples.is_empty() {
+        msg.push_str("### Examples\n");
+        for ex in &contract.examples {
+            msg.push_str(&format!("- **{}**: {}\n", ex.title, ex.description));
+            if let Some(code) = &ex.code {
+                msg.push_str(&format!("  ```\n  {code}\n  ```\n"));
+            }
+        }
+        msg.push('\n');
+    }
+
+    msg.push_str("## Task\n");
+    msg.push_str("Generate a conformance test suite that verifies each invariant, required semantic, \
+        forbidden semantic, and edge case defined in this contract. Use a trait-based harness pattern \
+        so tests are reusable across implementations. Include lexicon test tags as comments.\n");
+    msg
+}
+
+/// Build a prompt for inferring contracts from an API surface.
+pub fn infer_contract_prompt(api_summary: &str, context: &str) -> String {
+    let mut msg = String::new();
+    msg.push_str("## Repository Context\n");
+    msg.push_str(context);
+    msg.push_str("\n\n## Public API Surface\n");
+    msg.push_str(api_summary);
+    msg.push_str("\n\n## Task\n");
+    msg.push_str("Analyze the public API surface above and infer a behavioral contract. \
+        Propose invariants based on method signatures, trait definitions, error types, and \
+        documentation. Include required semantics, forbidden semantics, and edge cases. \
+        Output ONLY valid TOML following the contract template.\n");
+    msg
+}
+
+/// Build a prompt for generating tests to fill coverage gaps.
+pub fn coverage_improve_prompt(coverage_gaps: &str, context: &str) -> String {
+    let mut msg = String::new();
+    msg.push_str("## Repository Context\n");
+    msg.push_str(context);
+    msg.push_str("\n\n## Uncovered Contract Clauses\n");
+    msg.push_str(coverage_gaps);
+    msg.push_str("\n\n## Task\n");
+    msg.push_str("Generate conformance tests that cover the uncovered contract clauses listed above. \
+        Each test should include the appropriate lexicon test tag (// lexicon::tag(\"...\")) matching \
+        the clause's test_tags. Use a trait-based harness pattern. Focus on thorough coverage of \
+        the missing clauses.\n");
+    msg
+}
+
 /// Kind of artifact to generate or improve.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ArtifactKind {
@@ -74,6 +185,10 @@ pub enum ArtifactKind {
     Conformance,
     Behavior,
     Improve,
+    PropertyTest,
+    Fuzz,
+    EdgeCase,
+    InferContract,
 }
 
 const CONTRACT_SYSTEM: &str = "\
@@ -124,6 +239,47 @@ For each suggestion, output:\n\
 - Priority: (high/medium/low)\n\
 - Artifact: the file or section affected\n\
 Be specific and concise.";
+
+const PROPERTY_TEST_SYSTEM: &str = "\
+You are an expert at writing Rust property-based tests using the `proptest` crate. \
+Generate property tests that:\n\
+- Use the `proptest!` macro from the `proptest` crate\n\
+- Target contract invariants (properties that must hold for all inputs)\n\
+- Use appropriate proptest strategies for input generation\n\
+- Include `prop_assert!` and `prop_assert_eq!` assertions\n\
+- Use descriptive test names prefixed with `prop_`\n\
+- Include test tags as comments (// lexicon::tag(\"...\"))\n\
+Output ONLY valid Rust code. No markdown fences, no explanations.";
+
+const FUZZ_SYSTEM: &str = "\
+You are an expert at writing Rust fuzz test harnesses using `libfuzzer-sys`. \
+Generate a fuzz target that:\n\
+- Uses `#![no_main]` and `libfuzzer_sys::fuzz_target!`\n\
+- Exercises contract invariants with arbitrary input\n\
+- Uses `arbitrary::Arbitrary` for structured input where appropriate\n\
+- Includes safety checks and assertions for contract violations\n\
+- Focuses on boundary conditions and edge cases from the contract\n\
+Output ONLY valid Rust code. No markdown fences, no explanations.";
+
+const EDGE_CASE_SYSTEM: &str = "\
+You are an expert at writing Rust tests for edge cases and boundary conditions. \
+Generate targeted edge case tests that:\n\
+- Focus specifically on boundary conditions, error paths, and unusual inputs\n\
+- Test empty inputs, maximum values, concurrent access, and error recovery\n\
+- Use #[test] functions with descriptive names prefixed with `edge_`\n\
+- Include test tags as comments (// lexicon::tag(\"...\"))\n\
+- Each test targets exactly one edge case from the contract\n\
+Output ONLY valid Rust code. No markdown fences, no explanations.";
+
+const INFER_CONTRACT_SYSTEM: &str = "\
+You are an expert at analyzing Rust source code and inferring behavioral contracts. \
+Given a public API surface (traits, methods, structs, error types, documentation), \
+generate a TOML contract that captures:\n\
+- Invariants implied by method signatures and documentation\n\
+- Required semantics from trait method contracts\n\
+- Forbidden semantics from error types and safety constraints\n\
+- Edge cases from boundary conditions in method signatures\n\
+Output ONLY valid TOML following the lexicon contract schema. No markdown fences, no explanations.";
 
 const CONTRACT_TEMPLATE: &str = r#"id = "example-contract"
 title = "Example Contract"
@@ -196,6 +352,56 @@ const BEHAVIOR_TEMPLATE: &str = r#"# Behavior: <Feature Name>
 **Then** an appropriate error is returned
 "#;
 
+const PROPERTY_TEST_TEMPLATE: &str = r#"//! Property tests for <contract-name>
+//!
+//! Tests contract invariants using property-based testing.
+
+use proptest::prelude::*;
+
+proptest! {
+    // lexicon::tag("conformance.invariant_name")
+    #[test]
+    fn prop_invariant_holds(input in any::<String>()) {
+        // Property assertion here
+        prop_assert!(true);
+    }
+}
+"#;
+
+const FUZZ_TEMPLATE: &str = r#"//! Fuzz target for <contract-name>
+//!
+//! Exercises contract invariants with arbitrary input.
+
+#![no_main]
+
+use libfuzzer_sys::fuzz_target;
+
+fuzz_target!(|data: &[u8]| {
+    // Parse input and exercise contract invariants
+    // Any panic here indicates a contract violation
+});
+"#;
+
+const EDGE_CASE_TEMPLATE: &str = r#"//! Edge case tests for <contract-name>
+//!
+//! Targeted tests for boundary conditions and unusual inputs.
+
+#[cfg(test)]
+mod tests {
+    // lexicon::tag("edge.empty_input")
+    #[test]
+    fn edge_empty_input() {
+        // Test behavior with empty input
+    }
+
+    // lexicon::tag("edge.boundary_value")
+    #[test]
+    fn edge_boundary_value() {
+        // Test behavior at boundary conditions
+    }
+}
+"#;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -228,8 +434,38 @@ mod tests {
             ArtifactKind::Conformance,
             ArtifactKind::Behavior,
             ArtifactKind::Improve,
+            ArtifactKind::PropertyTest,
+            ArtifactKind::Fuzz,
+            ArtifactKind::EdgeCase,
+            ArtifactKind::InferContract,
         ] {
             assert!(!system_prompt(kind).is_empty());
         }
+    }
+
+    #[test]
+    fn new_artifact_kinds_have_templates() {
+        for kind in [
+            ArtifactKind::PropertyTest,
+            ArtifactKind::Fuzz,
+            ArtifactKind::EdgeCase,
+        ] {
+            let prompt = intent_prompt(kind, "test intent", "test context");
+            assert!(prompt.contains("## Template"));
+        }
+    }
+
+    #[test]
+    fn infer_contract_prompt_includes_api() {
+        let prompt = infer_contract_prompt("pub trait Foo { fn bar(); }", "ctx");
+        assert!(prompt.contains("pub trait Foo"));
+        assert!(prompt.contains("Public API Surface"));
+    }
+
+    #[test]
+    fn coverage_improve_prompt_includes_gaps() {
+        let prompt = coverage_improve_prompt("clause: inv-001 untested", "ctx");
+        assert!(prompt.contains("inv-001"));
+        assert!(prompt.contains("Uncovered Contract Clauses"));
     }
 }

@@ -198,6 +198,10 @@ pub enum AuditAction {
     ApiScan,
     ApiDiff,
     CoverageReport,
+    PropertyTestCreate,
+    FuzzCreate,
+    EdgeCaseCreate,
+    ContractInfer,
 }
 
 #[cfg(test)]

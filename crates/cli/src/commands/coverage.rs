@@ -4,6 +4,7 @@ use lexicon_repo::layout::RepoLayout;
 use lexicon_spec::contract::Contract;
 
 use crate::app::CoverageAction;
+use crate::commands::review::{review_artifact, show_warnings};
 use crate::output;
 
 pub fn run(action: CoverageAction) -> miette::Result<()> {
@@ -29,6 +30,23 @@ pub fn run(action: CoverageAction) -> miette::Result<()> {
             } else {
                 let text = coverage::coverage_report_text(&report);
                 println!("{text}");
+            }
+        }
+        CoverageAction::Improve { contract: _ } => {
+            output::heading("Coverage Improvement");
+            output::info("Analyzing coverage gaps...");
+            output::divider();
+
+            let results = lexicon_core::generate::generate_coverage_improvement(&layout)?;
+            if results.is_empty() {
+                output::success("All contract clauses are covered — no gaps to fill!");
+                return Ok(());
+            }
+
+            output::info(&format!("Generated {} test file(s) to fill coverage gaps", results.len()));
+            for result in &results {
+                show_warnings(&result.warnings);
+                review_artifact(&layout, &result.artifact)?;
             }
         }
     }

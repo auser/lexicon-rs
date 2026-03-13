@@ -39,6 +39,16 @@ pub fn run(action: ContractAction) -> miette::Result<()> {
                 &intent,
             );
         }
+        ContractAction::Infer { path } => {
+            output::heading("Infer Contract from API");
+            output::info("Scanning public API surface...");
+            output::divider();
+
+            let source_dir = path.as_ref().map(std::path::Path::new);
+            let result = lexicon_core::generate::infer_contract_from_api(&layout, source_dir)?;
+            crate::commands::review::show_warnings(&result.warnings);
+            crate::commands::review::review_artifact(&layout, &result.artifact)?;
+        }
     }
     Ok(())
 }

@@ -153,6 +153,18 @@ impl RepoLayout {
         self.tests_dir().join("integration")
     }
 
+    pub fn property_tests_dir(&self) -> PathBuf {
+        self.tests_dir().join("property")
+    }
+
+    pub fn edge_case_tests_dir(&self) -> PathBuf {
+        self.tests_dir().join("edge_cases")
+    }
+
+    pub fn fuzz_targets_dir(&self) -> PathBuf {
+        self.root.join("fuzz").join("fuzz_targets")
+    }
+
     // --- other paths ---
 
     pub fn claude_md_path(&self) -> PathBuf {

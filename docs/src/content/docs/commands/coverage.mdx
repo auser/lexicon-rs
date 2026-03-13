@@ -75,3 +75,56 @@ The `--json` flag produces a structured report with per-contract and per-clause 
 ```
 
 See [Contract Coverage](/concepts/coverage/) for details on how coverage computation works and how it integrates with scoring.
+
+### `lexicon coverage improve`
+
+AI-generate tests to fill coverage gaps.
+
+```bash
+lexicon coverage improve
+lexicon coverage improve --contract key-value-store
+```
+
+Runs a coverage report, identifies uncovered contract clauses, and uses AI to generate conformance tests that fill the gaps. Each generated test includes the appropriate `// lexicon::tag("...")` annotation to match the uncovered clause's test tags.
+
+Requires authentication (`lexicon auth login`).
+
+| Flag | Description |
+|------|-------------|
+| `--contract <id>` | Only improve coverage for a specific contract |
+
+**Example:**
+
+```bash
+lexicon coverage improve
+```
+
+```
+Coverage Improvement
+  Analyzing coverage gaps...
+────────────────────────────────────────────
+  Generated 1 test file(s) to fill coverage gaps
+
+Patch Preview
+  File: tests/conformance/coverage_fill.rs
+────────────────────────────────────────────
+...
+────────────────────────────────────────────
+? What would you like to do?
+> Accept
+  Edit
+  Reject
+```
+
+If all clauses are already covered:
+
+```
+All contract clauses are covered — no gaps to fill!
+```
+
+## See also
+
+- [`lexicon conformance`](/commands/conformance) -- manage conformance test suites
+- [`lexicon contract`](/commands/contract) -- manage contracts
+- [`lexicon improve`](/commands/improve) -- general AI-guided improvements
+- [Contract Coverage](/concepts/coverage) -- how coverage computation works

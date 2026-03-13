@@ -1,8 +1,8 @@
-use dialoguer::{Editor, Select};
 use lexicon_ai::prompt::ArtifactKind;
-use lexicon_core::generate::{accept_artifact, generate_from_intent, generate_multi, reject_artifact};
+use lexicon_core::generate::{generate_from_intent, generate_multi};
 use lexicon_repo::layout::RepoLayout;
 
+use crate::commands::review::{review_artifact, show_warnings};
 use crate::output;
 
 /// Run AI artifact generation from natural language intent.
@@ -37,6 +37,10 @@ pub fn run_generate(
         ArtifactKind::Conformance => "conformance tests",
         ArtifactKind::Behavior => "behavior scenarios",
         ArtifactKind::Improve => "improvements",
+        ArtifactKind::PropertyTest => "property tests",
+        ArtifactKind::Fuzz => "fuzz targets",
+        ArtifactKind::EdgeCase => "edge case tests",
+        ArtifactKind::InferContract => "inferred contract",
     };
 
     output::info(&format!("Generating {kind_label}..."));
@@ -67,67 +71,6 @@ pub fn run_improve(goal: Option<&str>) -> miette::Result<()> {
     output::divider();
     println!("{suggestions}");
     output::divider();
-
-    Ok(())
-}
-
-/// Show any context warnings to the user.
-fn show_warnings(warnings: &[String]) {
-    for w in warnings {
-        output::warning(w);
-    }
-}
-
-/// Present a patch preview and let the user accept, edit, or reject.
-fn review_artifact(
-    layout: &RepoLayout,
-    artifact: &lexicon_ai::generate::GeneratedArtifact,
-) -> miette::Result<()> {
-    println!();
-    output::heading("Patch Preview");
-    output::info(&format!("File: {}", artifact.path));
-    output::divider();
-    println!("{}", &artifact.content);
-    output::divider();
-
-    let choices = &["Accept", "Edit", "Reject"];
-    let selection = Select::new()
-        .with_prompt("What would you like to do?")
-        .items(choices)
-        .default(0)
-        .interact()
-        .map_err(|e| miette::miette!("selection error: {e}"))?;
-
-    match selection {
-        0 => {
-            accept_artifact(layout, artifact)?;
-            output::success(&format!("Artifact written to {}", artifact.path));
-        }
-        1 => {
-            let edited = Editor::new()
-                .extension(match artifact.format.as_str() {
-                    "toml" => ".toml",
-                    "rust" => ".rs",
-                    "markdown" => ".md",
-                    _ => ".txt",
-                })
-                .edit(&artifact.content)
-                .map_err(|e| miette::miette!("editor error: {e}"))?;
-
-            if let Some(content) = edited {
-                let mut edited_artifact = artifact.clone();
-                edited_artifact.content = content;
-                accept_artifact(layout, &edited_artifact)?;
-                output::success(&format!("Edited artifact written to {}", artifact.path));
-            } else {
-                output::warning("No changes made, artifact not saved");
-            }
-        }
-        _ => {
-            reject_artifact(layout, artifact)?;
-            output::warning("Artifact rejected");
-        }
-    }
 
     Ok(())
 }

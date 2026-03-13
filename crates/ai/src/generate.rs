@@ -4,11 +4,15 @@
 //! from natural language intent.
 
 use lexicon_repo::layout::RepoLayout;
+use lexicon_spec::contract::Contract;
 
 use crate::boundary::AiProvider;
 use crate::context::assemble_context;
 use crate::error::AiResult;
-use crate::prompt::{ArtifactKind, intent_prompt, system_prompt};
+use crate::prompt::{
+    ArtifactKind, contract_based_prompt, coverage_improve_prompt, infer_contract_prompt,
+    intent_prompt, system_prompt,
+};
 
 /// A generated artifact ready for preview and approval.
 #[derive(Debug, Clone)]
@@ -46,14 +50,7 @@ pub fn generate_artifact(
     let content = provider.complete(system, &user_msg)?;
 
     let slug = slugify(intent);
-    let (path, format) = match kind {
-        ArtifactKind::Contract => (format!("specs/contracts/{slug}.toml"), "toml".to_string()),
-        ArtifactKind::Conformance => {
-            (format!("tests/conformance/{slug}.rs"), "rust".to_string())
-        }
-        ArtifactKind::Behavior => (format!("specs/behavior/{slug}.md"), "markdown".to_string()),
-        ArtifactKind::Improve => ("".to_string(), "markdown".to_string()),
-    };
+    let (path, format) = artifact_path_and_format(kind, &slug);
 
     Ok(GenerateResult {
         artifact: GeneratedArtifact {
@@ -100,6 +97,165 @@ pub fn generate_improvements(
     Ok((result, warnings))
 }
 
+/// Generate conformance tests from a parsed contract.
+pub fn generate_from_contract(
+    provider: &dyn AiProvider,
+    layout: &RepoLayout,
+    contract: &Contract,
+) -> AiResult<GenerateResult> {
+    let (context, warnings) = load_context(layout);
+    let system = system_prompt(ArtifactKind::Conformance);
+    let user_msg = contract_based_prompt(contract, &context);
+
+    let content = provider.complete(system, &user_msg)?;
+    let slug = slugify(&contract.id);
+
+    Ok(GenerateResult {
+        artifact: GeneratedArtifact {
+            kind: ArtifactKind::Conformance,
+            path: format!("tests/conformance/{slug}.rs"),
+            content,
+            format: "rust".to_string(),
+        },
+        warnings,
+    })
+}
+
+/// Generate property tests from a contract's invariants.
+pub fn generate_property_tests(
+    provider: &dyn AiProvider,
+    layout: &RepoLayout,
+    contract: &Contract,
+) -> AiResult<GenerateResult> {
+    let (context, warnings) = load_context(layout);
+    let system = system_prompt(ArtifactKind::PropertyTest);
+    let user_msg = contract_based_prompt(contract, &context);
+
+    let content = provider.complete(system, &user_msg)?;
+    let slug = slugify(&contract.id);
+
+    Ok(GenerateResult {
+        artifact: GeneratedArtifact {
+            kind: ArtifactKind::PropertyTest,
+            path: format!("tests/property/{slug}.rs"),
+            content,
+            format: "rust".to_string(),
+        },
+        warnings,
+    })
+}
+
+/// Generate a fuzz test harness from a contract.
+pub fn generate_fuzz_target(
+    provider: &dyn AiProvider,
+    layout: &RepoLayout,
+    contract: &Contract,
+) -> AiResult<GenerateResult> {
+    let (context, warnings) = load_context(layout);
+    let system = system_prompt(ArtifactKind::Fuzz);
+    let user_msg = contract_based_prompt(contract, &context);
+
+    let content = provider.complete(system, &user_msg)?;
+    let slug = slugify(&contract.id);
+
+    Ok(GenerateResult {
+        artifact: GeneratedArtifact {
+            kind: ArtifactKind::Fuzz,
+            path: format!("fuzz/fuzz_targets/{slug}.rs"),
+            content,
+            format: "rust".to_string(),
+        },
+        warnings,
+    })
+}
+
+/// Generate edge case tests from a contract.
+pub fn generate_edge_case_tests(
+    provider: &dyn AiProvider,
+    layout: &RepoLayout,
+    contract: &Contract,
+) -> AiResult<GenerateResult> {
+    let (context, warnings) = load_context(layout);
+    let system = system_prompt(ArtifactKind::EdgeCase);
+    let user_msg = contract_based_prompt(contract, &context);
+
+    let content = provider.complete(system, &user_msg)?;
+    let slug = slugify(&contract.id);
+
+    Ok(GenerateResult {
+        artifact: GeneratedArtifact {
+            kind: ArtifactKind::EdgeCase,
+            path: format!("tests/edge_cases/{slug}.rs"),
+            content,
+            format: "rust".to_string(),
+        },
+        warnings,
+    })
+}
+
+/// Infer a contract from an API surface summary.
+pub fn infer_contract(
+    provider: &dyn AiProvider,
+    layout: &RepoLayout,
+    api_summary: &str,
+) -> AiResult<GenerateResult> {
+    let (context, warnings) = load_context(layout);
+    let system = system_prompt(ArtifactKind::InferContract);
+    let user_msg = infer_contract_prompt(api_summary, &context);
+
+    let content = provider.complete(system, &user_msg)?;
+    let slug = slugify("inferred-contract");
+
+    Ok(GenerateResult {
+        artifact: GeneratedArtifact {
+            kind: ArtifactKind::InferContract,
+            path: format!("specs/contracts/{slug}.toml"),
+            content,
+            format: "toml".to_string(),
+        },
+        warnings,
+    })
+}
+
+/// Generate tests to fill coverage gaps.
+pub fn generate_coverage_tests(
+    provider: &dyn AiProvider,
+    layout: &RepoLayout,
+    coverage_gaps: &str,
+) -> AiResult<GenerateResult> {
+    let (context, warnings) = load_context(layout);
+    let system = system_prompt(ArtifactKind::Conformance);
+    let user_msg = coverage_improve_prompt(coverage_gaps, &context);
+
+    let content = provider.complete(system, &user_msg)?;
+
+    Ok(GenerateResult {
+        artifact: GeneratedArtifact {
+            kind: ArtifactKind::Conformance,
+            path: "tests/conformance/coverage_fill.rs".to_string(),
+            content,
+            format: "rust".to_string(),
+        },
+        warnings,
+    })
+}
+
+/// Map an artifact kind to its output path and format.
+fn artifact_path_and_format(kind: ArtifactKind, slug: &str) -> (String, String) {
+    match kind {
+        ArtifactKind::Contract => (format!("specs/contracts/{slug}.toml"), "toml".to_string()),
+        ArtifactKind::Conformance => (format!("tests/conformance/{slug}.rs"), "rust".to_string()),
+        ArtifactKind::Behavior => (format!("specs/behavior/{slug}.md"), "markdown".to_string()),
+        ArtifactKind::Improve => ("".to_string(), "markdown".to_string()),
+        ArtifactKind::PropertyTest => (format!("tests/property/{slug}.rs"), "rust".to_string()),
+        ArtifactKind::Fuzz => (format!("fuzz/fuzz_targets/{slug}.rs"), "rust".to_string()),
+        ArtifactKind::EdgeCase => (format!("tests/edge_cases/{slug}.rs"), "rust".to_string()),
+        ArtifactKind::InferContract => {
+            (format!("specs/contracts/{slug}.toml"), "toml".to_string())
+        }
+    }
+}
+
 /// Load repo context for AI prompts. Returns the context string and any warnings.
 pub fn load_context(layout: &RepoLayout) -> (String, Vec<String>) {
     let mut warnings = Vec::new();
@@ -139,7 +295,7 @@ pub fn load_context(layout: &RepoLayout) -> (String, Vec<String>) {
     (ctx, warnings)
 }
 
-fn load_contracts(dir: &std::path::Path) -> Vec<lexicon_spec::contract::Contract> {
+fn load_contracts(dir: &std::path::Path) -> Vec<Contract> {
     let mut contracts = Vec::new();
     if let Ok(entries) = std::fs::read_dir(dir) {
         for entry in entries.flatten() {
@@ -181,5 +337,24 @@ mod tests {
         assert_eq!(slugify("Key Value Store"), "key-value-store");
         assert_eq!(slugify("async key-value store with TTL"), "async-key-value-store-with-ttl");
         assert_eq!(slugify("  hello   world  "), "hello-world");
+    }
+
+    #[test]
+    fn test_artifact_path_and_format() {
+        let (path, fmt) = artifact_path_and_format(ArtifactKind::PropertyTest, "kv-store");
+        assert_eq!(path, "tests/property/kv-store.rs");
+        assert_eq!(fmt, "rust");
+
+        let (path, fmt) = artifact_path_and_format(ArtifactKind::Fuzz, "kv-store");
+        assert_eq!(path, "fuzz/fuzz_targets/kv-store.rs");
+        assert_eq!(fmt, "rust");
+
+        let (path, fmt) = artifact_path_and_format(ArtifactKind::EdgeCase, "kv-store");
+        assert_eq!(path, "tests/edge_cases/kv-store.rs");
+        assert_eq!(fmt, "rust");
+
+        let (path, fmt) = artifact_path_and_format(ArtifactKind::InferContract, "inferred");
+        assert_eq!(path, "specs/contracts/inferred.toml");
+        assert_eq!(fmt, "toml");
     }
 }

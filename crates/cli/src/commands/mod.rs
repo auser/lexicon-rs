@@ -9,6 +9,7 @@ pub mod ecosystem_cmd;
 pub mod generate;
 pub mod gate;
 pub mod init;
+pub(crate) mod review;
 pub mod score;
 pub mod sync;
 pub mod verify;
