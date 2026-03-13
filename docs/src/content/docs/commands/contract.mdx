@@ -75,3 +75,36 @@ Checks contracts for structural problems such as missing fields, duplicate IDs, 
 :::note
 Contract linting is not yet fully implemented in the current version.
 :::
+
+### `lexicon contract generate`
+
+AI-generate a contract from a natural language description.
+
+```bash
+lexicon contract generate "<intent>"
+```
+
+Requires authentication (`lexicon auth login`).
+
+**Example:**
+
+```bash
+lexicon contract generate "async key-value store with TTL support"
+```
+
+Generates a complete TOML contract with invariants, required and forbidden semantics, edge cases, and examples. The generated contract is shown as a patch preview -- you review and accept or reject before it is written to `specs/contracts/`.
+
+```
+Patch Preview
+  File: specs/contracts/async-key-value-store-with-ttl-support.toml
+────────────────────────────────────────────
+id = "async-key-value-store-with-ttl-support"
+title = "Async Key-Value Store with TTL Support"
+...
+────────────────────────────────────────────
+? What would you like to do?
+> Accept
+  Reject
+```
+
+See [`lexicon generate`](/commands/generate) for more on AI artifact generation.

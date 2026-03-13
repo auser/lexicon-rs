@@ -1,0 +1,91 @@
+---
+title: lexicon auth
+description: Manage AI provider authentication via browser-based OAuth.
+---
+
+## Subcommands
+
+### `lexicon auth login`
+
+Authenticate with an AI provider using browser-based OAuth (PKCE flow).
+
+```bash
+lexicon auth login [provider] [--port <port>]
+```
+
+**Arguments:**
+
+- `provider` -- `claude` or `openai`. If omitted, prompts interactively.
+- `--port` -- custom OAuth callback port (defaults to 54321 for Claude, 1455 for OpenAI).
+
+**Flow:**
+
+1. Opens your browser to the provider's authorization page
+2. Starts a local callback server (waits up to 180 seconds)
+3. Exchanges the authorization code for access and refresh tokens
+4. Stores credentials in `.lexicon/auth/<provider>.json` with 0600 permissions
+
+```
+  → Anthropic / Claude — OAuth authorization
+  Opening authorization page in your browser...
+  (waiting up to 180s for the callback)
+
+  Exchanging authorization code...
+  ✓ Logged in to Anthropic / Claude.
+```
+
+### `lexicon auth status`
+
+Show authentication status for all providers.
+
+```bash
+lexicon auth status
+```
+
+```
+Authentication Status
+────────────────────────────────────────────
+  Anthropic / Claude    authenticated (expires in 2h)
+  OpenAI                not authenticated
+```
+
+### `lexicon auth refresh`
+
+Refresh an expired OAuth token.
+
+```bash
+lexicon auth refresh [provider]
+```
+
+Requires a stored refresh token. If the token cannot be refreshed, you will need to run `lexicon auth login` again.
+
+### `lexicon auth logout`
+
+Remove stored credentials for a provider.
+
+```bash
+lexicon auth logout [provider]
+```
+
+## Credential storage
+
+Credentials are stored as JSON files in `.lexicon/auth/`:
+
+```
+.lexicon/auth/claude.json
+.lexicon/auth/openai.json
+```
+
+On Unix systems, files are set to mode 0600 (owner read/write only). The `.lexicon/` directory should be in your `.gitignore`.
+
+## Supported providers
+
+| Provider | Client | Scopes |
+|----------|--------|--------|
+| `claude` | Anthropic OAuth | `user:inference user:profile` |
+| `openai` | OpenAI OAuth | `openid profile email offline_access` |
+
+## See also
+
+- [`lexicon generate`](/commands/generate) -- AI-generate artifacts (requires auth)
+- [`lexicon improve`](/commands/improve) -- AI-guided improvements (requires auth)

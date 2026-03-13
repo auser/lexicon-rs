@@ -88,7 +88,46 @@ pub trait AiProvider {
 }
 ```
 
-The default provider is `NoOpProvider`, which returns `AiError::NotAvailable` for all calls. This ensures lexicon works completely without any AI service configured. AI is an enhancement layer, not a dependency.
+Two implementations are available:
+
+- **`NoOpProvider`** -- the default when no AI is configured. Returns `AiError::NotAvailable` for all calls. This ensures lexicon works completely without any AI service.
+- **`ClaudeClient`** -- a live client that calls the Claude Messages API using OAuth credentials stored by `lexicon auth login`. Supports configurable model selection and 120-second request timeouts.
+
+AI is an enhancement layer, not a dependency.
+
+## Authentication
+
+AI features require browser-based OAuth authentication:
+
+```bash
+lexicon auth login     # opens browser, stores credentials
+lexicon auth status    # check auth status
+lexicon auth refresh   # refresh expired tokens
+lexicon auth logout    # remove stored credentials
+```
+
+Credentials are stored per-provider in `.lexicon/auth/` with restrictive file permissions (0600 on Unix). The auth system supports both Claude and OpenAI providers.
+
+## Intent-Driven Generation
+
+Lexicon supports generating artifacts from natural language descriptions:
+
+```bash
+lexicon contract generate "async key-value store with TTL"
+lexicon conformance generate "cache trait with async get/set/delete"
+lexicon behavior generate "user session expiration after inactivity"
+lexicon generate "rate limiter with burst capacity"
+```
+
+The generation pipeline:
+
+1. Assembles repo context (contracts, scoring, gates, manifest)
+2. Builds a specialized prompt with artifact templates
+3. Calls the AI provider
+4. Presents a patch preview
+5. Writes to disk only after explicit user approval
+
+All generated artifacts follow the same schemas as manually-created ones. Every acceptance or rejection is recorded in the audit trail.
 
 ## The Improvement Loop
 

@@ -192,5 +192,159 @@ Implements specs `009-ai-assisted-work.md` and `010-ai-prompting.md`.
 
 ---
 
-**Starting state**: 103 tests, 13 crates, 24-page docs site
-**Ending state**: 167 tests, 15 crates, 28-page docs site
+**Sprint 002 state**: 103→174 tests, 13→15 crates, 24→28-page docs site
+
+---
+---
+
+# Lexicon Sprint 003 — Progressive Adoption, Docs & Polish
+
+**Goal**: Progressive scale modes, docs diagrams, polished homepage, and documentation updates.
+
+Implements specs `004-progressive-adoption.md`, `007-docs-diagrams.md`, `008-homepage.md`.
+
+---
+
+## Phase 20: Progressive Adoption — Operating Modes
+
+Implements `specs/prompts/004-progressive-adoption.md`.
+
+### 20a: Mode Detection & Capability Model (`crates/spec`)
+- [ ] `mode.rs` — `OperatingMode` enum (Repo, Workspace, Ecosystem)
+- [ ] `capability.rs` — `Capability` enum and `CapabilitySet` (repo_contracts, repo_conformance, repo_scoring, repo_gates, repo_api, workspace_architecture, workspace_dependency_law, workspace_shared_contracts, ecosystem_governance, ecosystem_shared_contracts, ecosystem_impact)
+- [ ] `workspace.rs` — `WorkspaceManifest` schema type
+- [ ] `ecosystem.rs` — `EcosystemManifest`, `RepoEntry` schema types
+- [ ] Tests for mode detection, capability sets
+
+### 20b: Repo Shape Detection (`crates/repo`)
+- [ ] `detect.rs` — detect repo shape (single crate, workspace, ecosystem)
+- [ ] `mode.rs` — `detect_mode(layout)` — auto-detect operating mode from repo structure
+- [ ] Integration with `RepoLayout` for mode-aware paths
+- [ ] Tests for shape detection
+
+### 20c: Schema Layering
+- [ ] `.lexicon/workspace.toml` — workspace manifest schema
+- [ ] `.lexicon/architecture/rules.toml` — architecture rules schema
+- [ ] `.lexicon/architecture/graph.json` — architecture graph schema
+- [ ] `.lexicon/ecosystem.toml` — ecosystem manifest schema
+- [ ] `.lexicon/ecosystem/repos.toml` — repo registry schema
+- [ ] `.lexicon/ecosystem/contracts/*.toml` — shared contracts schema
+- [ ] Validation for each schema layer
+
+### 20d: Mode-Aware Init Flow
+- [ ] `lexicon init` auto-detects repo shape and defaults to Repo Mode
+- [ ] `lexicon workspace init` — upgrade from Repo Mode, preserve existing state
+- [ ] `lexicon ecosystem init` — upgrade from Workspace Mode, preserve existing state
+- [ ] Interactive prompts explaining mode options
+- [ ] Migration safety (additive, no data loss)
+
+### 20e: Mode-Aware Commands
+- [ ] `lexicon workspace verify` — workspace-level verification
+- [ ] `lexicon workspace doctor` — workspace-level health checks
+- [ ] `lexicon ecosystem verify` — ecosystem-level verification
+- [ ] `lexicon ecosystem doctor` — ecosystem-level health checks
+- [ ] `lexicon verify` adapts output based on current mode
+- [ ] `lexicon doctor` adapts output based on current mode
+
+### 20f: Architecture Governance (`crates/architecture` — new crate)
+- [ ] Create `crates/architecture` with workspace deps
+- [ ] `roles.rs` — crate roles (foundation, interface, adapter, application)
+- [ ] `rules.rs` — dependency law, layering rules
+- [ ] `graph.rs` — architecture graph construction
+- [ ] `drift.rs` — architecture drift detection
+- [ ] `lexicon architecture graph` command
+
+### 20g: Mode-Aware TUI
+- [ ] Dashboard shows current mode badge (Repo/Workspace/Ecosystem)
+- [ ] Workspace Mode: add crate role browser, architecture graph, dependency law explorer
+- [ ] Ecosystem Mode: add repo role browser, ecosystem governance dashboard
+- [ ] Tabs appear/disappear based on active mode
+
+### 20h: Mode-Aware Conversation Loops
+- [ ] Conversations scope questions to current mode
+- [ ] Repo Mode: local public API, contract semantics, local test expectations
+- [ ] Workspace Mode: additionally crate roles, crate boundaries, dependency direction
+- [ ] Ecosystem Mode: additionally repo roles, cross-repo responsibilities, interface ownership
+
+### 20i: Tests & Documentation
+- [ ] Tests for repo shape detection
+- [ ] Tests for mode selection
+- [ ] Tests for init behavior by mode
+- [ ] Tests for migration (repo → workspace, workspace → ecosystem)
+- [ ] Tests for mode-aware verify and doctor
+- [ ] Tests for schema layering
+- [ ] Docs: "Progressive Adoption" concept page
+- [ ] Docs: workspace and ecosystem command reference pages
+- [ ] Update architecture doc with new crate
+
+---
+
+## Phase 21: Documentation Diagrams
+
+Implements `specs/prompts/007-docs-diagrams.md`.
+
+### 21a: Diagram Components
+- [ ] `docs/src/components/diagrams/LexiconModelDiagram.astro` — core concept relationships
+- [ ] `docs/src/components/diagrams/VerificationPipelineDiagram.astro` — verification flow
+- [ ] `docs/src/components/diagrams/ProgressiveScopeDiagram.astro` — Repo → Workspace → Ecosystem
+- [ ] `docs/src/components/diagrams/AISafetyDiagram.astro` — AI boundary model
+- [ ] `docs/src/components/diagrams/ArchitectureGovernanceDiagram.astro` — architecture rules
+- [ ] `docs/src/components/diagrams/ContractCoverageDiagram.astro` — coverage mapping
+
+### 21b: Diagram Design
+- [ ] Inline SVG, theme-aware (light/dark)
+- [ ] Responsive layout, mobile legible
+- [ ] Consistent visual style (soft gradients, rounded containers, clean typography)
+- [ ] Reusable wrapper/caption components
+
+### 21c: Docs Integration
+- [ ] Lexicon model diagram on homepage or core concepts page
+- [ ] Verification pipeline in verification docs
+- [ ] Progressive scope diagram in getting started or scope docs
+- [ ] AI safety diagram in AI agents docs
+- [ ] Architecture governance diagram in architecture docs
+- [ ] Contract coverage diagram in coverage docs
+
+---
+
+## Phase 22: Polished Homepage
+
+Implements `specs/prompts/008-homepage.md`.
+
+### 22a: Homepage Structure
+- [ ] Custom hero section (title, value proposition, CTAs)
+- [ ] Visual concept section with embedded diagram
+- [ ] "Why Lexicon Exists" problem statement section
+- [ ] Core concept highlights (feature grid: Contracts, Conformance, Coverage, Gates, Scoring, Architecture, Ecosystem, AI Context)
+- [ ] Progressive scope section (Repo → Workspace → Ecosystem visual)
+- [ ] AI safety section
+- [ ] Quick start / calls to action section
+
+### 22b: Implementation
+- [ ] Custom `docs/src/content/docs/index.mdx` homepage
+- [ ] Supporting Astro components (hero, feature card grid, CTA row, section wrappers)
+- [ ] Responsive layout
+- [ ] Starlight theme integration
+- [ ] Strong, concise copy (no buzzwords, no hype)
+
+---
+
+## Phase 23: Remaining Polish & Fixes
+
+### 23a: Misc
+- [ ] Update `AGENTS.md` to include requirement to keep docs site up-to-date (from `specs/scratch.md`)
+- [ ] Update ending state counts in SPRINT.md
+
+---
+
+## Backlog (Not Yet Scheduled)
+
+These are referenced in spec prompts but not yet broken into phases:
+
+- **Ecosystem Governance** (`crates/ecosystem` — new crate): federated contracts, repo roles, cross-repo compatibility, ecosystem-level architecture policies. Described in `006-project-description.md` and `004-progressive-adoption.md`.
+- **Workspace Shared Contracts**: shared contract registry within a workspace, contract inheritance/composition.
+- **Dependency Law**: explicit crate dependency rules, forbidden dependency detection, layer violation checks.
+- **Impact Analysis**: downstream impact analysis for changes (workspace and ecosystem scope).
+- **AI Prompt Refinement**: conversation storage for artifact generation sessions, session replay/refinement, prompt training data collection. Extended from `009-ai-assisted-work.md`.
+- **Targeted Improve Commands**: `lexicon contract improve`, `lexicon conformance improve`, `lexicon coverage improve`, `lexicon architecture improve`, `lexicon scoring improve`. From `009-ai-assisted-work.md`.
+- **TUI Artifact Review**: AI suggestions as reviewable patches in TUI mode. From `009-ai-assisted-work.md` and `010-ai-prompting.md`.

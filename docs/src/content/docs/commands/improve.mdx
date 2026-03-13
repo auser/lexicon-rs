@@ -1,0 +1,73 @@
+---
+title: lexicon improve
+description: AI-guided improvement suggestions for repository artifacts.
+---
+
+## Usage
+
+```bash
+lexicon improve [--goal <goal>]
+```
+
+## Description
+
+Analyzes the repository and uses AI to suggest improvements. The AI receives the full repo context (contracts, scoring model, gates, coverage) and identifies actionable improvements.
+
+Requires authentication with an AI provider. Run `lexicon auth login` first.
+
+## Options
+
+- `--goal <goal>` -- focus improvements on a specific area (e.g., `coverage`, `contracts`, `scoring`)
+
+## How it works
+
+1. **Authenticate** -- loads stored OAuth credentials
+2. **Assemble context** -- gathers all repo artifacts into a structured summary
+3. **Send to AI** -- asks for improvement suggestions, optionally focused on a goal
+4. **Display suggestions** -- shows the AI's analysis and recommendations
+
+## Example
+
+```bash
+lexicon improve --goal coverage
+```
+
+```
+AI-Guided Improvement
+  Goal: coverage
+────────────────────────────────────────────
+  Analyzing repository...
+
+Improvement Suggestions
+────────────────────────────────────────────
+Type: conformance
+Description: Add conformance test for delete idempotency
+Priority: high
+Artifact: tests/conformance/kv_store.rs
+
+Type: contract
+Description: Add edge case for empty string keys
+Priority: medium
+Artifact: specs/contracts/kv-store.toml
+────────────────────────────────────────────
+```
+
+## Improvement priorities
+
+When no goal is specified, the AI prioritizes:
+
+1. Fixing coverage gaps
+2. Strengthening contracts
+3. Adding conformance tests
+4. Refining scoring models
+5. Improving architecture rules
+
+## Safety
+
+AI suggestions are **read-only** -- the improve command displays suggestions but does not modify any files. To act on a suggestion, use the appropriate `generate` command or make the change manually.
+
+## See also
+
+- [`lexicon generate`](/commands/generate) -- AI-generate artifacts from description
+- [`lexicon auth`](/commands/auth) -- manage AI provider authentication
+- [AI Agents](/concepts/ai-agents) -- how Lexicon keeps AI bounded and auditable

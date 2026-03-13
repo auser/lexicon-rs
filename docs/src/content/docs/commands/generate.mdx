@@ -1,0 +1,66 @@
+---
+title: lexicon generate
+description: AI-generate artifacts from a natural language description.
+---
+
+## Usage
+
+```bash
+lexicon generate "<intent>"
+```
+
+## Description
+
+Generates repository artifacts from a natural language description using AI. This is the top-level intent-driven generation command that creates a contract by default.
+
+Requires authentication with an AI provider. Run `lexicon auth login` first.
+
+## How it works
+
+1. **Authenticate** -- loads stored OAuth credentials (auto-refreshes if expired)
+2. **Assemble context** -- gathers contracts, scoring model, gates, and manifest from the repo
+3. **Send to AI** -- sends the intent along with repo context and artifact templates to Claude
+4. **Patch preview** -- displays the generated artifact for review
+5. **Accept or reject** -- you choose whether to write the artifact to disk
+
+## Example
+
+```bash
+lexicon generate "rate limiter with burst capacity"
+```
+
+Output:
+
+```
+AI Artifact Generation
+  Intent: rate limiter with burst capacity
+────────────────────────────────────────────
+
+Patch Preview
+  File: specs/contracts/rate-limiter-with-burst-capacity.toml
+────────────────────────────────────────────
+id = "rate-limiter-with-burst-capacity"
+title = "Rate Limiter with Burst Capacity"
+...
+────────────────────────────────────────────
+? What would you like to do?
+> Accept
+  Reject
+```
+
+## Artifact types
+
+For more targeted generation, use the artifact-specific subcommands:
+
+- [`lexicon contract generate`](/commands/contract) -- generate a contract
+- [`lexicon conformance generate`](/commands/conformance) -- generate conformance tests
+- [`lexicon behavior generate`](/commands/behavior) -- generate behavior scenarios
+
+## Audit trail
+
+Every accepted artifact is recorded with action `ContractCreate` (or the relevant action type) and actor `Ai`. Rejected artifacts are recorded as `AiImproveRejected`.
+
+## See also
+
+- [`lexicon improve`](/commands/improve) -- AI-guided improvement suggestions
+- [`lexicon auth`](/commands/auth) -- manage AI provider authentication

@@ -29,6 +29,10 @@ lexicon init
 # Create a new behavioral contract
 lexicon contract new
 
+# Or generate one from a description (requires auth)
+lexicon auth login
+lexicon contract generate "async key-value store with TTL"
+
 # Generate conformance tests from contracts
 lexicon conformance add
 
@@ -259,6 +263,32 @@ Lexicon keeps AI agents aligned with your specifications:
 - **Audit trail** — records before/after state for every AI-driven change
 - **Improvement loop** — `lexicon improve --goal <goal>` runs an AI-guided improvement cycle
 
+### AI-assisted artifact generation
+
+Authenticate with an AI provider, then generate artifacts from natural language:
+
+```sh
+# Authenticate (opens browser for OAuth)
+lexicon auth login
+
+# Generate a contract from a description
+lexicon contract generate "async key-value store with TTL support"
+
+# Generate conformance tests
+lexicon conformance generate "cache trait with async get/set/delete"
+
+# Generate behavior scenarios
+lexicon behavior generate "user session expiration after inactivity"
+
+# Generate any artifact type
+lexicon generate "rate limiter with burst capacity"
+
+# AI-guided improvement suggestions
+lexicon improve --goal "coverage"
+```
+
+All generated artifacts are shown as a patch preview. You review and accept or reject before anything is written to disk. Every decision is recorded in the audit trail.
+
 AI is never required. The core system uses a NoOp AI provider by default and works entirely offline.
 
 ## Repository health
@@ -280,27 +310,35 @@ The TUI shows contract status, gate results, scores, and coverage in a single in
 ## CLI reference
 
 ```
-lexicon init                    Initialize lexicon in a repository
-lexicon contract new            Create a new contract interactively
-lexicon contract list           List all contracts
-lexicon contract lint           Validate contract files
-lexicon conformance add         Generate conformance suite from contract
-lexicon conformance sync        Re-sync suites with updated contracts
-lexicon behavior add            Add behavior scenarios
-lexicon behavior sync           Sync behavior scenarios
-lexicon score init              Create scoring model
-lexicon score explain           Explain score calculation
-lexicon gate init               Set up verification gates
-lexicon verify                  Run all gates and compute score
-lexicon improve --goal <goal>   AI-guided improvement loop
-lexicon api scan                Extract public API
-lexicon api diff                Diff against API baseline
-lexicon api baseline            Save current API as baseline
-lexicon api report              Full API surface report
-lexicon coverage report         Contract coverage report
-lexicon doctor                  Check repo health
-lexicon sync claude             Sync context to CLAUDE.md
-lexicon tui                     Launch terminal UI
+lexicon init                           Initialize lexicon in a repository
+lexicon contract new                   Create a new contract interactively
+lexicon contract list                  List all contracts
+lexicon contract lint                  Validate contract files
+lexicon contract generate "<intent>"   AI-generate a contract from description
+lexicon conformance add                Generate conformance suite from contract
+lexicon conformance sync               Re-sync suites with updated contracts
+lexicon conformance generate "<intent>" AI-generate conformance tests
+lexicon behavior add                   Add behavior scenarios
+lexicon behavior sync                  Sync behavior scenarios
+lexicon behavior generate "<intent>"   AI-generate behavior scenarios
+lexicon score init                     Create scoring model
+lexicon score explain                  Explain score calculation
+lexicon gate init                      Set up verification gates
+lexicon verify                         Run all gates and compute score
+lexicon generate "<intent>"            AI-generate artifacts from description
+lexicon improve --goal <goal>          AI-guided improvement suggestions
+lexicon auth login                     Authenticate with AI provider (OAuth)
+lexicon auth status                    Show authentication status
+lexicon auth refresh                   Refresh expired tokens
+lexicon auth logout                    Remove stored credentials
+lexicon api scan                       Extract public API
+lexicon api diff                       Diff against API baseline
+lexicon api baseline                   Save current API as baseline
+lexicon api report                     Full API surface report
+lexicon coverage report                Contract coverage report
+lexicon doctor                         Check repo health
+lexicon sync claude                    Sync context to CLAUDE.md
+lexicon tui                            Launch terminal UI
 ```
 
 ## Workspace structure
