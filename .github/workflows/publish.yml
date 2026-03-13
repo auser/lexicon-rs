@@ -1,0 +1,60 @@
+name: Publish to crates.io
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Publish crates
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          # Publish in dependency order with delays for index updates
+          publish() {
+            echo "Publishing $1..."
+            cargo publish -p "$1"
+            echo "Waiting for crates.io index update..."
+            sleep 30
+          }
+
+          # Tier 0: Foundation
+          publish lexicon-spec
+
+          # Tier 1: Depend only on spec
+          publish lexicon-fs
+          publish lexicon-audit
+
+          # Tier 2: Mid-level crates
+          publish lexicon-repo
+          publish lexicon-scoring
+          publish lexicon-api
+          publish lexicon-coverage
+
+          # Tier 3: Higher-level crates
+          publish lexicon-conformance
+          publish lexicon-gates
+          publish lexicon-conversation
+
+          # Tier 4: Near-top crates
+          publish lexicon-scaffold
+          publish lexicon-ai
+          publish lexicon-tui
+
+          # Tier 5: Orchestrator
+          publish lexicon-core
+
+          # Tier 6: CLI binary
+          echo "Publishing lexicon-rs..."
+          cargo publish -p lexicon-rs

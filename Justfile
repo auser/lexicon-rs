@@ -82,6 +82,30 @@ docs-build:
 docs-preview:
     cd docs && pnpm preview
 
+# Create a release with a specific version (e.g., just release 0.2.0)
+release version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    tag="v{{version}}"
+    echo "Creating release ${tag}..."
+    git cliff --tag "${tag}" -o CHANGELOG.md
+    git add CHANGELOG.md
+    git commit -m "chore: update changelog for ${tag}"
+    git tag -a "${tag}" -m "Release ${tag}"
+    echo "Release ${tag} created. Push with: git push && git push --tags"
+
+# Auto-detect next version from conventional commits and release
+release-auto:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    next=$(git cliff --bumped-version)
+    echo "Next version: ${next}"
+    git cliff --tag "${next}" -o CHANGELOG.md
+    git add CHANGELOG.md
+    git commit -m "chore: update changelog for ${next}"
+    git tag -a "${next}" -m "Release ${next}"
+    echo "Release ${next} created. Push with: git push && git push --tags"
+
 # Clean build artifacts
 clean:
     cargo clean
