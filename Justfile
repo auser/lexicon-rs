@@ -106,6 +106,15 @@ release-auto:
     git tag -a "${next}" -m "Release ${next}"
     echo "Release ${next} created. Push with: git push && git push --tags"
 
+# Build release binary and symlink to ~/.local/bin
+install:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cargo build --release
+    mkdir -p ~/.local/bin
+    ln -sf "{{justfile_directory()}}/target/release/lexicon" ~/.local/bin/lexicon
+    echo "Installed: ~/.local/bin/lexicon -> $(readlink ~/.local/bin/lexicon)"
+
 # Clean build artifacts
 clean:
     cargo clean
