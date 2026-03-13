@@ -1,0 +1,70 @@
+---
+title: lexicon init
+description: Initialize lexicon in the current repository.
+---
+
+## Usage
+
+```bash
+lexicon init
+```
+
+## Description
+
+Initializes lexicon in the current repository by creating the directory structure and manifest file. This is an interactive workflow that prompts for project metadata.
+
+The command discovers the repository root by walking up from the current directory looking for a `.lexicon/` directory or `Cargo.toml`. It falls back to the current directory if neither is found.
+
+If lexicon has already been initialized (`.lexicon/manifest.toml` exists), the command fails with an error.
+
+## What It Creates
+
+### `.lexicon/` directory
+
+| Path                       | Purpose                              |
+|----------------------------|--------------------------------------|
+| `.lexicon/manifest.toml`   | Root manifest with project metadata  |
+| `.lexicon/context/`        | Assembled context for AI consumption |
+| `.lexicon/conversations/`  | Recorded conversation sessions       |
+| `.lexicon/audit/`          | Audit trail records                  |
+| `.lexicon/cache/`          | Cached computation results           |
+| `.lexicon/state/`          | Runtime state                        |
+
+### `specs/` directory
+
+| Path                       | Purpose                              |
+|----------------------------|--------------------------------------|
+| `specs/contracts/`         | Contract TOML files                  |
+| `specs/behavior/`          | Behavior scenario definitions        |
+| `specs/scoring/`           | Scoring model                        |
+| `specs/conformance/`       | Conformance specifications           |
+| `specs/non_goals/`         | Non-goal definitions                 |
+
+## Interactive Prompts
+
+The init workflow asks for:
+
+1. **Project name** -- Used as the project identifier
+2. **Description** -- Short project description
+3. **Repository type** -- `library`, `binary`, or `workspace`
+4. **Domain** -- What the project does (e.g., "key-value store", "parser")
+
+## Manifest
+
+The generated `manifest.toml` includes:
+
+- Project metadata (name, description, type, domain, timestamps)
+- Default preferences (kebab-case naming, trait-based conformance)
+- Default AI policy (source files editable, specs require review, manifest/gates protected)
+
+## Example
+
+```bash
+$ lexicon init
+Initializing lexicon
+? Project name: my-parser
+? Description: A streaming JSON parser
+? Repository type: library
+? Domain: parser
+Lexicon initialized successfully
+```

@@ -1,0 +1,91 @@
+{
+  "schema_version": {
+    "major": 1,
+    "minor": 0
+  },
+  "id": "a3f8c1d2-7b4e-4f9a-b6c5-1e2d3f4a5b6c",
+  "workflow": "contract_new",
+  "status": "completed",
+  "steps": [
+    {
+      "step_type": "info",
+      "content": "Starting new contract creation workflow.",
+      "timestamp": "2025-10-20T09:15:00Z"
+    },
+    {
+      "step_type": "question",
+      "content": "What component does this contract describe?",
+      "timestamp": "2025-10-20T09:15:01Z"
+    },
+    {
+      "step_type": "user_input",
+      "content": "A key-value store with concurrent access and TTL support.",
+      "timestamp": "2025-10-20T09:15:45Z"
+    },
+    {
+      "step_type": "question",
+      "content": "What are the core operations this store must support?",
+      "timestamp": "2025-10-20T09:15:46Z"
+    },
+    {
+      "step_type": "user_input",
+      "content": "get, set, delete, list_keys, and compare_and_swap",
+      "timestamp": "2025-10-20T09:16:20Z"
+    },
+    {
+      "step_type": "proposal",
+      "content": "Draft contract 'key-value-store' with 3 invariants, 5 required semantics, 3 forbidden semantics, 4 edge cases, and 3 examples.",
+      "timestamp": "2025-10-20T09:16:22Z"
+    },
+    {
+      "step_type": "question",
+      "content": "Does this draft capture the intended behavior? Any changes needed?",
+      "timestamp": "2025-10-20T09:16:23Z"
+    },
+    {
+      "step_type": "user_input",
+      "content": "Add an invariant about thread safety. Otherwise looks good.",
+      "timestamp": "2025-10-20T09:17:10Z"
+    },
+    {
+      "step_type": "refinement",
+      "content": "Added invariant inv-003: 'The store must be safe to access concurrently from multiple threads without data corruption.'",
+      "timestamp": "2025-10-20T09:17:12Z"
+    },
+    {
+      "step_type": "validation",
+      "content": "Contract passes schema validation. All invariant and semantic IDs are unique.",
+      "timestamp": "2025-10-20T09:17:13Z"
+    },
+    {
+      "step_type": "write",
+      "content": "Wrote specs/contracts/key-value-store.toml",
+      "timestamp": "2025-10-20T09:17:14Z"
+    }
+  ],
+  "decisions": [
+    {
+      "key": "contract_id",
+      "value": "key-value-store",
+      "rationale": "Derived from user description using kebab-case convention."
+    },
+    {
+      "key": "stability",
+      "value": "stable",
+      "rationale": "User indicated this is a well-understood component with clear requirements."
+    },
+    {
+      "key": "include_cas",
+      "value": "true",
+      "rationale": "User explicitly listed compare_and_swap as a core operation."
+    },
+    {
+      "key": "include_ttl",
+      "value": "true",
+      "rationale": "User mentioned TTL support in initial description."
+    }
+  ],
+  "artifact_id": "key-value-store",
+  "started_at": "2025-10-20T09:15:00Z",
+  "completed_at": "2025-10-20T09:17:14Z"
+}

@@ -1,0 +1,74 @@
+---
+title: Repository Layout
+description: Directory structure created and managed by lexicon.
+---
+
+After running `lexicon init` and setting up all components, the repository contains the following lexicon-managed structure.
+
+## Directory Tree
+
+```
+your-project/
+├── .lexicon/
+│   ├── manifest.toml        # Root manifest with project metadata and policy
+│   ├── context/             # Assembled context for AI consumption
+│   ├── conversations/       # Recorded conversation sessions
+│   ├── audit/               # Audit trail (JSON records)
+│   ├── cache/               # Cached computation results
+│   └── state/               # Runtime state
+├── specs/
+│   ├── contracts/           # Contract TOML files
+│   │   └── <id>.toml
+│   ├── behavior/            # Behavior scenario definitions
+│   ├── scoring/
+│   │   └── model.toml       # Scoring model configuration
+│   ├── conformance/         # Conformance specifications
+│   ├── non_goals/           # Non-goal definitions
+│   └── gates.toml           # Gates configuration
+├── tests/
+│   ├── conformance/         # Generated conformance test harnesses
+│   │   └── <contract-id>.rs
+│   ├── behavior/            # Behavior test files
+│   └── integration/         # Integration tests
+├── CLAUDE.md                # AI context file (managed blocks)
+└── ...                      # Your existing project files
+```
+
+## `.lexicon/` Directory
+
+Internal lexicon state. This directory should be committed to version control (except possibly `cache/`).
+
+| Path | Purpose |
+|------|---------|
+| `manifest.toml` | Project configuration, preferences, and AI policy. Created by `lexicon init`. |
+| `context/` | Pre-assembled context snapshots for AI consumption. |
+| `conversations/` | JSON records of every interactive workflow session. Tracks questions asked, decisions made, and artifacts produced. |
+| `audit/` | Immutable audit trail. Each file is `<timestamp>-<uuid>.json`. Records verification runs, contract changes, AI actions, and policy violations. |
+| `cache/` | Temporary cached results. Safe to delete. |
+| `state/` | Runtime state persisted between commands. |
+
+## `specs/` Directory
+
+User-facing specification files. These define what your project should do.
+
+| Path | Purpose |
+|------|---------|
+| `contracts/<id>.toml` | Behavioral contracts. One file per component. Created by `lexicon contract new`. |
+| `behavior/` | Behavior scenario definitions linked to contracts. |
+| `scoring/model.toml` | Scoring model with dimensions and thresholds. Created by `lexicon score init`. |
+| `conformance/` | Conformance specifications that link contracts to test harnesses. |
+| `non_goals/` | Explicit non-goals for the project. |
+| `gates.toml` | Verification gate definitions. Created by `lexicon gate init`. |
+
+## `CLAUDE.md`
+
+The AI context file in the repository root. Contains managed blocks (delimited by `lexicon:begin:*` and `lexicon:end:*` markers) that are updated by `lexicon sync claude`. User content outside managed blocks is preserved.
+
+## Discovery
+
+Lexicon discovers the repository root by walking up from the current working directory, looking for:
+
+1. A `.lexicon/` directory
+2. A `Cargo.toml` file
+
+It uses the first match. If neither is found, it falls back to the current directory.

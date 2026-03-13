@@ -1,0 +1,75 @@
+---
+title: lexicon verify
+description: Run all gates, compute scores, and write an audit record.
+---
+
+## Usage
+
+```bash
+lexicon verify
+```
+
+## Description
+
+Runs the full verification pipeline:
+
+1. **Load gates** -- Reads `specs/gates.toml` (falls back to the default model if not found)
+2. **Run all gates** -- Executes each gate command as a subprocess via `sh -c` in the repository root
+3. **Load scoring model** -- Reads `specs/scoring/model.toml` if it exists
+4. **Compute score** -- Maps gate results to scoring dimensions and computes the weighted score
+5. **Write audit record** -- Records the verification run in `.lexicon/audit/`
+
+## Output
+
+```
+Running verification
+────────────────────────
+Gates
+ ✓ fmt (42ms)
+ ✓ clippy (1830ms)
+ ✗ unit-tests (2105ms)
+ ⊘ doc-tests (0ms)
+
+Score
+ Total: 65.0% (WARN)
+  correctness: 100% — fmt: passed in 42ms
+  conformance-coverage: 50% — no gate configured
+  behavior-pass-rate: 50% — no gate configured
+  lint-quality: 100% — clippy: passed in 1830ms
+  doc-completeness: 100% — advisory
+  panic-safety: 0% — unit-tests: FAILED
+────────────────────────
+Some gates failed
+```
+
+### Gate Outcome Icons
+
+| Icon | Meaning |
+|------|---------|
+| `✓`  | Pass    |
+| `✗`  | Fail    |
+| `⊘`  | Skip    |
+| `!`  | Error   |
+
+## Gate-to-Dimension Mapping
+
+During scoring, gate results are mapped to dimensions by matching `gate.id` to `dimension.id`:
+
+- If a gate matches and passed: dimension value = 1.0
+- If a gate matches and failed: dimension value = 0.0
+- If no gate matches an advisory dimension: value = 1.0 (assumed pass)
+- If no gate matches a non-advisory dimension: value = 0.5 (partial credit)
+
+## Audit Record
+
+Each verification run writes a JSON audit record to `.lexicon/audit/` with:
+
+- Action: `verify_run`
+- Actor: `system`
+- Summary: gate count and pass count
+- Whether all gates passed
+- Final score (if scoring model exists)
+
+## Exit Behavior
+
+The command currently always exits successfully. Check the output for gate failures and score verdicts. In CI, you may want to combine this with a script that checks the output.

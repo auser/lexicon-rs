@@ -1,0 +1,16 @@
+{
+  "schema_version": {
+    "major": 1,
+    "minor": 0
+  },
+  "id": "e7a2b9c4-3d1f-48e5-a0c6-9f8e7d6b5a43",
+  "action": "contract_create",
+  "actor": "ai",
+  "before_hash": null,
+  "after_hash": "sha256:a4f3c8d1e9b2f07654321abcdef09876543210fedcba9876543210abcdef1234",
+  "delta_summary": "Created contract 'key-value-store' with 4 invariants, 5 required semantics, 3 forbidden semantics, 4 edge cases, and 3 examples.",
+  "score_before": null,
+  "score_after": 0.72,
+  "gates_passed": true,
+  "timestamp": "2025-10-20T09:17:14Z"
+}

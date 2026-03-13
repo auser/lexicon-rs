@@ -1,0 +1,16 @@
+[package]
+name = "lexicon-fs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Safe file operations, diffs, and managed-block patching for lexicon"
+
+[dependencies]
+lexicon-spec.workspace = true
+similar.workspace = true
+thiserror.workspace = true
+tempfile.workspace = true
+
+[dev-dependencies]
+insta.workspace = true

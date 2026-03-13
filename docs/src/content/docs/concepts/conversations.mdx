@@ -1,0 +1,119 @@
+---
+title: Conversations
+description: Workflow-driven interactions modeled as state machines, not chat.
+---
+
+Lexicon uses structured conversations to guide artifact creation. Conversations are state machines, not free-form chat. Each workflow defines a sequence of steps that collect input and produce output.
+
+## The Workflow Trait
+
+All interactive workflows implement the `Workflow` trait:
+
+```rust
+pub trait Workflow {
+    type Context;  // Accumulated state during the workflow
+    type Output;   // Final artifact produced
+
+    fn name(&self) -> &str;
+    fn steps(&self) -> &[WorkflowStep];
+    fn initial_context(&self) -> Self::Context;
+    fn execute_step(
+        &self,
+        step_idx: usize,
+        ctx: &mut Self::Context,
+        input: StepInput,
+    ) -> StepOutput;
+    fn finalize(&self, ctx: Self::Context) -> Option<Self::Output>;
+}
+```
+
+Key design points:
+
+- `Context` accumulates decisions as the user progresses through steps
+- `execute_step` is called with user input and returns what to show next
+- `finalize` produces the output artifact (e.g., a Contract TOML file) or `None` if the user aborted
+
+## Steps
+
+Each `WorkflowStep` has:
+
+- **`id`** -- Unique step identifier
+- **`prompt`** -- Human-readable description
+- **`skippable`** -- Whether the step can be skipped
+
+## Input and Output
+
+### StepInput
+
+What the user provides at each step:
+
+- **`UserResponse(String)`** -- Typed text response
+- **`Accept`** -- Accepted a proposal as-is
+- **`Refine(String)`** -- Requested changes with feedback
+- **`Skip`** -- Skipped this step
+
+### StepOutput
+
+What the workflow presents:
+
+- **`Question`** -- Ask the user a question (with optional default, suggestions, multiline support)
+- **`Proposal`** -- Present a draft artifact for review (with title, content, and format hint)
+- **`Info`** -- Show informational text
+- **`Advance`** -- Step completed silently, move on
+- **`Done`** -- Workflow is complete
+
+## The ConversationDriver Trait
+
+The `ConversationDriver` trait abstracts user interaction, allowing the same workflow to run in different contexts:
+
+```rust
+pub trait ConversationDriver {
+    fn present_question(&self, question: &Question) -> Result<String>;
+    fn present_proposal(&self, proposal: &Proposal) -> Result<ProposalResponse>;
+    fn present_info(&self, message: &str);
+}
+```
+
+Lexicon ships with a `TerminalDriver` that uses dialoguer for CLI prompts. The driver abstraction also enables automated testing via mock drivers.
+
+### Proposal Responses
+
+When a proposal is presented, the user can:
+
+- **Accept** -- Use the proposal as-is
+- **Refine(feedback)** -- Request changes with specific feedback
+- **Skip** -- Skip this step (if the step is skippable)
+- **Abort** -- Cancel the entire workflow
+
+## The Conversation Engine
+
+The `ConversationEngine` drives a workflow through its steps:
+
+1. Creates a `ConversationSession` for recording
+2. Builds the initial context
+3. Iterates through each step, presenting output via the driver and collecting input
+4. Records every step, decision, and response in the session
+5. Calls `finalize` to produce the output artifact
+6. Marks the session as completed (or abandoned if aborted)
+
+## Session Persistence
+
+Every conversation is recorded as a `ConversationSession` stored in `.lexicon/conversations/`. Sessions track:
+
+- Workflow kind (Init, ContractNew, ContractEdit, ScoreInit, etc.)
+- Status (Active, Completed, Abandoned)
+- Each step with its type and content
+- Decisions made at each step
+
+## Workflow Kinds
+
+Lexicon defines these workflow kinds:
+
+- `Init` -- Repository initialization
+- `ContractNew` -- Creating a new contract
+- `ContractEdit` -- Editing an existing contract
+- `ConformanceAdd` -- Adding conformance tests
+- `BehaviorAdd` -- Adding behavior scenarios
+- `ScoreInit` -- Initializing the scoring model
+- `GateInit` -- Initializing gates
+- `Improve` -- AI-guided improvement loop

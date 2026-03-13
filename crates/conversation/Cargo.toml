@@ -1,0 +1,22 @@
+[package]
+name = "lexicon-conversation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Conversational refinement loops and session state for lexicon"
+
+[dependencies]
+lexicon-spec.workspace = true
+lexicon-fs.workspace = true
+lexicon-audit.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+thiserror.workspace = true
+dialoguer.workspace = true
+console.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

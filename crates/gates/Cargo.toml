@@ -1,0 +1,16 @@
+[package]
+name = "lexicon-gates"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Verification gate runners and policy enforcement for lexicon"
+
+[dependencies]
+lexicon-spec.workspace = true
+lexicon-repo.workspace = true
+lexicon-scoring.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

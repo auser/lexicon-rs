@@ -1,0 +1,89 @@
+---
+title: AI Integration
+description: How lexicon integrates with AI assistants while maintaining safety boundaries.
+---
+
+AI integration in lexicon is optional by design. All workflows work fully without AI. When AI is available, it enhances proposals and suggests improvements -- but every change is bounded, audited, and subject to policy.
+
+## The AiProvider Trait
+
+AI integration is abstracted behind a trait:
+
+```rust
+pub trait AiProvider {
+    fn enhance_proposal(&self, prompt: &str, context: &str) -> AiResult<String>;
+    fn suggest_improvement(&self, context: &str, failure: &str) -> AiResult<String>;
+}
+```
+
+- `enhance_proposal` -- Takes a prompt and context, returns an enhanced draft
+- `suggest_improvement` -- Given a context and failure description, suggests a fix
+
+## NoOpProvider
+
+The default provider is `NoOpProvider`, which returns `AiError::NotAvailable` for all calls. This ensures lexicon works completely without any AI service configured.
+
+## Context Assembly
+
+The `assemble_context` function creates a structured text summary from repository state for AI consumption:
+
+```
+# Project: my-lib
+Domain: key-value store
+Type: Library
+
+## Contracts
+- **KV Store** (kv): Basic KV [status: Active, stability: Stable]
+  Invariants:
+  - inv-001: Keys set must be retrievable
+  Required semantics:
+  - req-001: get returns None for missing keys
+
+## Scoring
+Pass threshold: 80%, Warn threshold: 60%
+- Correctness (weight: 30, Required)
+- Conformance Coverage (weight: 25, Scored)
+...
+
+## Gates
+- Format Check (Required): `cargo fmt -- --check`
+- Clippy Lints (Required): `cargo clippy -- -D warnings`
+...
+```
+
+This assembled context is used both for prompt construction and for the managed block in CLAUDE.md.
+
+## Edit Policy
+
+The manifest's `PolicyConfig` controls what AI may edit:
+
+| Policy Level     | Default Patterns                        | Behavior                        |
+|------------------|-----------------------------------------|---------------------------------|
+| `ai_may_edit`    | `src/**/*.rs`, `tests/**/*.rs`          | AI may freely edit these files  |
+| `ai_requires_review` | `specs/**/*.toml`, `CLAUDE.md`     | AI changes require manual review|
+| `ai_protected`   | `.lexicon/manifest.toml`, `specs/gates.toml` | AI must never edit these   |
+
+Files not matching any pattern default to `RequiresReview`.
+
+The `ai_may_edit` function checks a file path against these patterns in order: protected first, then requires-review, then allowed.
+
+## Safety Boundaries
+
+Several mechanisms prevent AI from degrading project quality:
+
+### Gate Weakening Detection
+Changes that lower a gate's category or make a non-skippable gate skippable are flagged as weakening. The `gate_weakening_requires_approval` policy (default: `true`) requires explicit approval.
+
+### Test Deletion Approval
+The `test_deletion_requires_approval` policy (default: `true`) prevents AI from silently removing tests.
+
+### Audit Trail
+Every AI-driven change is recorded as an audit record with:
+- The action type (`AiImprove` or `AiImproveRejected`)
+- Actor set to `Ai`
+- Content hashes before and after
+- Score impact (before and after)
+- Whether gates still pass
+
+### Bounded Improvement Loops
+The `lexicon improve` command runs an AI-guided improvement loop with a specific goal. The loop is bounded -- it produces suggestions that go through verification, not unbounded autonomous changes.

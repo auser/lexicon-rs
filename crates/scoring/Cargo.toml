@@ -1,0 +1,15 @@
+[package]
+name = "lexicon-scoring"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Scoring engine for lexicon"
+
+[dependencies]
+lexicon-spec.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+insta.workspace = true

@@ -1,0 +1,49 @@
+---
+title: Lexicon
+description: Contract-driven verification for Rust libraries and workspaces.
+template: splash
+hero:
+  tagline: Define behavioral contracts for your Rust code. Verify them automatically. Keep AI assistants aligned with your specifications.
+  actions:
+    - text: Get Started
+      link: /getting-started/quickstart/
+      icon: right-arrow
+    - text: Concepts
+      link: /concepts/contracts/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## What is Lexicon?
+
+Lexicon is a contract-driven verification tool for Rust. It lets you declare what your code must do, must not do, and what is out of scope -- then continuously verifies that your implementation matches.
+
+Lexicon works with or without AI. When used with Claude Code, it syncs your contracts and verification context into `CLAUDE.md` so the AI always operates within defined boundaries.
+
+## Core Workflow
+
+<CardGrid>
+	<Card title="Define Contracts" icon="pencil">
+		Write TOML contracts that declare invariants, required semantics, forbidden behaviors, and edge cases.
+	</Card>
+	<Card title="Generate Conformance Tests" icon="document">
+		Lexicon generates trait-based or factory-based test harnesses from your contracts.
+	</Card>
+	<Card title="Score and Gate" icon="setting">
+		Configure weighted scoring dimensions and verification gates that run as part of CI.
+	</Card>
+	<Card title="Verify Continuously" icon="approve-check">
+		Run `lexicon verify` to execute all gates, compute scores, and write audit records.
+	</Card>
+</CardGrid>
+
+## Key Features
+
+- **Behavioral contracts** -- TOML-based specifications with invariants, required/forbidden semantics, and edge cases
+- **Conformance suites** -- auto-generated test harnesses from contracts
+- **Weighted scoring** -- multi-dimensional health scores with pass/warn/fail verdicts
+- **Verification gates** -- shell commands (cargo fmt, clippy, tests) run as subprocesses
+- **AI integration** -- optional, bounded, audited; syncs context to CLAUDE.md
+- **Audit trail** -- every verification run and change is recorded as JSON
+- **Terminal UI** -- tab-based dashboard for contracts, gates, and scores

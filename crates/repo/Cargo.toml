@@ -1,0 +1,19 @@
+[package]
+name = "lexicon-repo"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Repository inspection and layout management for lexicon"
+
+[dependencies]
+lexicon-spec.workspace = true
+lexicon-fs.workspace = true
+glob.workspace = true
+miette.workspace = true
+thiserror.workspace = true
+toml.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

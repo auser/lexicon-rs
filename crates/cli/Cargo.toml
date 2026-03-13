@@ -1,0 +1,32 @@
+[package]
+name = "lexicon"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Contract-driven verification system for Rust libraries and workspaces"
+
+[[bin]]
+name = "lexicon"
+path = "src/main.rs"
+
+[dependencies]
+lexicon-core.workspace = true
+lexicon-spec.workspace = true
+lexicon-repo.workspace = true
+lexicon-conversation.workspace = true
+lexicon-gates.workspace = true
+lexicon-scoring.workspace = true
+lexicon-tui.workspace = true
+clap.workspace = true
+console.workspace = true
+dialoguer.workspace = true
+indicatif.workspace = true
+miette.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+lexicon-core.workspace = true
+lexicon-spec.workspace = true
+lexicon-repo.workspace = true

@@ -1,0 +1,77 @@
+---
+title: lexicon contract
+description: Create, list, and lint behavioral contracts.
+---
+
+## Subcommands
+
+### `lexicon contract new`
+
+Create a new contract interactively.
+
+```bash
+lexicon contract new
+```
+
+Launches a conversational workflow that guides you through defining:
+
+- Contract ID (slug format, e.g., `key-value-store`)
+- Title and scope description
+- Invariants with severity levels
+- Required semantics with test tags
+- Forbidden semantics with test tags
+- Edge cases with expected behavior
+- Usage examples
+
+The contract is saved to `specs/contracts/<id>.toml` with `draft` status and `experimental` stability.
+
+On success:
+
+```
+New Contract
+...
+Contract 'key-value-store' created
+```
+
+If cancelled:
+
+```
+Contract creation cancelled
+```
+
+### `lexicon contract list`
+
+List all contracts in the repository.
+
+```bash
+lexicon contract list
+```
+
+Scans `specs/contracts/` for TOML files and lists their IDs.
+
+```
+Contracts
+  key-value-store
+  parser
+  auth-handler
+```
+
+If no contracts exist:
+
+```
+No contracts found. Run `lexicon contract new` to create one.
+```
+
+### `lexicon contract lint`
+
+Lint contracts for potential issues.
+
+```bash
+lexicon contract lint
+```
+
+Checks contracts for structural problems such as missing fields, duplicate IDs, or orphaned references.
+
+:::note
+Contract linting is not yet fully implemented in the current version.
+:::

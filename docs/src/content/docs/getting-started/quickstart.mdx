@@ -1,0 +1,118 @@
+---
+title: Quickstart
+description: Walk through the full lexicon workflow from init to verification.
+---
+
+This guide walks through the happy path of setting up lexicon in a Rust project.
+
+## 1. Initialize Lexicon
+
+From your project root:
+
+```bash
+lexicon init
+```
+
+This launches an interactive workflow that asks for your project name, description, type (library/binary/workspace), and domain. It creates the `.lexicon/` and `specs/` directory structure with a `manifest.toml`.
+
+Expected output:
+
+```
+Initializing lexicon
+...
+Lexicon initialized successfully
+```
+
+## 2. Create a Contract
+
+```bash
+lexicon contract new
+```
+
+An interactive workflow guides you through defining:
+- Contract ID (e.g., `key-value-store`)
+- Title and scope description
+- Invariants, required semantics, forbidden behaviors
+- Edge cases and examples
+
+The contract is saved to `specs/contracts/<id>.toml`.
+
+## 3. Initialize the Scoring Model
+
+```bash
+lexicon score init
+```
+
+Creates the default scoring model at `specs/scoring/model.toml` with six dimensions:
+
+| Dimension              | Weight | Category |
+|------------------------|--------|----------|
+| Correctness            | 30     | Required |
+| Conformance Coverage   | 25     | Scored   |
+| Behavior Pass Rate     | 15     | Scored   |
+| Lint Quality           | 10     | Scored   |
+| Documentation Complete | 10     | Advisory |
+| Panic Safety           | 10     | Scored   |
+
+## 4. Initialize Gates
+
+```bash
+lexicon gate init
+```
+
+Creates default gates at `specs/gates.toml`:
+
+| Gate       | Command                      | Category |
+|------------|------------------------------|----------|
+| fmt        | `cargo fmt -- --check`       | Required |
+| clippy     | `cargo clippy -- -D warnings`| Required |
+| unit-tests | `cargo test`                 | Required |
+| doc-tests  | `cargo test --doc`           | Scored   |
+
+## 5. Run Verification
+
+```bash
+lexicon verify
+```
+
+This runs all gates as subprocesses, computes the weighted score, and writes an audit record. Example output:
+
+```
+Running verification
+────────────────────────
+Gates
+ ✓ fmt (42ms)
+ ✓ clippy (1830ms)
+ ✓ unit-tests (2105ms)
+ ✓ doc-tests (890ms)
+
+Score
+ Total: 92.5% (PASS)
+  correctness: 100% — fmt: passed in 42ms
+  conformance-coverage: 50% — no gate configured
+  ...
+────────────────────────
+All gates passed
+```
+
+## 6. Sync to CLAUDE.md
+
+```bash
+lexicon sync claude
+```
+
+Generates a `CLAUDE.md` file (or updates existing) with a managed block containing your contracts, scoring model, and gates. The managed block is delimited by `lexicon:begin:lexicon-context` and `lexicon:end:lexicon-context` markers. Existing content outside the managed block is preserved.
+
+## 7. Launch the TUI
+
+```bash
+lexicon tui
+```
+
+Opens a terminal dashboard with tabs for Dashboard, Contracts, Gates, Score, and Help. Use Tab/arrow keys or number keys (1-5) to switch tabs, `r` to refresh, and `q` to quit.
+
+## Next Steps
+
+- Learn about [Contracts](/concepts/contracts/) in depth
+- Understand the [Scoring](/concepts/scoring/) model
+- Set up [CI Integration](/guides/ci-integration/)

@@ -1,0 +1,138 @@
+---
+title: Contracts
+description: Behavioral specifications that define what your code must and must not do.
+---
+
+Contracts are the primary artifact in lexicon. A contract declares the stable behavioral specification for a component -- what it must do, what it must not do, and what is explicitly out of scope.
+
+Contracts are stored as TOML files at `specs/contracts/<id>.toml`.
+
+## Contract Structure
+
+Every contract has these fields:
+
+| Field                  | Type           | Description                                    |
+|------------------------|----------------|------------------------------------------------|
+| `schema_version`       | string         | Schema version for forward compatibility       |
+| `id`                   | string         | Unique slug identifier (e.g., `key-value-store`) |
+| `title`                | string         | Human-readable name                            |
+| `status`               | enum           | Lifecycle status (see below)                   |
+| `stability`            | enum           | Stability level (see below)                    |
+| `scope`                | string         | High-level scope description                   |
+| `capabilities`         | string[]       | What the component provides                    |
+| `invariants`           | Invariant[]    | Conditions that must always hold                |
+| `required_semantics`   | Semantic[]     | Behavior that is required                      |
+| `forbidden_semantics`  | Semantic[]     | Behavior that is explicitly forbidden           |
+| `edge_cases`           | EdgeCase[]     | Edge cases with expected behavior              |
+| `examples`             | Example[]      | Usage examples                                 |
+| `non_goals`            | string[]       | What this component explicitly does not do     |
+| `implementation_notes` | string[]       | Notes not part of the contract                 |
+| `test_expectations`    | string[]       | Expected tests for this contract               |
+| `history`              | HistoryEntry[] | Version history of contract changes            |
+| `created_at`           | datetime       | Creation timestamp                             |
+| `updated_at`           | datetime       | Last update timestamp                          |
+
+## Status Lifecycle
+
+Contracts move through four statuses:
+
+- **`draft`** -- Being drafted, not yet enforced
+- **`active`** -- Active and enforced
+- **`deprecated`** -- Still enforced but expected to be replaced
+- **`retired`** -- No longer enforced
+
+## Stability Levels
+
+Contracts have a stability level that controls how changes are handled:
+
+- **`experimental`** -- May change or be removed at any time
+- **`unstable`** -- Expected to stabilize but may still change
+- **`stable`** -- Changes require versioned migration
+- **`frozen`** -- Must not change without extraordinary justification
+
+New contracts default to `experimental` stability and `draft` status.
+
+## Invariants
+
+Invariants are conditions that must always hold. Each invariant has an `id`, `description`, and `severity`:
+
+- **`required`** (default) -- Failure blocks verification
+- **`advisory`** -- Contributes to score but does not block
+
+## Required and Forbidden Semantics
+
+**Required semantics** declare behavior the implementation must provide. **Forbidden semantics** declare behavior that must never occur. Each has an `id`, `description`, and optional `test_tags` for linking to conformance tests.
+
+## Edge Cases
+
+Edge cases describe specific scenarios with expected behavior. Each has an `id`, `scenario` description, and `expected_behavior`.
+
+## Examples
+
+Examples have a `title`, `description`, and optional `code` snippet.
+
+## Version History
+
+The `history` array tracks contract changes with `version`, `date`, `description`, and `author` fields.
+
+## TOML Example
+
+```toml
+schema_version = "1.0"
+id = "key-value-store"
+title = "Key-Value Store Contract"
+status = "active"
+stability = "stable"
+scope = "Defines the behavior of a basic key-value store"
+capabilities = ["get/set/delete operations"]
+non_goals = ["persistence", "network access"]
+implementation_notes = ["Consider using a HashMap internally"]
+test_expectations = ["All invariants covered by conformance tests"]
+created_at = "2025-01-15T00:00:00Z"
+updated_at = "2025-01-15T00:00:00Z"
+
+[[invariants]]
+id = "inv-001"
+description = "A key set with a value must return that value on get"
+severity = "required"
+
+[[required_semantics]]
+id = "req-001"
+description = "get(key) returns None for missing keys"
+test_tags = ["conformance", "basic"]
+
+[[forbidden_semantics]]
+id = "forbid-001"
+description = "Must not panic on missing key lookup"
+test_tags = ["safety"]
+
+[[edge_cases]]
+id = "edge-001"
+scenario = "Setting the same key twice"
+expected_behavior = "The second value overwrites the first"
+
+[[examples]]
+title = "Basic usage"
+description = "Set and get a value"
+code = "store.set(\"key\", \"value\"); assert_eq!(store.get(\"key\"), Some(\"value\"));"
+
+[[history]]
+version = "1.0"
+date = "2025-01-15T00:00:00Z"
+description = "Initial contract"
+author = "team"
+```
+
+## Creating Contracts
+
+Use the interactive workflow:
+
+```bash
+lexicon contract new
+```
+
+Or list existing contracts:
+
+```bash
+lexicon contract list
+```

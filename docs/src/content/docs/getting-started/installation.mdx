@@ -1,0 +1,42 @@
+---
+title: Installation
+description: How to install lexicon from source.
+---
+
+## Requirements
+
+- **Rust 1.85+** (install via [rustup](https://rustup.rs/))
+- A Rust project with a `Cargo.toml` in the repository root
+
+## Install from Source
+
+Clone the repository and install the CLI:
+
+```bash
+git clone https://github.com/your-org/lexicon.git
+cd lexicon
+cargo install --path crates/cli
+```
+
+This installs the `lexicon` binary into your Cargo bin directory (typically `~/.cargo/bin/`).
+
+## Verify Installation
+
+```bash
+lexicon --version
+```
+
+## Shell Completions
+
+Lexicon uses [clap](https://docs.rs/clap/) for argument parsing. You can generate shell completions for your shell if needed by consulting the clap documentation.
+
+## Next Steps
+
+Once installed, initialize lexicon in your project:
+
+```bash
+cd /path/to/your/rust/project
+lexicon init
+```
+
+See the [Quickstart](/getting-started/quickstart/) for a full walkthrough.

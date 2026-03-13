@@ -1,0 +1,108 @@
+---
+title: Gates
+description: Verification gates that run shell commands as subprocesses during lexicon verify.
+---
+
+Gates are concrete verification checks that run during `lexicon verify`. Each gate executes a shell command as a subprocess and reports pass, fail, skip, or error.
+
+The gates model is stored at `specs/gates.toml`.
+
+## Gate Structure
+
+Each gate has:
+
+| Field          | Type     | Description                                          |
+|----------------|----------|------------------------------------------------------|
+| `id`           | string   | Unique identifier (e.g., `fmt`, `clippy`)            |
+| `label`        | string   | Human-readable label                                 |
+| `command`      | string   | Shell command to execute                             |
+| `category`     | enum     | `required`, `scored`, or `advisory`                  |
+| `timeout_secs` | u64?     | Timeout in seconds (default: 300s if not specified)  |
+| `allow_skip`   | bool     | Whether this gate may be skipped                     |
+
+## Categories
+
+- **Required** -- Must pass. Failure blocks the overall verification. Required gates default to `allow_skip = false`.
+- **Scored** -- Contributes to the numeric score but does not block verification on its own.
+- **Advisory** -- Informational only. Does not affect pass/fail.
+
+## Gate Execution
+
+Gates run sequentially via `sh -c <command>` in the repository root. Each gate produces:
+
+- **Pass** -- Command exited with status 0
+- **Fail** -- Command exited with non-zero status
+- **Skip** -- Gate was in the skip list
+- **Error** -- Command could not be executed (e.g., binary not found)
+
+Stdout and stderr are captured for each gate, along with execution duration in milliseconds.
+
+## Skip Policy
+
+Gates can be skipped by passing their IDs to the skip list. However, policy enforcement prevents skipping gates that should not be skipped:
+
+- Required gates with `allow_skip = false` cannot be skipped -- the policy validator rejects the request.
+- Only gates with `allow_skip = true` may be skipped.
+
+## Weakening Detection
+
+Lexicon detects when a gate configuration change constitutes a "weakening":
+
+- **Lowering the category** (e.g., Required to Scored, or Scored to Advisory) is a weakening
+- **Making a non-skippable gate skippable** (`allow_skip: false` to `true`) is a weakening
+
+When `gate_weakening_requires_approval` is enabled in the manifest policy (the default), weakening changes are flagged and audited.
+
+## Default Gates
+
+The default model created by `lexicon gate init`:
+
+```toml
+schema_version = "1.0"
+
+[[gates]]
+id = "fmt"
+label = "Format Check"
+command = "cargo fmt -- --check"
+category = "required"
+timeout_secs = 60
+allow_skip = false
+
+[[gates]]
+id = "clippy"
+label = "Clippy Lints"
+command = "cargo clippy -- -D warnings"
+category = "required"
+timeout_secs = 120
+allow_skip = false
+
+[[gates]]
+id = "unit-tests"
+label = "Unit Tests"
+command = "cargo test"
+category = "required"
+timeout_secs = 300
+allow_skip = false
+
+[[gates]]
+id = "doc-tests"
+label = "Documentation Tests"
+command = "cargo test --doc"
+category = "scored"
+timeout_secs = 120
+allow_skip = true
+```
+
+## Custom Gates
+
+Edit `specs/gates.toml` to add project-specific gates:
+
+```toml
+[[gates]]
+id = "miri"
+label = "Miri Safety Check"
+command = "cargo +nightly miri test"
+category = "advisory"
+timeout_secs = 600
+allow_skip = true
+```

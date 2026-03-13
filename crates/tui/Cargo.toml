@@ -1,0 +1,17 @@
+[package]
+name = "lexicon-tui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Rich interactive terminal UI for lexicon"
+
+[dependencies]
+lexicon-core.workspace = true
+lexicon-spec.workspace = true
+lexicon-repo.workspace = true
+lexicon-gates.workspace = true
+lexicon-scoring.workspace = true
+ratatui.workspace = true
+crossterm.workspace = true
+thiserror.workspace = true

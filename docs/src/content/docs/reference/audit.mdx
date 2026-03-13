@@ -1,0 +1,90 @@
+---
+title: Audit Records
+description: Format and content of the immutable audit trail.
+---
+
+Lexicon maintains an immutable audit trail of significant actions. Every verification run, contract change, AI modification, and policy event is recorded.
+
+## Storage
+
+Audit records are stored as JSON files in `.lexicon/audit/`. Each file is named `<timestamp>-<uuid>.json`, where the timestamp format is `YYYYMMDDTHHMMSS`.
+
+## Record Format
+
+```json
+{
+  "schema_version": "1.0",
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "action": "verify_run",
+  "actor": "system",
+  "before_hash": null,
+  "after_hash": "abc123...",
+  "delta_summary": "Verify: 4 gates, 4 passed",
+  "score_before": null,
+  "score_after": 0.925,
+  "gates_passed": true,
+  "timestamp": "2025-01-15T12:00:00Z"
+}
+```
+
+## Fields
+
+| Field            | Type    | Description |
+|------------------|---------|-------------|
+| `schema_version` | string  | Schema version for forward compatibility |
+| `id`             | UUID    | Unique identifier for this record |
+| `action`         | enum    | Type of action (see below) |
+| `actor`          | enum    | Who performed the action |
+| `before_hash`    | string? | Content hash before the change |
+| `after_hash`     | string? | Content hash after the change |
+| `delta_summary`  | string  | Human-readable summary of what changed |
+| `score_before`   | f64?    | Score before the change |
+| `score_after`    | f64?    | Score after the change |
+| `gates_passed`   | bool    | Whether all gates passed after the change |
+| `timestamp`      | datetime| When the action occurred |
+
+## Actions
+
+| Action | Description |
+|--------|-------------|
+| `repo_init` | Repository initialized with lexicon |
+| `contract_create` | New contract created |
+| `contract_update` | Existing contract modified |
+| `contract_status_change` | Contract status changed (e.g., draft to active) |
+| `conformance_create` | New conformance suite created |
+| `conformance_update` | Conformance suite updated |
+| `behavior_create` | New behavior scenario created |
+| `behavior_update` | Behavior scenario updated |
+| `score_model_change` | Scoring model modified |
+| `gate_model_change` | Gates configuration modified |
+| `gate_weakening_attempt` | Attempt to weaken a gate definition |
+| `ai_improve` | AI-guided improvement applied |
+| `ai_improve_rejected` | AI-guided improvement rejected |
+| `verify_run` | Verification pipeline executed |
+| `claude_sync_run` | CLAUDE.md synced with repo state |
+| `test_deletion` | Test file or test function deleted |
+| `threshold_change` | Scoring threshold changed |
+
+## Actors
+
+| Actor | Description |
+|-------|-------------|
+| `user` | Human user initiated the action |
+| `ai` | AI assistant initiated the action |
+| `system` | Automated system action (e.g., verification) |
+
+## Score Tracking
+
+Records that involve changes (contract updates, AI improvements) capture `score_before` and `score_after` to track the impact. This enables detection of score regressions.
+
+## Querying Audit Records
+
+Audit records are plain JSON files. You can query them with standard tools:
+
+```bash
+# Find all failed verification runs
+grep -l '"gates_passed": false' .lexicon/audit/*.json
+
+# Find all AI actions
+grep -l '"actor": "ai"' .lexicon/audit/*.json
+```

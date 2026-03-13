@@ -1,0 +1,6 @@
+/target
+specs/scratch.md
+.claude
+docs/node_modules/
+docs/dist/
+docs/.astro/

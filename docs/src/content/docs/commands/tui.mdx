@@ -1,0 +1,42 @@
+---
+title: lexicon tui
+description: Launch the terminal UI dashboard.
+---
+
+## Usage
+
+```bash
+lexicon tui
+```
+
+## Description
+
+Opens a full-screen terminal UI built with [ratatui](https://ratatui.rs/) and [crossterm](https://docs.rs/crossterm/). The TUI provides a tab-based dashboard for viewing contracts, gate results, and scores.
+
+On launch, the TUI automatically runs verification to populate the dashboard with current data.
+
+## Tabs
+
+| Tab        | Key | Content                                      |
+|------------|-----|----------------------------------------------|
+| Dashboard  | `1` | Overview of repository health                |
+| Contracts  | `2` | List of all contracts                        |
+| Gates      | `3` | Gate results with pass/fail status           |
+| Score      | `4` | Scoring breakdown by dimension               |
+| Help       | `5` | Keybinding reference                         |
+
+## Keybindings
+
+| Key              | Action                    |
+|------------------|---------------------------|
+| `Tab` / `Right`  | Next tab                  |
+| `Shift+Tab` / `Left` | Previous tab          |
+| `1` - `5`        | Jump to specific tab      |
+| `?`              | Open Help tab             |
+| `r`              | Refresh data (re-run verification) |
+| `q` / `Esc`      | Quit                      |
+| `Ctrl+C`         | Force quit                |
+
+## Data Refresh
+
+Press `r` to re-run verification and refresh all displayed data. This executes the same pipeline as `lexicon verify` -- running all gates, computing scores, and updating the display.

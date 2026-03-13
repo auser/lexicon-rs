@@ -1,0 +1,126 @@
+---
+title: CI Integration
+description: Adding lexicon verify to your CI pipeline with GitHub Actions.
+---
+
+This guide shows how to add `lexicon verify` to a GitHub Actions workflow so that every push and pull request is verified against your contracts and gates.
+
+## GitHub Actions Example
+
+Create `.github/workflows/lexicon.yml`:
+
+```yaml
+name: Lexicon Verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/
+            ~/.cargo/git/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Lexicon
+        run: cargo install --path crates/cli
+
+      - name: Run Doctor
+        run: lexicon doctor
+
+      - name: Run Verify
+        run: lexicon verify
+```
+
+## What Runs
+
+The `lexicon verify` step executes:
+
+1. All gates defined in `specs/gates.toml` (fmt, clippy, tests, etc.)
+2. Score computation from `specs/scoring/model.toml`
+3. Audit record written to `.lexicon/audit/`
+
+The default gates run `cargo fmt -- --check`, `cargo clippy -- -D warnings`, `cargo test`, and `cargo test --doc`.
+
+## Checking Results
+
+Currently `lexicon verify` exits with status 0 regardless of gate outcomes. To fail CI on gate failures, wrap the command:
+
+```yaml
+      - name: Run Verify
+        run: |
+          lexicon verify 2>&1 | tee verify-output.txt
+          if grep -q "Some gates failed" verify-output.txt; then
+            echo "Verification failed"
+            exit 1
+          fi
+```
+
+## Running Doctor First
+
+The `lexicon doctor` step is optional but recommended. It checks that all lexicon components are configured:
+
+- Manifest exists
+- Contracts are present
+- Scoring model is configured
+- Gates are configured
+- CLAUDE.md is present
+
+This catches configuration drift early.
+
+## Caching
+
+The cargo cache step speeds up subsequent runs by caching:
+
+- Compiled dependencies in `target/`
+- Cargo registry and git checkouts
+- The `lexicon` binary in `~/.cargo/bin/`
+
+## Audit Records in CI
+
+Each `lexicon verify` run writes an audit record to `.lexicon/audit/`. In CI, these records are written but not committed back to the repository. If you want to preserve CI audit records, add a step to commit them or upload as artifacts:
+
+```yaml
+      - name: Upload Audit Records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lexicon-audit
+          path: .lexicon/audit/
+```
+
+## Pre-commit Hook
+
+For local verification before pushing, add a git pre-commit hook:
+
+```bash
+#!/bin/sh
+# .git/hooks/pre-commit
+lexicon verify
+```
+
+Or use a lightweight check:
+
+```bash
+#!/bin/sh
+# .git/hooks/pre-commit
+lexicon doctor
+```

@@ -1,0 +1,78 @@
+---
+title: lexicon sync
+description: Sync generated files with current repository state.
+---
+
+## Subcommands
+
+### `lexicon sync claude`
+
+Sync CLAUDE.md with the current repository state.
+
+```bash
+lexicon sync claude
+```
+
+## Description
+
+Reads the current manifest, all contracts, scoring model, and gates model, then assembles a structured context summary and writes it to `CLAUDE.md` in the repository root.
+
+## Managed Blocks
+
+The sync command uses managed blocks to update CLAUDE.md without destroying user content. The managed block is delimited by markers:
+
+```
+<!-- lexicon:begin:lexicon-context -->
+## Lexicon Verification Context
+
+This section is managed by `lexicon sync claude`. Do not edit manually.
+
+# Project: my-lib
+Domain: key-value store
+Type: Library
+
+## Contracts
+- **KV Store** (kv): Basic KV [status: Active, stability: Stable]
+  ...
+
+## Scoring
+Pass threshold: 80%, Warn threshold: 60%
+...
+
+## Gates
+- Format Check (Required): `cargo fmt -- --check`
+...
+<!-- lexicon:end:lexicon-context -->
+```
+
+### Behavior
+
+- **New file** -- If CLAUDE.md does not exist, creates it with just the managed block
+- **Existing file** -- If CLAUDE.md exists but has no managed block, appends it
+- **Existing block** -- If CLAUDE.md already has a managed block, replaces only the block content
+
+Content outside the managed block markers is always preserved.
+
+## What Gets Synced
+
+The assembled context includes:
+
+- Project name, domain, and type from the manifest
+- All contracts with their invariants, required semantics, and forbidden semantics
+- Scoring dimensions with weights and categories
+- Gates with their commands and categories
+
+## When to Sync
+
+Run `lexicon sync claude` after:
+
+- Creating or modifying contracts
+- Changing the scoring model
+- Adding or modifying gates
+- Any change that should be reflected in the AI's working context
+
+On success:
+
+```
+CLAUDE.md synced
+```

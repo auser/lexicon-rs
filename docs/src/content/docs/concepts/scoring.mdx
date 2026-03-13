@@ -1,0 +1,124 @@
+---
+title: Scoring
+description: Multi-dimensional health scoring with weighted dimensions and verdicts.
+---
+
+The scoring model defines how repository health is measured. Each dimension contributes a weighted score, and the overall result is a verdict of Pass, Warn, or Fail.
+
+The scoring model is stored at `specs/scoring/model.toml`.
+
+## Score Model Structure
+
+A score model contains:
+
+- **`dimensions`** -- A list of scoring dimensions, each with a weight and category
+- **`thresholds`** -- Pass and warn thresholds (values between 0.0 and 1.0)
+
+## Dimensions
+
+Each dimension has:
+
+| Field      | Type   | Description                                     |
+|------------|--------|-------------------------------------------------|
+| `id`       | string | Unique identifier (e.g., `correctness`)         |
+| `label`    | string | Human-readable label                            |
+| `weight`   | u32    | Weight in total score calculation                |
+| `category` | enum   | `required`, `scored`, or `advisory`             |
+| `source`   | enum   | Where the value comes from: `gate`, `test_suite`, `coverage`, or `manual` |
+
+## Categories
+
+- **Required** -- Must pass. If any required dimension fails, the overall verdict is Fail regardless of the numeric score.
+- **Scored** -- Contributes to the weighted numeric score.
+- **Advisory** -- Informational only. Does not affect pass/fail or the numeric score. Advisory dimensions are excluded from the weighted calculation.
+
+## Thresholds
+
+| Threshold | Default | Meaning                                  |
+|-----------|---------|------------------------------------------|
+| `pass`    | 0.8     | Score at or above this value is Pass     |
+| `warn`    | 0.6     | Score at or above this but below pass is Warn |
+
+Below the warn threshold, the verdict is Fail.
+
+## Verdict Logic
+
+The verdict is determined in order:
+
+1. If any required dimension failed, verdict is **Fail**
+2. If total score >= pass threshold, verdict is **Pass**
+3. If total score >= warn threshold, verdict is **Warn**
+4. Otherwise, verdict is **Fail**
+
+## Score Computation
+
+The total score is a weighted average of all non-advisory dimensions:
+
+```
+total = sum(dimension.value * dimension.weight) / sum(weights)
+```
+
+Advisory dimensions are excluded from both the numerator and denominator.
+
+Each dimension value is between 0.0 and 1.0. For gate-sourced dimensions, a passing gate scores 1.0 and a failing gate scores 0.0.
+
+## Default Model
+
+The default model created by `lexicon score init` includes six dimensions:
+
+```toml
+schema_version = "1.0"
+
+[[dimensions]]
+id = "correctness"
+label = "Correctness"
+weight = 30
+category = "required"
+source = "gate"
+
+[[dimensions]]
+id = "conformance-coverage"
+label = "Conformance Coverage"
+weight = 25
+category = "scored"
+source = "test_suite"
+
+[[dimensions]]
+id = "behavior-pass-rate"
+label = "Behavior Pass Rate"
+weight = 15
+category = "scored"
+source = "test_suite"
+
+[[dimensions]]
+id = "lint-quality"
+label = "Lint Quality"
+weight = 10
+category = "scored"
+source = "gate"
+
+[[dimensions]]
+id = "doc-completeness"
+label = "Documentation Completeness"
+weight = 10
+category = "advisory"
+source = "manual"
+
+[[dimensions]]
+id = "panic-safety"
+label = "Panic Safety"
+weight = 10
+category = "scored"
+source = "gate"
+
+[thresholds]
+pass = 0.8
+warn = 0.6
+```
+
+Weights sum to 100 across all dimensions, but only non-advisory weights (90) are used in the denominator.
+
+## Commands
+
+- `lexicon score init` -- Create the default scoring model
+- `lexicon score explain` -- Display the current model with explanations

@@ -1,0 +1,162 @@
+# Example contract for a key-value store component.
+# Stored at: specs/contracts/key-value-store.toml
+
+[schema_version]
+major = 1
+minor = 0
+
+id = "key-value-store"
+title = "Key-Value Store Contract"
+status = "active"
+stability = "stable"
+scope = "Defines the behavioral guarantees of a concurrent in-memory key-value store supporting get, set, delete, and list operations."
+
+capabilities = [
+    "get/set/delete individual keys",
+    "list all keys",
+    "atomic compare-and-swap",
+    "TTL-based key expiration",
+]
+
+non_goals = [
+    "Persistence to disk",
+    "Distributed replication",
+    "Transactions spanning multiple keys",
+]
+
+implementation_notes = [
+    "The reference implementation uses a DashMap for concurrent access.",
+    "Expiration is handled lazily on read plus a background sweep every 30s.",
+]
+
+test_expectations = [
+    "Conformance suite covers all invariants and required semantics",
+    "Fuzz tests exercise concurrent access patterns",
+    "Property-based tests verify compare-and-swap linearizability",
+]
+
+[[invariants]]
+id = "inv-001"
+description = "A key set with a value must return that exact value on subsequent get, until overwritten or deleted."
+severity = "required"
+
+[[invariants]]
+id = "inv-002"
+description = "After deleting a key, get must return None for that key."
+severity = "required"
+
+[[invariants]]
+id = "inv-003"
+description = "The store must be safe to access concurrently from multiple threads without data corruption."
+severity = "required"
+
+[[invariants]]
+id = "inv-004"
+description = "Keys with an expired TTL must not be returned by get or list."
+severity = "advisory"
+
+[[required_semantics]]
+id = "req-001"
+description = "get(key) returns None for keys that have never been set."
+test_tags = ["conformance", "basic"]
+
+[[required_semantics]]
+id = "req-002"
+description = "set(key, value) inserts or overwrites the value for the given key."
+test_tags = ["conformance", "basic"]
+
+[[required_semantics]]
+id = "req-003"
+description = "delete(key) removes the key and returns the previous value if present, or None."
+test_tags = ["conformance", "basic"]
+
+[[required_semantics]]
+id = "req-004"
+description = "list_keys() returns all currently stored, non-expired keys in unspecified order."
+test_tags = ["conformance", "enumeration"]
+
+[[required_semantics]]
+id = "req-005"
+description = "compare_and_swap(key, expected, new) atomically sets key to new only if the current value equals expected, returning Ok(()) on success or Err(actual) on mismatch."
+test_tags = ["conformance", "cas"]
+
+[[forbidden_semantics]]
+id = "forbid-001"
+description = "Must not panic on get or delete of a missing key."
+test_tags = ["safety"]
+
+[[forbidden_semantics]]
+id = "forbid-002"
+description = "Must not silently drop writes under contention; all successful set() calls must be observable."
+test_tags = ["safety", "concurrency"]
+
+[[forbidden_semantics]]
+id = "forbid-003"
+description = "Must not return expired entries from get() or list_keys()."
+test_tags = ["correctness", "ttl"]
+
+[[edge_cases]]
+id = "edge-001"
+scenario = "Setting a key with an empty string value"
+expected_behavior = "The key is stored with an empty string; get returns Some(\"\")."
+
+[[edge_cases]]
+id = "edge-002"
+scenario = "Setting a key with a TTL of zero seconds"
+expected_behavior = "The key is immediately considered expired and is not returned by get."
+
+[[edge_cases]]
+id = "edge-003"
+scenario = "Concurrent set and delete of the same key"
+expected_behavior = "One operation wins; the final state is consistent (either the key exists with the set value, or it is absent)."
+
+[[edge_cases]]
+id = "edge-004"
+scenario = "compare_and_swap on a key that does not exist with expected = None"
+expected_behavior = "The key is created with the new value if no other writer has set it concurrently."
+
+[[examples]]
+title = "Basic get/set workflow"
+description = "Store a value and retrieve it."
+code = """
+let store = KvStore::new();
+store.set("user:42", "Alice");
+assert_eq!(store.get("user:42"), Some("Alice".to_string()));
+"""
+
+[[examples]]
+title = "Delete and verify absence"
+description = "Delete a key and confirm it is gone."
+code = """
+let store = KvStore::new();
+store.set("temp", "data");
+let old = store.delete("temp");
+assert_eq!(old, Some("data".to_string()));
+assert_eq!(store.get("temp"), None);
+"""
+
+[[examples]]
+title = "Compare-and-swap"
+description = "Atomically update a value only if it matches the expected state."
+code = """
+let store = KvStore::new();
+store.set("counter", "1");
+let result = store.compare_and_swap("counter", Some("1"), "2");
+assert!(result.is_ok());
+assert_eq!(store.get("counter"), Some("2".to_string()));
+"""
+
+[[history]]
+version = "1.0"
+date = 2025-09-15T10:00:00Z
+description = "Initial contract with basic get/set/delete semantics."
+author = "auser"
+
+[[history]]
+version = "1.1"
+date = 2025-11-02T14:30:00Z
+description = "Added compare-and-swap and TTL expiration semantics."
+author = "auser"
+
+created_at = 2025-09-15T10:00:00Z
+updated_at = 2025-11-02T14:30:00Z
