@@ -1,0 +1,118 @@
+---
+title: Daily Usage
+description: Common workflows for day-to-day use of Lexicon.
+---
+
+Once you've initialized lexicon ([Quickstart](/getting-started/quickstart/)), here are the workflows you'll use most often.
+
+## The essentials
+
+Most days you only need three commands:
+
+```bash
+lexicon verify              # run gates + compute score
+lexicon doctor              # check for drift and issues
+lexicon contract list       # see what contracts exist
+```
+
+## Writing new contracts
+
+**Interactive** — answer prompts to define invariants, semantics, and edge cases:
+
+```bash
+lexicon contract new
+```
+
+**AI-assisted** — describe what you want and review the generated contract:
+
+```bash
+lexicon auth login                                    # one-time setup
+lexicon contract generate "async key-value store"     # generates + previews
+```
+
+Both approaches produce the same TOML file in `specs/contracts/`. The AI path is faster for getting a first draft; the interactive path gives you more control.
+
+## Adding tests
+
+Generate conformance tests or behavior scenarios the same way:
+
+```bash
+# Interactive
+lexicon conformance add kv-store
+lexicon behavior add kv-store
+
+# AI-assisted
+lexicon conformance generate "cache trait with get/set/delete"
+lexicon behavior generate "session timeout after inactivity"
+```
+
+## Checking your work
+
+After making changes, verify everything still passes:
+
+```bash
+lexicon verify
+```
+
+This runs your gates (formatting, linting, tests), computes the quality score, checks coverage, and detects API drift — all in one command.
+
+For a deeper check:
+
+```bash
+lexicon doctor         # structural health, missing coverage, API mismatches
+lexicon coverage report   # which contract clauses have tests
+lexicon api diff       # what changed in the public API
+```
+
+## Tracking API changes
+
+When your public API changes intentionally:
+
+```bash
+lexicon api scan       # extract current API
+lexicon api diff       # review what changed
+lexicon api baseline   # accept the new API as the baseline
+```
+
+## Getting AI suggestions
+
+Ask the AI to analyze your repo and suggest improvements:
+
+```bash
+lexicon improve                    # general suggestions
+lexicon improve --goal coverage    # focus on test coverage
+lexicon improve --goal contracts   # focus on contract quality
+```
+
+## Keeping CLAUDE.md current
+
+If you use Claude Code or similar AI tools:
+
+```bash
+lexicon sync claude
+```
+
+This updates the managed block in `CLAUDE.md` with your current contracts, gates, and scoring model so the AI has accurate context.
+
+## Common patterns
+
+### Before a PR
+
+```bash
+lexicon verify && lexicon doctor
+```
+
+### After adding a new module
+
+```bash
+lexicon api scan && lexicon api diff    # check for new public API
+lexicon contract new                    # consider adding a contract
+```
+
+### Weekly review
+
+```bash
+lexicon coverage report    # find gaps in test coverage
+lexicon improve            # get AI suggestions for improvements
+lexicon score explain      # understand how the score breaks down
+```

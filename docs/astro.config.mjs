@@ -15,11 +15,48 @@ export default defineConfig({
 					items: [
 						{ label: 'Installation', slug: 'getting-started/installation' },
 						{ label: 'Quickstart', slug: 'getting-started/quickstart' },
+						{ label: 'Daily Usage', slug: 'getting-started/daily-usage' },
 					],
 				},
 				{
 					label: 'Commands',
-					autogenerate: { directory: 'commands' },
+					items: [
+						{
+							label: 'Artifacts',
+							items: [
+								{ label: 'contract', slug: 'commands/contract' },
+								{ label: 'conformance', slug: 'commands/conformance' },
+								{ label: 'behavior', slug: 'commands/behavior' },
+								{ label: 'score', slug: 'commands/score' },
+								{ label: 'gate', slug: 'commands/gate' },
+							],
+						},
+						{
+							label: 'Verification',
+							items: [
+								{ label: 'verify', slug: 'commands/verify' },
+								{ label: 'coverage', slug: 'commands/coverage' },
+								{ label: 'api', slug: 'commands/api' },
+								{ label: 'doctor', slug: 'commands/doctor' },
+							],
+						},
+						{
+							label: 'AI',
+							items: [
+								{ label: 'generate', slug: 'commands/generate' },
+								{ label: 'improve', slug: 'commands/improve' },
+								{ label: 'auth', slug: 'commands/auth' },
+							],
+						},
+						{
+							label: 'Utilities',
+							items: [
+								{ label: 'init', slug: 'commands/init' },
+								{ label: 'sync', slug: 'commands/sync' },
+								{ label: 'tui', slug: 'commands/tui' },
+							],
+						},
+					],
 				},
 				{
 					label: 'Concepts',
