@@ -1,0 +1,35 @@
+---
+source: crates/spec/src/snapshot_tests.rs
+expression: toml_str
+---
+[schema_version]
+major = 1
+minor = 0
+
+[project]
+name = "my-awesome-lib"
+description = "A library for doing awesome things"
+repo_type = "library"
+domain = "key-value store"
+created_at = "2025-01-15T12:00:00Z"
+updated_at = "2025-01-15T12:00:00Z"
+
+[preferences]
+naming_convention = "kebab_case"
+conformance_style = "trait_based"
+
+[policy]
+ai_may_edit = [
+    "src/**/*.rs",
+    "tests/**/*.rs",
+]
+ai_requires_review = [
+    "specs/**/*.toml",
+    "CLAUDE.md",
+]
+ai_protected = [
+    ".lexicon/manifest.toml",
+    "specs/gates.toml",
+]
+gate_weakening_requires_approval = true
+test_deletion_requires_approval = true

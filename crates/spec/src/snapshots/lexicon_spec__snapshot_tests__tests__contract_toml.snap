@@ -1,0 +1,40 @@
+---
+source: crates/spec/src/snapshot_tests.rs
+expression: toml_str
+---
+id = "key-value-store"
+title = "Key-Value Store Contract"
+status = "draft"
+stability = "experimental"
+scope = "Defines the behavior of a basic key-value store"
+capabilities = ["get/set/delete operations"]
+edge_cases = []
+examples = []
+non_goals = []
+implementation_notes = []
+test_expectations = []
+history = []
+created_at = "2025-01-15T12:00:00Z"
+updated_at = "2025-01-15T12:00:00Z"
+
+[schema_version]
+major = 1
+minor = 0
+
+[[invariants]]
+id = "inv-001"
+description = "A key set with a value must return that value on get"
+severity = "required"
+
+[[required_semantics]]
+id = "req-001"
+description = "get(key) returns None for missing keys"
+test_tags = [
+    "conformance",
+    "basic",
+]
+
+[[forbidden_semantics]]
+id = "forbid-001"
+description = "Must not panic on missing key lookup"
+test_tags = ["safety"]

@@ -16,3 +16,6 @@ pub mod scoring;
 pub mod session;
 pub mod validation;
 pub mod version;
+
+#[cfg(test)]
+mod snapshot_tests;

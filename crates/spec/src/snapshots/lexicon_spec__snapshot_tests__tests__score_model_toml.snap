@@ -1,0 +1,53 @@
+---
+source: crates/spec/src/snapshot_tests.rs
+expression: toml_str
+---
+[schema_version]
+major = 1
+minor = 0
+
+[[dimensions]]
+id = "correctness"
+label = "Correctness"
+weight = 30
+category = "required"
+source = "gate"
+
+[[dimensions]]
+id = "conformance-coverage"
+label = "Conformance Coverage"
+weight = 25
+category = "scored"
+source = "test_suite"
+
+[[dimensions]]
+id = "behavior-pass-rate"
+label = "Behavior Pass Rate"
+weight = 15
+category = "scored"
+source = "test_suite"
+
+[[dimensions]]
+id = "lint-quality"
+label = "Lint Quality"
+weight = 10
+category = "scored"
+source = "gate"
+
+[[dimensions]]
+id = "doc-completeness"
+label = "Documentation Completeness"
+weight = 10
+category = "advisory"
+source = "manual"
+
+[[dimensions]]
+id = "panic-safety"
+label = "Panic Safety"
+weight = 10
+category = "scored"
+source = "gate"
+
+[thresholds]
+pass = 0.8
+warn = 0.6

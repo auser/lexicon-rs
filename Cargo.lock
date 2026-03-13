@@ -592,6 +592,8 @@ dependencies = [
 name = "lexicon-ai"
 version = "0.1.0"
 dependencies = [
+ "chrono",
+ "insta",
  "lexicon-conversation",
  "lexicon-repo",
  "lexicon-spec",

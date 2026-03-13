@@ -1,0 +1,187 @@
+---
+title: Architecture
+description: Internal architecture of the lexicon workspace
+---
+
+Lexicon is a Rust workspace of 12 crates organized into strict dependency layers.
+This document describes the crate graph, key design decisions, data flow, and extension points.
+
+## Crate dependency graph
+
+```
+Layer 6 (frontends)    cli          tui
+                        \          / |
+Layer 5 (orchestrator)   \  core  /  |
+                        / | \  | \   |
+Layer 4 (AI)          ai  |  \ |  \  |
+                       |  |   \|   \ |
+Layer 3 (domain)    conversation  scaffold
+                       |    |      |   |
+Layer 2 (services)   repo  audit  gates
+                       |     |   /   |
+Layer 1 (engines)     fs  scoring  conformance
+                       \     |     /
+Layer 0 (types)         \  spec  /
+```
+
+**Layer 0 — `spec`**: Zero-dependency leaf crate. All domain types, schemas,
+and validation rules live here. Every other crate depends on it.
+
+**Layer 1 — `fs`, `scoring`, `conformance`**: Low-level engines with no
+cross-dependencies. `fs` handles atomic file I/O, `scoring` computes weighted
+scores, `conformance` checks structural compliance.
+
+**Layer 2 — `repo`, `audit`, `gates`**: Repository layout discovery, audit
+trail persistence, and gate execution (subprocess runner).
+
+**Layer 3 — `conversation`, `scaffold`**: Interactive workflow engine and
+file-generation templates. `conversation` is a generic state machine;
+`scaffold` emits TOML/Markdown files.
+
+**Layer 4 — `ai`**: Optional AI integration. Defines the provider trait and
+edit-policy engine. The system works fully without this crate doing anything.
+
+**Layer 5 — `core`**: Orchestration layer that wires everything together.
+Exposes high-level operations: `init`, `verify`, `sync_claude`, `contract`.
+
+**Layer 6 — `cli`, `tui`**: User-facing frontends. `cli` uses clap; `tui`
+uses ratatui/crossterm.
+
+## Key design decisions
+
+### spec is a pure-types crate
+
+`spec` contains every domain type (contracts, gates, scoring models, audit
+records, sessions, manifests) but zero business logic. This keeps compilation
+fast and ensures all crates agree on a single source of truth for shapes.
+
+### Conversation as state machine, not chat
+
+Workflows implement a `Workflow` trait that models a finite sequence of steps,
+not a free-form chat:
+
+```rust
+pub trait Workflow {
+    type Context;
+    type Output;
+
+    fn name(&self) -> &str;
+    fn steps(&self) -> &[WorkflowStep];
+    fn initial_context(&self) -> Self::Context;
+    fn execute_step(&self, step_idx: usize, ctx: &mut Self::Context, input: StepInput) -> StepOutput;
+    fn finalize(&self, ctx: Self::Context) -> Option<Self::Output>;
+}
+```
+
+The `ConversationEngine` drives any `Workflow` through a `ConversationDriver`,
+which abstracts I/O (terminal prompts, TUI widgets, or test mocks).
+
+### AI is optional
+
+The `AiProvider` trait defines the boundary to external AI services:
+
+```rust
+pub trait AiProvider {
+    fn enhance_proposal(&self, prompt: &str, context: &str) -> AiResult<String>;
+    fn suggest_improvement(&self, context: &str, failure: &str) -> AiResult<String>;
+}
+```
+
+A `NoOpProvider` is the default. Every workflow, verification, and sync
+operation works without AI. AI only enhances proposals and suggests fixes.
+
+### Safe file operations
+
+All file writes go through `lexicon-fs`, which writes to a temporary file
+first, then atomically renames into place. This prevents partial writes from
+corrupting spec files or audit records.
+
+### Managed blocks in CLAUDE.md
+
+`sync claude` patches CLAUDE.md using marker-delimited sections
+(`<!-- lexicon:start -->` / `<!-- lexicon:end -->`). Content outside the
+markers is never touched, so hand-written guidance coexists with generated
+context.
+
+### Gate commands run as subprocesses
+
+Gates are arbitrary shell commands executed via `sh -c`. This means any
+existing CI check, linter, or test suite can be a gate without writing
+Rust code.
+
+### Audit trail for every mutation
+
+Every verification run, contract creation, and score computation is recorded
+as a timestamped audit entry (JSON). This provides a history of project
+health over time.
+
+### AI edit policy
+
+The `ai` crate enforces file-level permissions through glob-based policy:
+
+```rust
+pub enum EditPermission {
+    Allowed,        // AI may freely edit
+    RequiresReview, // AI changes need manual review
+    Protected,      // AI must not edit
+}
+```
+
+Policy defaults protect `.lexicon/` and spec files while allowing source edits.
+
+## Data flow
+
+### `lexicon init`
+
+Creates the `.lexicon/` directory structure and writes `manifest.toml` with
+project metadata, default policy, and version info.
+
+### `lexicon contract new`
+
+1. `ConversationEngine` runs a contract-creation `Workflow`
+2. Steps collect: contract ID, title, description, obligations, guarantees
+3. `Workflow::finalize` produces a `ContractSpec`
+4. `scaffold::contract` writes the TOML file to `specs/contracts/<id>.toml`
+5. Session is recorded as JSON in `.lexicon/sessions/`
+
+### `lexicon score init` / `lexicon gate init`
+
+`scaffold::scoring` and `scaffold::gates` emit default model TOML files.
+These are user-editable starting points.
+
+### `lexicon verify`
+
+1. Loads `RepoLayout` to discover `.lexicon/` paths
+2. Loads gate definitions from `specs/gates.toml`
+3. Runs each gate command as a subprocess via `sh -c`
+4. Loads scoring model from `specs/scoring.toml`
+5. Computes weighted score from gate results and conformance checks
+6. Writes an audit record to `.lexicon/audit/`
+7. Returns `VerifyResult` with gate results and score report
+
+### `lexicon sync claude`
+
+1. Loads manifest, contracts, scoring model, and gate definitions
+2. Assembles a context document with project structure and rules
+3. Reads existing `CLAUDE.md` (if any)
+4. Patches or creates the managed block between markers
+5. Writes the file atomically
+
+## Extension points
+
+| Extension | Trait / Mechanism | Purpose |
+|-----------|-------------------|---------|
+| AI backends | `AiProvider` trait | Swap in Claude API, local LLM, or mock |
+| I/O backends | `ConversationDriver` trait | Terminal, TUI, or test harness |
+| New workflows | `Workflow` trait | Add new interactive creation flows |
+| Gate commands | Shell commands in TOML | Any `sh -c`-compatible check |
+
+## File formats
+
+| Format | Files | Audience |
+|--------|-------|----------|
+| TOML | `manifest.toml`, `contracts/*.toml`, `scoring.toml`, `gates.toml` | Human-editable specs |
+| JSON | `.lexicon/sessions/*.json`, `.lexicon/audit/*.json` | Machine state and history |
+
+TOML files are the user-facing configuration surface. JSON files are internal
+state that users rarely need to inspect directly.

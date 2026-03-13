@@ -1,0 +1,31 @@
+---
+source: crates/ai/src/snapshot_tests.rs
+expression: ctx
+---
+# Project: my-lib
+Domain: key-value store
+Type: Library
+
+## Contracts
+- **KV Store** (kv-store): Basic key-value operations [status: Draft, stability: Experimental]
+  Invariants:
+  - inv-001: get after set returns the value
+  Required semantics:
+  - req-001: get returns None for missing keys
+  Forbidden:
+  - forbid-001: must not panic on missing key
+
+## Scoring
+Pass threshold: 80%, Warn threshold: 60%
+- Correctness (weight: 30, Required)
+- Conformance Coverage (weight: 25, Scored)
+- Behavior Pass Rate (weight: 15, Scored)
+- Lint Quality (weight: 10, Scored)
+- Documentation Completeness (weight: 10, Advisory)
+- Panic Safety (weight: 10, Scored)
+
+## Gates
+- Format Check (Required): `cargo fmt -- --check`
+- Clippy Lints (Required): `cargo clippy -- -D warnings`
+- Unit Tests (Required): `cargo test`
+- Documentation Tests (Scored, skippable): `cargo test --doc`

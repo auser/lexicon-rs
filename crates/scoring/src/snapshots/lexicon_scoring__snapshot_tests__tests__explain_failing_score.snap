@@ -1,0 +1,15 @@
+---
+source: crates/scoring/src/snapshot_tests.rs
+expression: explanation
+---
+Score: 35.0% — FAIL
+
+Dimensions:
+  [FAIL] correctness: 0.0% — 3 tests failed
+  [ok] conformance-coverage: 50.0% — 10/20 semantics covered
+  [FAIL] behavior-pass-rate: 40.0% — 8/20 behaviors pass
+  [ok] lint-quality: 60.0% — 12 warnings
+  [FAIL] doc-completeness: 20.0% — advisory only
+  [FAIL] panic-safety: 0.0% — 2 panics detected
+
+Required gates failed — overall verdict is FAIL regardless of score.

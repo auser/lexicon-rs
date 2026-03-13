@@ -104,7 +104,7 @@
 
 ## Phase 10: Tests, Docs, Samples
 - [x] Integration tests (2 end-to-end tempdir flows)
-- [ ] Snapshot tests (insta) — deferred
+- [x] Snapshot tests (insta) — 7 tests across spec, scoring, ai
 - [x] Sample contract.toml
 - [x] Sample scoring_model.toml
 - [x] Sample gates.toml
@@ -112,7 +112,7 @@
 - [x] Sample audit_record.json
 - [x] Sample CLAUDE.md managed block
 - [x] README.md
-- [ ] Architecture doc — deferred
+- [x] Architecture doc (reference/architecture.mdx)
 
 ## Phase 11: Documentation Site (Astro + Starlight)
 - [x] Initialize Astro + Starlight project in docs/ (pnpm)
@@ -130,4 +130,4 @@
 
 ---
 
-**Total: 96 tests passing across 13 crates, 23-page docs site**
+**Total: 103 tests passing across 13 crates, 24-page docs site**

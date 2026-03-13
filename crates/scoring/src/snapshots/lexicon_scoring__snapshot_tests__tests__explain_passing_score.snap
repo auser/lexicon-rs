@@ -1,0 +1,13 @@
+---
+source: crates/scoring/src/snapshot_tests.rs
+expression: explanation
+---
+Score: 92.0% — PASS
+
+Dimensions:
+  [ok] correctness: 100.0% — all tests passed
+  [ok] conformance-coverage: 85.0% — 17/20 semantics covered
+  [ok] behavior-pass-rate: 90.0% — 18/20 behaviors pass
+  [ok] lint-quality: 100.0% — no warnings
+  [ok] doc-completeness: 70.0% — advisory only
+  [ok] panic-safety: 80.0% — no panics detected
