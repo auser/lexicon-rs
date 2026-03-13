@@ -1,7 +1,7 @@
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Tabs};
+use ratatui::widgets::{Block, Borders, Cell, List, ListItem, Paragraph, Row, Table, Tabs};
 use ratatui::Frame;
 
 use lexicon_gates::result::GateOutcome;
@@ -26,6 +26,8 @@ pub fn draw(f: &mut Frame, state: &AppState) {
         Tab::Contracts => draw_contracts(f, state, chunks[1]),
         Tab::Gates => draw_gates(f, state, chunks[1]),
         Tab::Score => draw_score(f, state, chunks[1]),
+        Tab::Api => draw_api_tab(f, state, chunks[1]),
+        Tab::Coverage => draw_coverage_tab(f, state, chunks[1]),
         Tab::Help => draw_help(f, chunks[1]),
     }
 
@@ -86,6 +88,46 @@ fn draw_dashboard(f: &mut Frame, state: &AppState, area: Rect) {
                 Style::default().fg(color).add_modifier(Modifier::BOLD),
             ),
         ]));
+    }
+
+    // API summary
+    lines.push(Line::from(""));
+    match state.api_snapshot {
+        Some(ref snap) => {
+            lines.push(Line::from(format!("  API: {} items extracted", snap.items.len())));
+        }
+        None => {
+            lines.push(Line::from(Span::styled(
+                "  API: Not scanned",
+                Style::default().fg(Color::DarkGray),
+            )));
+        }
+    }
+
+    // Coverage summary
+    match state.coverage_report {
+        Some(ref report) => {
+            let color = if report.overall_coverage_pct >= 80.0 {
+                Color::Green
+            } else if report.overall_coverage_pct >= 50.0 {
+                Color::Yellow
+            } else {
+                Color::Red
+            };
+            lines.push(Line::from(vec![
+                Span::raw("  Coverage: "),
+                Span::styled(
+                    format!("{:.1}%", report.overall_coverage_pct),
+                    Style::default().fg(color),
+                ),
+            ]));
+        }
+        None => {
+            lines.push(Line::from(Span::styled(
+                "  Coverage: Not analyzed",
+                Style::default().fg(Color::DarkGray),
+            )));
+        }
     }
 
     let summary = Paragraph::new(lines)
@@ -224,6 +266,230 @@ fn draw_score(f: &mut Frame, state: &AppState, area: Rect) {
     f.render_widget(paragraph, area);
 }
 
+fn draw_api_tab(f: &mut Frame, state: &AppState, area: Rect) {
+    let snapshot = match state.api_snapshot {
+        Some(ref s) => s,
+        None => {
+            let msg = Paragraph::new("No API scan found. Run `lexicon api scan`.")
+                .block(Block::default().borders(Borders::ALL).title(" API "));
+            f.render_widget(msg, area);
+            return;
+        }
+    };
+
+    // Split vertically: table on top, diff summary on bottom (if diff exists)
+    let has_diff = state.api_diff.is_some();
+    let constraints = if has_diff {
+        vec![Constraint::Percentage(65), Constraint::Percentage(35)]
+    } else {
+        vec![Constraint::Percentage(100)]
+    };
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(constraints)
+        .split(area);
+
+    // API items table
+    let header = Row::new(vec![
+        Cell::from("Kind"),
+        Cell::from("Name"),
+        Cell::from("Module"),
+        Cell::from("Visibility"),
+    ])
+    .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD));
+
+    let rows: Vec<Row> = snapshot
+        .items
+        .iter()
+        .map(|item| {
+            let module = item.module_path.join("::");
+            Row::new(vec![
+                Cell::from(item.kind.to_string()),
+                Cell::from(item.name.as_str()),
+                Cell::from(module),
+                Cell::from(item.visibility.to_string()),
+            ])
+        })
+        .collect();
+
+    let table = Table::new(
+        rows,
+        [
+            Constraint::Length(12),
+            Constraint::Percentage(30),
+            Constraint::Percentage(40),
+            Constraint::Length(15),
+        ],
+    )
+    .header(header)
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title(format!(" API — {} items ({}) ", snapshot.items.len(), snapshot.crate_name)),
+    );
+    f.render_widget(table, chunks[0]);
+
+    // Diff summary
+    if let Some(ref diff) = state.api_diff {
+        let mut lines = vec![
+            Line::from(Span::styled(
+                "API Diff (vs baseline)",
+                Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+            )),
+            Line::from(""),
+        ];
+
+        if diff.is_empty() {
+            lines.push(Line::from(Span::styled(
+                "  No API changes detected",
+                Style::default().fg(Color::Green),
+            )));
+        } else {
+            lines.push(Line::from(format!("  {}", diff.summary())));
+            lines.push(Line::from(""));
+
+            if !diff.added.is_empty() {
+                lines.push(Line::from(Span::styled(
+                    format!("  + {} added", diff.added.len()),
+                    Style::default().fg(Color::Green),
+                )));
+            }
+            if !diff.removed.is_empty() {
+                lines.push(Line::from(Span::styled(
+                    format!("  - {} removed", diff.removed.len()),
+                    Style::default().fg(Color::Red),
+                )));
+            }
+            if !diff.changed.is_empty() {
+                lines.push(Line::from(Span::styled(
+                    format!("  ~ {} changed", diff.changed.len()),
+                    Style::default().fg(Color::Yellow),
+                )));
+            }
+
+            if diff.has_breaking() {
+                lines.push(Line::from(""));
+                lines.push(Line::from(Span::styled(
+                    format!("  !! {} breaking change(s)", diff.breaking_count()),
+                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                )));
+            }
+        }
+
+        let diff_paragraph = Paragraph::new(lines)
+            .block(Block::default().borders(Borders::ALL).title(" Diff Summary "));
+        f.render_widget(diff_paragraph, chunks[1]);
+    }
+}
+
+fn draw_coverage_tab(f: &mut Frame, state: &AppState, area: Rect) {
+    let report = match state.coverage_report {
+        Some(ref r) => r,
+        None => {
+            let msg = Paragraph::new("No coverage data. Run `lexicon coverage report`.")
+                .block(Block::default().borders(Borders::ALL).title(" Coverage "));
+            f.render_widget(msg, area);
+            return;
+        }
+    };
+
+    // Split: overall summary on top, per-contract breakdown and uncovered on bottom
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(5),  // overall summary
+            Constraint::Min(0),    // details
+        ])
+        .split(area);
+
+    // Overall coverage
+    let cov_color = if report.overall_coverage_pct >= 80.0 {
+        Color::Green
+    } else if report.overall_coverage_pct >= 50.0 {
+        Color::Yellow
+    } else {
+        Color::Red
+    };
+
+    let overview_lines = vec![
+        Line::from(vec![
+            Span::raw("  Overall Coverage: "),
+            Span::styled(
+                format!("{:.1}%", report.overall_coverage_pct),
+                Style::default().fg(cov_color).add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(format!("  ({}/{})", report.total_covered, report.total_clauses)),
+        ]),
+    ];
+
+    let overview = Paragraph::new(overview_lines)
+        .block(Block::default().borders(Borders::ALL).title(" Coverage Summary "));
+    f.render_widget(overview, chunks[0]);
+
+    // Bottom area: contracts on left, uncovered on right
+    let detail_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(chunks[1]);
+
+    // Per-contract breakdown
+    let contract_items: Vec<ListItem> = report
+        .contracts
+        .iter()
+        .map(|c| {
+            let color = if c.coverage_pct >= 80.0 {
+                Color::Green
+            } else if c.coverage_pct >= 50.0 {
+                Color::Yellow
+            } else {
+                Color::Red
+            };
+            ListItem::new(Line::from(vec![
+                Span::styled(
+                    format!("{:.0}% ", c.coverage_pct),
+                    Style::default().fg(color),
+                ),
+                Span::raw(&c.contract_id),
+                Span::styled(
+                    format!(" ({}/{})", c.covered_count, c.total_count),
+                    Style::default().fg(Color::DarkGray),
+                ),
+            ]))
+        })
+        .collect();
+
+    let contracts_list = List::new(contract_items)
+        .block(Block::default().borders(Borders::ALL).title(" Per-Contract "));
+    f.render_widget(contracts_list, detail_chunks[0]);
+
+    // Uncovered clauses
+    if report.uncovered_clauses.is_empty() {
+        let msg = Paragraph::new("  All clauses covered!")
+            .style(Style::default().fg(Color::Green))
+            .block(Block::default().borders(Borders::ALL).title(" Uncovered Clauses "));
+        f.render_widget(msg, detail_chunks[1]);
+    } else {
+        let uncovered_items: Vec<ListItem> = report
+            .uncovered_clauses
+            .iter()
+            .map(|uc| {
+                ListItem::new(Line::from(vec![
+                    Span::styled("  x ", Style::default().fg(Color::Red)),
+                    Span::raw(format!("{}/{}", uc.contract_id, uc.clause_id)),
+                    Span::styled(
+                        format!(" ({})", uc.clause_type),
+                        Style::default().fg(Color::DarkGray),
+                    ),
+                ]))
+            })
+            .collect();
+
+        let uncovered_list = List::new(uncovered_items)
+            .block(Block::default().borders(Borders::ALL).title(" Uncovered Clauses "));
+        f.render_widget(uncovered_list, detail_chunks[1]);
+    }
+}
+
 fn draw_help(f: &mut Frame, area: Rect) {
     let lines = vec![
         Line::from(Span::styled(
@@ -232,7 +498,7 @@ fn draw_help(f: &mut Frame, area: Rect) {
         )),
         Line::from(""),
         Line::from("  Tab / → / ←    Switch tabs"),
-        Line::from("  1-5            Jump to tab"),
+        Line::from("  1-7            Jump to tab"),
         Line::from("  r              Refresh data"),
         Line::from("  q / Esc        Quit"),
         Line::from("  Ctrl+C         Force quit"),
@@ -242,13 +508,15 @@ fn draw_help(f: &mut Frame, area: Rect) {
             Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
-        Line::from("  lexicon init           Initialize lexicon"),
-        Line::from("  lexicon contract new   Create a contract"),
-        Line::from("  lexicon score init     Initialize scoring"),
-        Line::from("  lexicon gate init      Initialize gates"),
-        Line::from("  lexicon verify         Run verification"),
-        Line::from("  lexicon sync claude    Sync CLAUDE.md"),
-        Line::from("  lexicon doctor         Check repo health"),
+        Line::from("  lexicon init              Initialize lexicon"),
+        Line::from("  lexicon contract new      Create a contract"),
+        Line::from("  lexicon score init        Initialize scoring"),
+        Line::from("  lexicon gate init         Initialize gates"),
+        Line::from("  lexicon verify            Run verification"),
+        Line::from("  lexicon api scan          Scan public API"),
+        Line::from("  lexicon coverage report   Generate coverage report"),
+        Line::from("  lexicon sync claude       Sync CLAUDE.md"),
+        Line::from("  lexicon doctor            Check repo health"),
     ];
 
     let help = Paragraph::new(lines)

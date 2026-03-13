@@ -47,6 +47,9 @@ pub struct Contract {
     /// What tests are expected for this contract.
     #[serde(default)]
     pub test_expectations: Vec<String>,
+    /// Expected public API items (traits, methods, types) this contract covers.
+    #[serde(default)]
+    pub expected_api: Vec<String>,
     /// Version history of contract changes.
     #[serde(default)]
     pub history: Vec<HistoryEntry>,
@@ -62,6 +65,9 @@ pub struct Invariant {
     pub description: String,
     #[serde(default)]
     pub severity: Severity,
+    /// Tags for linking to conformance tests.
+    #[serde(default)]
+    pub test_tags: Vec<String>,
 }
 
 /// A semantic requirement or prohibition.
@@ -121,6 +127,7 @@ impl Contract {
             non_goals: Vec::new(),
             implementation_notes: Vec::new(),
             test_expectations: Vec::new(),
+            expected_api: Vec::new(),
             history: Vec::new(),
             created_at: now,
             updated_at: now,
@@ -144,6 +151,7 @@ mod tests {
             id: "inv-001".to_string(),
             description: "A key set with a value must return that value on get".to_string(),
             severity: Severity::Required,
+            test_tags: vec!["conformance".to_string()],
         });
         contract.required_semantics.push(Semantic {
             id: "req-001".to_string(),

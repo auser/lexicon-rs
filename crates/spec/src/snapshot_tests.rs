@@ -25,6 +25,7 @@ mod tests {
             id: "inv-001".to_string(),
             description: "A key set with a value must return that value on get".to_string(),
             severity: Severity::Required,
+            test_tags: vec!["conformance".to_string()],
         });
         c.required_semantics.push(Semantic {
             id: "req-001".to_string(),

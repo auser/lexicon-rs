@@ -49,11 +49,29 @@ pub enum Command {
     /// Run verification (gates + scoring)
     Verify,
 
+    /// Manage AI provider authentication
+    Auth {
+        #[command(subcommand)]
+        action: AuthAction,
+    },
+
     /// AI-guided improvement loop
     Improve {
         /// Goal to optimize for
         #[arg(long)]
         goal: Option<String>,
+    },
+
+    /// Manage public API extraction and drift
+    Api {
+        #[command(subcommand)]
+        action: ApiAction,
+    },
+
+    /// Analyze contract test coverage
+    Coverage {
+        #[command(subcommand)]
+        action: CoverageAction,
     },
 
     /// Check repo health and detect drift
@@ -116,7 +134,57 @@ pub enum GateAction {
 }
 
 #[derive(Subcommand)]
+pub enum ApiAction {
+    /// Scan and extract the public API
+    Scan,
+    /// Compare current API against baseline
+    Diff,
+    /// Show API diff report
+    Report {
+        /// Output as JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Save current API as baseline
+    Baseline,
+}
+
+#[derive(Subcommand)]
+pub enum CoverageAction {
+    /// Show contract coverage report
+    Report {
+        /// Output as JSON
+        #[arg(long)]
+        json: bool,
+    },
+}
+
+#[derive(Subcommand)]
 pub enum SyncAction {
     /// Sync CLAUDE.md with current repo state
     Claude,
+}
+
+#[derive(Subcommand)]
+pub enum AuthAction {
+    /// Login to an AI provider via browser OAuth
+    Login {
+        /// Provider name (claude, openai). Interactive if omitted.
+        provider: Option<lexicon_spec::auth::Provider>,
+        /// Custom OAuth callback port
+        #[arg(long)]
+        port: Option<u16>,
+    },
+    /// Refresh an expired OAuth token
+    Refresh {
+        /// Provider name (claude, openai). Interactive if omitted.
+        provider: Option<lexicon_spec::auth::Provider>,
+    },
+    /// Show authentication status for all providers
+    Status,
+    /// Remove stored credentials for a provider
+    Logout {
+        /// Provider name (claude, openai). Interactive if omitted.
+        provider: Option<lexicon_spec::auth::Provider>,
+    },
 }

@@ -61,6 +61,18 @@ pub fn validate_contract(contract: &Contract) -> SpecResult<()> {
         }
     }
 
+    // Check for duplicate expected_api entries
+    {
+        let mut seen_api = std::collections::HashSet::new();
+        for api_ref in &contract.expected_api {
+            if !seen_api.insert(api_ref) {
+                return Err(SpecError::DuplicateId {
+                    id: api_ref.clone(),
+                });
+            }
+        }
+    }
+
     // Check for duplicate semantic IDs
     for sem in &contract.required_semantics {
         if !seen_ids.insert(&sem.id) {
@@ -139,11 +151,13 @@ mod tests {
             id: "dup".to_string(),
             description: "first".to_string(),
             severity: crate::common::Severity::Required,
+            test_tags: Vec::new(),
         });
         contract.invariants.push(crate::contract::Invariant {
             id: "dup".to_string(),
             description: "second".to_string(),
             severity: crate::common::Severity::Required,
+            test_tags: Vec::new(),
         });
         let result = validate_contract(&contract);
         assert!(result.is_err());

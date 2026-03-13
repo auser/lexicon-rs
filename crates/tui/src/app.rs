@@ -16,12 +16,14 @@ pub enum Tab {
     Contracts,
     Gates,
     Score,
+    Api,
+    Coverage,
     Help,
 }
 
 impl Tab {
     pub fn all() -> &'static [Tab] {
-        &[Tab::Dashboard, Tab::Contracts, Tab::Gates, Tab::Score, Tab::Help]
+        &[Tab::Dashboard, Tab::Contracts, Tab::Gates, Tab::Score, Tab::Api, Tab::Coverage, Tab::Help]
     }
 
     pub fn label(&self) -> &'static str {
@@ -30,6 +32,8 @@ impl Tab {
             Tab::Contracts => "Contracts",
             Tab::Gates => "Gates",
             Tab::Score => "Score",
+            Tab::Api => "API",
+            Tab::Coverage => "Coverage",
             Tab::Help => "Help",
         }
     }
@@ -54,21 +58,52 @@ pub struct AppState {
     pub contracts: Vec<String>,
     pub gate_results: Vec<lexicon_gates::result::GateResult>,
     pub score_report: Option<lexicon_scoring::engine::ScoreReport>,
+    pub api_snapshot: Option<lexicon_api::schema::ApiSnapshot>,
+    pub api_diff: Option<lexicon_api::diff::ApiDiff>,
+    pub coverage_report: Option<lexicon_coverage::report::CoverageReport>,
     pub should_quit: bool,
     pub status_message: String,
 }
 
 impl AppState {
     pub fn new(layout: RepoLayout) -> Self {
+        let (api_snapshot, api_diff) = Self::load_api_data(&layout);
+
         Self {
             tab: Tab::Dashboard,
             layout,
             contracts: Vec::new(),
             gate_results: Vec::new(),
             score_report: None,
+            api_snapshot,
+            api_diff,
+            coverage_report: None,
             should_quit: false,
             status_message: String::new(),
         }
+    }
+
+    /// Try to load API snapshot and diff from the repo.
+    fn load_api_data(layout: &RepoLayout) -> (Option<lexicon_api::schema::ApiSnapshot>, Option<lexicon_api::diff::ApiDiff>) {
+        let api_dir = layout.root.join(".lexicon").join("api");
+        let current_path = api_dir.join("current.json");
+        let baseline_path = api_dir.join("baseline.json");
+
+        let snapshot = match lexicon_api::baseline::load_baseline(&current_path) {
+            Ok(snap) => Some(snap),
+            Err(_) => None,
+        };
+
+        let diff = if let Some(ref current) = snapshot {
+            match lexicon_api::baseline::load_baseline(&baseline_path) {
+                Ok(baseline) => Some(lexicon_api::diff::diff_snapshots(&baseline, current)),
+                Err(_) => None,
+            }
+        } else {
+            None
+        };
+
+        (snapshot, diff)
     }
 
     /// Load data from the repo.
@@ -88,6 +123,11 @@ impl AppState {
                 self.status_message = format!("Verify error: {e}");
             }
         }
+
+        // Reload API data
+        let (snapshot, diff) = Self::load_api_data(&self.layout);
+        self.api_snapshot = snapshot;
+        self.api_diff = diff;
     }
 }
 
@@ -118,7 +158,9 @@ pub fn run_tui(layout: RepoLayout) -> io::Result<()> {
                     KeyCode::Char('2') => state.tab = Tab::Contracts,
                     KeyCode::Char('3') => state.tab = Tab::Gates,
                     KeyCode::Char('4') => state.tab = Tab::Score,
-                    KeyCode::Char('5') | KeyCode::Char('?') => state.tab = Tab::Help,
+                    KeyCode::Char('5') => state.tab = Tab::Api,
+                    KeyCode::Char('6') => state.tab = Tab::Coverage,
+                    KeyCode::Char('7') | KeyCode::Char('?') => state.tab = Tab::Help,
                     KeyCode::Char('r') => state.refresh(),
                     _ => {}
                 }

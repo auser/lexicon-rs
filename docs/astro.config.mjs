@@ -27,6 +27,7 @@ export default defineConfig({
 						{ label: 'The Lexicon Model', slug: 'concepts/lexicon' },
 						{ label: 'Contracts', slug: 'concepts/contracts' },
 						{ label: 'Conformance', slug: 'concepts/conformance' },
+						{ label: 'API Extraction', slug: 'concepts/api-extraction' },
 						{ label: 'Contract Coverage', slug: 'concepts/coverage' },
 						{ label: 'Gates', slug: 'concepts/gates' },
 						{ label: 'Scoring', slug: 'concepts/scoring' },

@@ -4,6 +4,7 @@
 //! schema definitions, and validation logic live here. Every other
 //! crate in the workspace depends on this one.
 
+pub mod auth;
 pub mod audit;
 pub mod behavior;
 pub mod common;

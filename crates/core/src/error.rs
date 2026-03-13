@@ -27,6 +27,30 @@ pub enum CoreError {
     #[error("fs error: {0}")]
     Fs(#[from] lexicon_fs::error::FsError),
 
+    #[error("api error: {0}")]
+    Api(#[from] lexicon_api::error::ApiError),
+
+    #[error("coverage error: {0}")]
+    Coverage(#[from] lexicon_coverage::error::CoverageError),
+
+    #[error("not authenticated for provider '{provider}' — run `lexicon auth login`")]
+    NotAuthenticated { provider: String },
+
+    #[error("authentication failed: {reason}")]
+    AuthFailed { reason: String },
+
+    #[error("token refresh failed for {provider}: {reason}")]
+    RefreshFailed { provider: String, reason: String },
+
+    #[error("OAuth callback error: {0}")]
+    OAuthCallback(String),
+
+    #[error("HTTP request failed: {0}")]
+    Http(String),
+
+    #[error("io error: {0}")]
+    Io(#[from] std::io::Error),
+
     #[error("{0}")]
     Other(String),
 }

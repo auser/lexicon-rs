@@ -5,7 +5,7 @@ description: Internal architecture and governance model of the lexicon workspace
 
 import ArchitectureGovernanceDiagram from '../../../components/diagrams/ArchitectureGovernanceDiagram.astro';
 
-Lexicon is a Rust workspace of 12 crates organized into strict dependency layers.
+Lexicon is a Rust workspace of 15 crates organized into strict dependency layers.
 This document describes the crate graph, key design decisions, data flow, and extension points.
 
 <ArchitectureGovernanceDiagram />
@@ -21,22 +21,25 @@ Layer 4 (AI)          ai  |  \ |  \  |
                        |  |   \|   \ |
 Layer 3 (domain)    conversation  scaffold
                        |    |      |   |
-Layer 2 (services)   repo  audit  gates
-                       |     |   /   |
-Layer 1 (engines)     fs  scoring  conformance
-                       \     |     /
-Layer 0 (types)         \  spec  /
+Layer 2 (services)   repo  audit  gates  coverage
+                       |     |   /   |      |
+Layer 1 (engines)     fs  scoring  conformance  api
+                       \     |     /       /
+Layer 0 (types)         \  spec  /--------/
 ```
 
 **Layer 0 — `spec`**: Zero-dependency leaf crate. All domain types, schemas,
 and validation rules live here. Every other crate depends on it.
 
-**Layer 1 — `fs`, `scoring`, `conformance`**: Low-level engines with no
+**Layer 1 — `fs`, `scoring`, `conformance`, `api`**: Low-level engines with no
 cross-dependencies. `fs` handles atomic file I/O, `scoring` computes weighted
-scores, `conformance` checks structural compliance.
+scores, `conformance` checks structural compliance, and `api` handles
+syn-based public API extraction, diffing, and baseline management.
 
-**Layer 2 — `repo`, `audit`, `gates`**: Repository layout discovery, audit
-trail persistence, and gate execution (subprocess runner).
+**Layer 2 — `repo`, `audit`, `gates`, `coverage`**: Repository layout discovery,
+audit trail persistence, gate execution (subprocess runner), and contract
+coverage analysis. `coverage` scans test files for lexicon tags and matches
+them against contract clauses to compute coverage metrics.
 
 **Layer 3 — `conversation`, `scaffold`**: Interactive workflow engine and
 file-generation templates. `conversation` is a generic state machine;

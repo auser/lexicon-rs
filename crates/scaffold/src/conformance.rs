@@ -39,6 +39,7 @@ mod tests {
             id: "inv-001".to_string(),
             description: "get after set".to_string(),
             severity: Severity::Required,
+            test_tags: vec!["conformance".to_string()],
         });
 
         write_conformance_harness(&layout, &contract, ConformanceStyle::TraitBased).unwrap();

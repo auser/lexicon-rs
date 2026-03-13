@@ -55,6 +55,36 @@ pub fn run() -> miette::Result<()> {
         }
     }
 
+    // Display coverage report
+    if let Some(ref cov) = result.coverage_report {
+        println!();
+        output::heading("Contract Coverage");
+        output::info(&format!(
+            "Overall: {:.1}% ({}/{} clauses covered)",
+            cov.overall_coverage_pct, cov.total_covered, cov.total_clauses
+        ));
+        if !cov.uncovered_clauses.is_empty() {
+            output::warning(&format!(
+                "{} uncovered clause(s)",
+                cov.uncovered_clauses.len()
+            ));
+        }
+    }
+
+    // Display API drift
+    if let Some(ref diff) = result.api_diff {
+        println!();
+        output::heading("API Drift");
+        if diff.is_empty() {
+            output::success("No API changes from baseline");
+        } else {
+            output::info(&diff.summary());
+            if diff.has_breaking() {
+                output::error(&format!("{} breaking change(s)", diff.breaking_count()));
+            }
+        }
+    }
+
     output::divider();
 
     let all_passed = result

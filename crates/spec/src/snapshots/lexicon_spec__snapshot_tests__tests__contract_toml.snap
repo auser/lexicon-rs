@@ -13,6 +13,7 @@ examples = []
 non_goals = []
 implementation_notes = []
 test_expectations = []
+expected_api = []
 history = []
 created_at = "2025-01-15T12:00:00Z"
 updated_at = "2025-01-15T12:00:00Z"
@@ -25,6 +26,7 @@ minor = 0
 id = "inv-001"
 description = "A key set with a value must return that value on get"
 severity = "required"
+test_tags = ["conformance"]
 
 [[required_semantics]]
 id = "req-001"

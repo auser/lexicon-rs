@@ -27,6 +27,7 @@ mod tests {
             id: "inv-get-after-set".to_string(),
             description: "A key set with a value must return that value on get".to_string(),
             severity: Severity::Required,
+            test_tags: vec!["conformance".to_string()],
         });
         c.required_semantics.push(Semantic {
             id: "req-missing-key".to_string(),

@@ -69,14 +69,14 @@ impl ScoreModel {
                 ScoreDimension {
                     id: "conformance-coverage".to_string(),
                     label: "Conformance Coverage".to_string(),
-                    weight: 25,
+                    weight: 20,
                     category: DimensionCategory::Scored,
                     source: ScoreSource::TestSuite,
                 },
                 ScoreDimension {
                     id: "behavior-pass-rate".to_string(),
                     label: "Behavior Pass Rate".to_string(),
-                    weight: 15,
+                    weight: 10,
                     category: DimensionCategory::Scored,
                     source: ScoreSource::TestSuite,
                 },
@@ -97,8 +97,22 @@ impl ScoreModel {
                 ScoreDimension {
                     id: "panic-safety".to_string(),
                     label: "Panic Safety".to_string(),
+                    weight: 5,
+                    category: DimensionCategory::Scored,
+                    source: ScoreSource::Gate,
+                },
+                ScoreDimension {
+                    id: "contract-coverage".to_string(),
+                    label: "Contract Coverage".to_string(),
                     weight: 10,
                     category: DimensionCategory::Scored,
+                    source: ScoreSource::Coverage,
+                },
+                ScoreDimension {
+                    id: "api-drift".to_string(),
+                    label: "API Drift".to_string(),
+                    weight: 5,
+                    category: DimensionCategory::Advisory,
                     source: ScoreSource::Gate,
                 },
             ],
@@ -116,7 +130,7 @@ mod tests {
         let model = ScoreModel::default_model();
         let toml_str = toml::to_string_pretty(&model).unwrap();
         let parsed: ScoreModel = toml::from_str(&toml_str).unwrap();
-        assert_eq!(parsed.dimensions.len(), 6);
+        assert_eq!(parsed.dimensions.len(), 8);
         assert_eq!(parsed.thresholds.pass, 0.8);
     }
 

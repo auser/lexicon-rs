@@ -95,7 +95,28 @@ Score
 All gates passed
 ```
 
-## 6. Sync to CLAUDE.md
+## 6. Extract and Baseline the Public API
+
+```bash
+lexicon api scan
+lexicon api baseline
+```
+
+Scans all Rust source files and extracts the public API surface (structs, enums, traits, functions, constants, type aliases, modules). The baseline command saves the current snapshot so that future scans can detect drift.
+
+After making changes, run `lexicon api diff` to see what changed and whether any changes are breaking.
+
+## 7. Check Contract Coverage
+
+```bash
+lexicon coverage report
+```
+
+Scans test files for lexicon tags (`#[lexicon_tag("...")]`, `lexicon::tags("...")`, `// lexicon-tag: ...`) and matches them against contract clauses. Produces a coverage report showing which clauses are tested and which are missing coverage.
+
+Use `--json` for machine-readable output suitable for CI.
+
+## 8. Sync to CLAUDE.md
 
 ```bash
 lexicon sync claude
@@ -103,7 +124,7 @@ lexicon sync claude
 
 Generates a `CLAUDE.md` file (or updates existing) with a managed block containing your contracts, scoring model, and gates. The managed block is delimited by `lexicon:begin:lexicon-context` and `lexicon:end:lexicon-context` markers. Existing content outside the managed block is preserved.
 
-## 7. Launch the TUI
+## 9. Launch the TUI
 
 ```bash
 lexicon tui

@@ -1,0 +1,19 @@
+[package]
+name = "lexicon-api"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Public API extraction and diffing for lexicon"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+syn = { version = "2", features = ["full", "parsing", "visit"] }
+quote = "1"
+proc-macro2 = { version = "1", features = ["span-locations"] }
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+insta.workspace = true

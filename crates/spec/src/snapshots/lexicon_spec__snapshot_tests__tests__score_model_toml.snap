@@ -16,14 +16,14 @@ source = "gate"
 [[dimensions]]
 id = "conformance-coverage"
 label = "Conformance Coverage"
-weight = 25
+weight = 20
 category = "scored"
 source = "test_suite"
 
 [[dimensions]]
 id = "behavior-pass-rate"
 label = "Behavior Pass Rate"
-weight = 15
+weight = 10
 category = "scored"
 source = "test_suite"
 
@@ -44,8 +44,22 @@ source = "manual"
 [[dimensions]]
 id = "panic-safety"
 label = "Panic Safety"
+weight = 5
+category = "scored"
+source = "gate"
+
+[[dimensions]]
+id = "contract-coverage"
+label = "Contract Coverage"
 weight = 10
 category = "scored"
+source = "coverage"
+
+[[dimensions]]
+id = "api-drift"
+label = "API Drift"
+weight = 5
+category = "advisory"
 source = "gate"
 
 [thresholds]

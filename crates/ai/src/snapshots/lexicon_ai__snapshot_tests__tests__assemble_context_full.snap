@@ -18,11 +18,13 @@ Type: Library
 ## Scoring
 Pass threshold: 80%, Warn threshold: 60%
 - Correctness (weight: 30, Required)
-- Conformance Coverage (weight: 25, Scored)
-- Behavior Pass Rate (weight: 15, Scored)
+- Conformance Coverage (weight: 20, Scored)
+- Behavior Pass Rate (weight: 10, Scored)
 - Lint Quality (weight: 10, Scored)
 - Documentation Completeness (weight: 10, Advisory)
-- Panic Safety (weight: 10, Scored)
+- Panic Safety (weight: 5, Scored)
+- Contract Coverage (weight: 10, Scored)
+- API Drift (weight: 5, Advisory)
 
 ## Gates
 - Format Check (Required): `cargo fmt -- --check`

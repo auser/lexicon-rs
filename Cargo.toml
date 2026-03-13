@@ -14,6 +14,8 @@ members = [
     "crates/fs",
     "crates/repo",
     "crates/audit",
+    "crates/coverage",
+    "crates/api",
 ]
 default-members = ["crates/cli"]
 
@@ -39,6 +41,12 @@ crossterm = "0.28"
 # Error handling
 thiserror = "2"
 miette = { version = "7", features = ["fancy"] }
+
+
+# HTTP / Auth
+reqwest = { version = "0.12", features = ["blocking", "json"] }
+sha2 = "0.10"
+open = "5"
 
 # Utilities
 chrono = { version = "0.4", features = ["serde"] }
@@ -67,3 +75,5 @@ lexicon-fs = { path = "crates/fs" }
 lexicon-repo = { path = "crates/repo" }
 lexicon-audit = { path = "crates/audit" }
 lexicon-tui = { path = "crates/tui" }
+lexicon-coverage = { path = "crates/coverage" }
+lexicon-api = { path = "crates/api" }

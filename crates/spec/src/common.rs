@@ -195,6 +195,9 @@ pub enum AuditAction {
     ClaudeSyncRun,
     TestDeletion,
     ThresholdChange,
+    ApiScan,
+    ApiDiff,
+    CoverageReport,
 }
 
 #[cfg(test)]

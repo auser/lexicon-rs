@@ -1,4 +1,7 @@
+pub mod api;
+pub mod auth;
 pub mod contract;
+pub mod coverage;
 pub mod doctor;
 pub mod gate;
 pub mod init;

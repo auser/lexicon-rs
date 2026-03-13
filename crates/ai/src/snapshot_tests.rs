@@ -34,6 +34,7 @@ mod tests {
             id: "inv-001".to_string(),
             description: "get after set returns the value".to_string(),
             severity: Severity::Required,
+            test_tags: vec!["conformance".to_string()],
         });
         contract.required_semantics.push(Semantic {
             id: "req-001".to_string(),

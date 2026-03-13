@@ -154,6 +154,7 @@ fn build_contract(ctx: &ContractNewContext) -> Contract {
             id: format!("inv-{:03}", i + 1),
             description: inv.clone(),
             severity: Severity::Required,
+            test_tags: Vec::new(),
         });
     }
 

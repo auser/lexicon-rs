@@ -1,0 +1,114 @@
+---
+title: lexicon api
+description: Extract, baseline, and diff the public API surface.
+---
+
+## Subcommands
+
+### `lexicon api scan`
+
+Scan the project source files and extract the public API surface.
+
+```bash
+lexicon api scan
+```
+
+Walks all `.rs` files in the project, parses them with `syn`, and extracts every public struct, enum, trait, function, constant, type alias, and module. The result is saved to `.lexicon/api/current.json`.
+
+On success:
+
+```
+Scanning public API
+12 API items extracted
+Saved to .lexicon/api/current.json
+```
+
+### `lexicon api diff`
+
+Compare the current API against the saved baseline.
+
+```bash
+lexicon api diff
+```
+
+If no baseline exists, prints an error and suggests running `lexicon api baseline` first. If no current scan exists, runs a scan automatically before diffing.
+
+Output when no changes are found:
+
+```
+No API changes from baseline
+```
+
+Output when breaking changes are detected:
+
+```
+2 breaking change(s) detected
+1 added, 1 removed, 1 changed
+```
+
+### `lexicon api report`
+
+Show a detailed API diff report.
+
+```bash
+lexicon api report
+lexicon api report --json
+```
+
+Produces a human-readable report grouped by breaking level (Breaking, Dangerous, Additive). If no baseline exists, prints a warning and exits. If no current scan exists, runs a scan automatically.
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output the full diff as structured JSON |
+
+Example output:
+
+```
+API Diff Summary: 1 added, 1 removed
+============================================================
+
+[BREAKING] Removed items:
+  - function old_helper (pub)
+
+[ADDITIVE] Added items:
+  + struct NewConfig (pub)
+```
+
+### `lexicon api baseline`
+
+Save the current API snapshot as the baseline.
+
+```bash
+lexicon api baseline
+```
+
+If no current scan exists, runs a scan automatically before saving. Copies `current.json` to `baseline.json` in `.lexicon/api/`.
+
+On success:
+
+```
+Current API saved as baseline
+```
+
+## Typical Workflow
+
+```bash
+# Initial setup: scan and save baseline
+lexicon api scan
+lexicon api baseline
+
+# After making changes: check for drift
+lexicon api diff
+
+# Get a detailed report
+lexicon api report
+
+# If the changes are intentional: update the baseline
+lexicon api baseline
+```
+
+## CI Integration
+
+Run `lexicon api diff` in your CI pipeline to detect unintended API changes. The diff command reports breaking changes prominently, making it suitable for gating merge requests on API stability.
+
+See [API Extraction](/concepts/api-extraction/) for details on how extraction, diffing, and classification work.

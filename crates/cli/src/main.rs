@@ -22,8 +22,16 @@ fn main() -> miette::Result<()> {
         }
         Command::Score { action } => commands::score::run(action),
         Command::Gate { action } => commands::gate::run(action),
+        Command::Api { action } => commands::api::run(action),
+        Command::Coverage { action } => commands::coverage::run(action),
         Command::Verify => commands::verify::run(),
+        Command::Auth { action } => commands::auth::run(action),
         Command::Improve { goal: _ } => {
+            let layout = lexicon_repo::layout::RepoLayout::discover()?;
+            lexicon_core::auth::ensure_authenticated(
+                &layout,
+                lexicon_spec::auth::Provider::Claude,
+            )?;
             output::warning("AI-guided improvement not yet implemented");
             Ok(())
         }

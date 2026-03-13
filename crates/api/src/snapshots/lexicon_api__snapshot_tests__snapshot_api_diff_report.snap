@@ -1,0 +1,16 @@
+---
+source: crates/api/src/snapshot_tests.rs
+expression: report
+---
+API Diff Summary: 1 added, 1 removed, 1 changed
+============================================================
+
+[BREAKING] Removed items:
+  - trait Handler (pub)
+
+[DANGEROUS] Changed items:
+  ~ function process
+    signature: fn process(input: &str) -> bool -> fn process(input: &str, strict: bool) -> bool
+
+[ADDITIVE] Added items:
+  + function validate (pub)

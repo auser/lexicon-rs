@@ -1,0 +1,77 @@
+---
+title: lexicon coverage
+description: Report contract coverage by matching test tags to contract clauses.
+---
+
+## Subcommands
+
+### `lexicon coverage report`
+
+Generate a contract coverage report.
+
+```bash
+lexicon coverage report
+lexicon coverage report --json
+```
+
+Loads all contracts from `specs/contracts/`, scans the project test files for lexicon tags, matches tags to contract clauses, and produces a coverage report.
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output the report as structured JSON |
+
+Example output:
+
+```
+Contract Coverage Report
+
+=== Lexicon Coverage Report ===
+
+Overall coverage: 66.7% (2/3)
+
+Contract: key-value-store - 66.7% (2/3)
+  [covered] Required Semantic req-001: get(key) returns None for missing keys
+  [covered] Forbidden Semantic forbid-001: Must not panic on missing key lookup
+  [UNCOVERED] Required Semantic req-002: delete is idempotent for missing keys
+
+Uncovered clauses:
+  - key-value-store/req-002 (Required Semantic): delete is idempotent for missing keys
+```
+
+If no contracts are found, prints a warning and exits.
+
+## How Tags Are Matched
+
+The coverage engine scans `.rs` files for three tag formats:
+
+1. **Attribute tags** -- `#[lexicon_tag("tag-name")]` on test functions
+2. **Function call tags** -- `lexicon::tags("tag1", "tag2")` inside test bodies
+3. **Comment tags** -- `// lexicon-tag: tag-name` above or inside tests
+
+Each contract clause declares expected tags via the `test_tags` field. A clause is considered covered if at least one discovered test tag matches any of the clause's expected tags.
+
+Clauses without any `test_tags` are excluded from the coverage percentage denominator. Edge cases currently do not support tags and are always shown as uncovered.
+
+## JSON Output
+
+The `--json` flag produces a structured report with per-contract and per-clause detail:
+
+```json
+{
+  "contracts": [
+    {
+      "contract_id": "key-value-store",
+      "clauses": [...],
+      "covered_count": 2,
+      "total_count": 3,
+      "coverage_pct": 66.7
+    }
+  ],
+  "overall_coverage_pct": 66.7,
+  "total_covered": 2,
+  "total_clauses": 3,
+  "uncovered_clauses": [...]
+}
+```
+
+See [Contract Coverage](/concepts/coverage/) for details on how coverage computation works and how it integrates with scoring.

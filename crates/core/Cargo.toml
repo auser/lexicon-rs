@@ -17,9 +17,16 @@ lexicon-conformance.workspace = true
 lexicon-conversation.workspace = true
 lexicon-ai.workspace = true
 lexicon-scaffold.workspace = true
+lexicon-api.workspace = true
+lexicon-coverage.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 toml.workspace = true
 thiserror.workspace = true
 miette.workspace = true
+reqwest.workspace = true
+sha2.workspace = true
+open.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

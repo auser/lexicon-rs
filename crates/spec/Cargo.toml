@@ -7,6 +7,7 @@ rust-version.workspace = true
 description = "Domain types, schemas, and validation for lexicon"
 
 [dependencies]
+clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 toml.workspace = true

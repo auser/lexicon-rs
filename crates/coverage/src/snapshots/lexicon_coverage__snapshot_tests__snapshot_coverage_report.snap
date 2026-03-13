@@ -1,0 +1,20 @@
+---
+source: crates/coverage/src/snapshot_tests.rs
+expression: text
+---
+=== Lexicon Coverage Report ===
+
+Overall coverage: 50.0% (2/4)
+
+Contract: kv-store - 66.7% (2/3)
+  [covered] Required Semantic req-001: Description for req-001
+  [UNCOVERED] Required Semantic req-002: Description for req-002
+  [covered] Forbidden Semantic forbid-001: Description for forbid-001
+  [no tags] Invariant inv-001: Description for inv-001
+
+Contract: auth-service - 0.0% (0/1)
+  [UNCOVERED] Required Semantic req-001: Description for req-001
+
+Uncovered clauses:
+  - kv-store/req-002 (Required Semantic): Description for req-002
+  - auth-service/req-001 (Required Semantic): Description for req-001

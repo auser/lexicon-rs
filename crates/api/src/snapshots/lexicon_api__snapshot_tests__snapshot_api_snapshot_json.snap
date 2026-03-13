@@ -1,0 +1,35 @@
+---
+source: crates/api/src/snapshot_tests.rs
+expression: json
+---
+{
+  "crate_name": "test-crate",
+  "version": "0.1.0",
+  "items": [
+    {
+      "kind": "Struct",
+      "name": "Config",
+      "module_path": [],
+      "signature": "struct Config",
+      "visibility": "Public",
+      "trait_associations": [],
+      "stability": null,
+      "doc_summary": null,
+      "span_file": "src/lib.rs",
+      "span_line": 1
+    },
+    {
+      "kind": "Function",
+      "name": "process",
+      "module_path": [],
+      "signature": "fn process(input: &str) -> bool",
+      "visibility": "Public",
+      "trait_associations": [],
+      "stability": null,
+      "doc_summary": null,
+      "span_file": "src/lib.rs",
+      "span_line": 1
+    }
+  ],
+  "extracted_at": "2026-01-01T00:00:00Z"
+}

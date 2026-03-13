@@ -13,7 +13,7 @@ Coverage ensures contracts are not merely documentation but are enforced.
 
 ## How It Works
 
-Each contract clause can reference tests or test tags:
+Each contract clause can declare expected test tags via the `test_tags` field:
 
 ```toml
 [[invariants]]
@@ -32,11 +32,49 @@ description = "delete is idempotent for missing keys"
 test_tags = ["conformance.delete_behavior"]
 ```
 
-Lexicon computes:
+Lexicon scans your test files for tags, matches them against the declared `test_tags`, and computes:
 
-- **clauses tested** -- contract elements with matching test tags
-- **clauses missing tests** -- contract elements with no test coverage
-- **coverage percentage** -- tested clauses / total clauses
+- **clauses tested** -- contract elements with at least one matching test tag
+- **clauses missing tests** -- contract elements with tags but no matching tests
+- **coverage percentage** -- covered clauses / total clauses with tags
+
+Clauses that do not declare any `test_tags` are excluded from the denominator. This means coverage percentage reflects how well you have tested the clauses you intended to test, not every clause in the contract.
+
+## Supported Tag Formats
+
+Lexicon recognizes three ways to tag tests:
+
+### Attribute tag
+
+```rust
+#[lexicon_tag("conformance.value_retrieval")]
+#[test]
+fn test_get_returns_value() {
+    // ...
+}
+```
+
+### Function call tag
+
+```rust
+#[test]
+fn test_delete_behavior() {
+    lexicon::tags("conformance.delete_behavior", "edge-case");
+    // ...
+}
+```
+
+### Comment tag
+
+```rust
+// lexicon-tag: conformance.value_retrieval
+#[test]
+fn test_retrieval() {
+    // ...
+}
+```
+
+All three formats are detected by the coverage scanner when it walks `.rs` files in the project. You can mix formats freely -- a single test file can use attributes, function calls, and comments.
 
 ## Coverage Report
 

@@ -63,6 +63,18 @@ impl RepoLayout {
         self.lexicon_dir().join("state")
     }
 
+    pub fn api_dir(&self) -> PathBuf {
+        self.lexicon_dir().join("api")
+    }
+
+    pub fn auth_dir(&self) -> PathBuf {
+        self.lexicon_dir().join("auth")
+    }
+
+    pub fn auth_credential_path(&self, provider: &str) -> PathBuf {
+        self.auth_dir().join(format!("{provider}.json"))
+    }
+
     // --- specs/ directories ---
 
     pub fn specs_dir(&self) -> PathBuf {
@@ -134,6 +146,8 @@ impl RepoLayout {
             self.audit_dir(),
             self.cache_dir(),
             self.state_dir(),
+            self.api_dir(),
+            self.auth_dir(),
             self.contracts_dir(),
             self.behavior_dir(),
             self.scoring_dir(),
