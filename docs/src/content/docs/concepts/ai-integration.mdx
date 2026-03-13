@@ -5,6 +5,20 @@ description: How lexicon integrates with AI assistants while maintaining safety 
 
 AI integration in lexicon is optional by design. All workflows work fully without AI. When AI is available, it enhances proposals and suggests improvements -- but every change is bounded, audited, and subject to policy.
 
+The core idea: **make AI useful, but bounded and auditable**. The architecture assumes AI can make "locally clever but globally bad" choices and defends against that. AI is never required for core verification -- the deterministic pipeline (contracts, conformance, scoring, gates) is the source of truth.
+
+Lexicon is designed so that Claude Code can read generated files and immediately understand:
+
+- what the repo does
+- what behavior is stable
+- what can and cannot change
+- how to add tests
+- how to interpret conformance
+- how score is computed
+- what gates are mandatory
+- what changes require spec updates
+- how to work safely in the repo
+
 ## The AiProvider Trait
 
 AI integration is abstracted behind a trait:
@@ -21,7 +35,7 @@ pub trait AiProvider {
 
 ## NoOpProvider
 
-The default provider is `NoOpProvider`, which returns `AiError::NotAvailable` for all calls. This ensures lexicon works completely without any AI service configured.
+The default provider is `NoOpProvider`, which returns `AiError::NotAvailable` for all calls. This ensures lexicon works completely without any AI service configured. AI is an enhancement layer, not a dependency.
 
 ## Context Assembly
 
@@ -55,7 +69,14 @@ This assembled context is used both for prompt construction and for the managed 
 
 ## Edit Policy
 
-The manifest's `PolicyConfig` controls what AI may edit:
+The manifest's `PolicyConfig` controls what AI may edit. The system explicitly defines:
+
+- what files AI may edit freely
+- what files require manual review
+- what files are protected from AI modification
+- what changes require contract history updates
+- what scoring/gate changes are restricted
+- how test deletions are handled
 
 | Policy Level     | Default Patterns                        | Behavior                        |
 |------------------|-----------------------------------------|---------------------------------|
@@ -77,6 +98,18 @@ Changes that lower a gate's category or make a non-skippable gate skippable are 
 ### Test Deletion Approval
 The `test_deletion_requires_approval` policy (default: `true`) prevents AI from silently removing tests.
 
+### Forbidden AI Behaviors
+The system architecturally protects against:
+
+- deleting tests to make CI pass
+- weakening assertions without acknowledgment
+- silently loosening score thresholds
+- rewriting contract semantics without updating contract status/history
+- weakening required gates without policy approval
+- gaming performance baselines
+- hiding failures behind skipped tests
+- bypassing ecosystem governance for local convenience
+
 ### Audit Trail
 Every AI-driven change is recorded as an audit record with:
 - The action type (`AiImprove` or `AiImproveRejected`)
@@ -85,5 +118,33 @@ Every AI-driven change is recorded as an audit record with:
 - Score impact (before and after)
 - Whether gates still pass
 
-### Bounded Improvement Loops
-The `lexicon improve` command runs an AI-guided improvement loop with a specific goal. The loop is bounded -- it produces suggestions that go through verification, not unbounded autonomous changes.
+Conversation memory is not hidden magic -- it is inspectable. Every session is local to the repo and reviewable.
+
+## The Improvement Loop
+
+The `lexicon improve` command runs a safe, AI-guided improvement cycle:
+
+1. Read contracts, scoring, gates, and repo context
+2. Identify failures, weaknesses, or improvement opportunities
+3. Propose a narrow patch
+4. Explain why the patch should help
+5. Apply the patch in a controlled way
+6. Run verification
+7. Compare score delta
+8. Reject patches that violate required gates
+9. Generate an audit record
+10. Produce a human-readable summary
+
+This is not an uncontrolled auto-rewrite feature. It is bounded and auditable. The AI can propose improvements such as adding missing tests, strengthening conformance harnesses, updating contracts when appropriate, and documenting new API behavior -- but it must not silently weaken contracts or remove tests.
+
+## Claude Code Sync
+
+The `lexicon sync claude` command generates and maintains a `CLAUDE.md` file with explicit managed blocks containing:
+
+- active contracts and their invariants
+- scoring dimensions and thresholds
+- required and advisory gates
+- safe edit zones from the edit policy
+- stability boundaries
+
+This gives Claude Code immediate context about how to work safely in the repo. The managed blocks are updated repeatably by `lexicon sync claude` while preserving any user-authored content outside the managed sections.

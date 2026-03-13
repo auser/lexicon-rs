@@ -1,133 +1,104 @@
-# Lexicon Sprint Plan
+# Lexicon Sprint 002 — Phase 2 Improvements
 
-## Phase 0: Workspace Scaffolding
-- [x] Convert root Cargo.toml to virtual workspace (resolver = "3")
-- [x] Create crates/spec (lib, no internal deps)
-- [x] Create crates/fs (lib)
-- [x] Create crates/repo (lib)
-- [x] Create crates/audit (lib)
-- [x] Create crates/scoring (lib)
-- [x] Create crates/gates (lib)
-- [x] Create crates/conformance (lib)
-- [x] Create crates/conversation (lib)
-- [x] Create crates/ai (lib)
-- [x] Create crates/scaffold (lib)
-- [x] Create crates/core (lib)
-- [x] Create crates/tui (lib)
-- [x] Create crates/cli (binary, move src/main.rs)
-- [x] Create xtask/ (binary)
-- [x] Verify `cargo build` succeeds
+**Goal**: API extraction, contract coverage analysis, and stronger verification integration.
 
-## Phase 1: spec Crate — Domain Types
-- [x] version.rs — SchemaVersion type
-- [x] common.rs — shared enums (ContractStatus, Stability, Severity, etc.)
-- [x] error.rs — SpecError
-- [x] manifest.rs — Manifest, ProjectMeta, Preferences, PolicyConfig
-- [x] contract.rs — Contract, Invariant, Semantic, EdgeCase, Example, HistoryEntry
-- [x] conformance.rs — ConformanceSuite, ConformanceTest, FixtureRef
-- [x] behavior.rs — BehaviorScenario
-- [x] scoring.rs — ScoreModel, ScoreDimension, ScoreThresholds
-- [x] gates.rs — GatesModel, Gate, GateCategory
-- [x] session.rs — ConversationSession, SessionStep, Decision
-- [x] audit.rs — AuditRecord, AuditAction, Actor
-- [x] validation.rs — validate functions per type
-- [x] Round-trip serde tests (24 passing)
-
-## Phase 2: fs Crate — Safe File Operations
-- [x] safe_write.rs — atomic write with backup
-- [x] diff.rs — textual diffs (similar crate)
-- [x] patch.rs — managed-block insertion/update
-- [x] Tests (16 passing)
-
-## Phase 3: repo + audit Crates
-- [x] repo/inspect.rs — scan repo, detect workspace
-- [x] repo/layout.rs — RepoLayout struct + discover()
-- [x] repo/lexicon_dir.rs — .lexicon/ management
-- [x] audit/writer.rs — append audit records
-- [x] audit/reader.rs — list/filter/load records
-- [x] Tests (9 + 4 = 13 passing)
-
-## Phase 4: scoring + gates + conformance Crates
-- [x] scoring/engine.rs — compute_score()
-- [x] scoring/explain.rs — human-readable breakdown
-- [x] gates/runner.rs — execute gate commands
-- [x] gates/result.rs — GateResult type
-- [x] gates/policy.rs — enforce required gates
-- [x] conformance/generator.rs — generate test code
-- [x] conformance/templates.rs — harness templates
-- [x] Tests (6 + 8 + 3 = 17 passing)
-
-## Phase 5: conversation Crate — Workflow Engine
-- [x] workflow.rs — Workflow trait, step types
-- [x] engine.rs — ConversationEngine state machine
-- [x] session.rs — session persistence
-- [x] driver.rs — TerminalDriver (dialoguer) + MockDriver
-- [x] Tests (5 passing)
-
-## Phase 6: ai + scaffold Crates
-- [x] ai/context.rs — AI-readable context assembly
-- [x] ai/boundary.rs — AiProvider trait + NoOpProvider
-- [x] ai/policy.rs — AI edit policy
-- [x] scaffold/init.rs — repo initialization
-- [x] scaffold/contract.rs — write contract TOML
-- [x] scaffold/conformance.rs — write conformance files
-- [x] scaffold/scoring.rs — write scoring model
-- [x] scaffold/gates.rs — write gates config
-- [x] scaffold/claude.rs — CLAUDE.md managed blocks
-- [x] Tests (3 + 10 = 13 passing)
-
-## Phase 7: core Crate — Orchestration
-- [x] error.rs — CoreError with Diagnostic derive
-- [x] init.rs — init_repo() + init_repo_noninteractive()
-- [x] contract.rs — contract_new() + contract_new_noninteractive() + contract_list()
-- [x] score.rs — score_init(), gate_init(), score_explain()
-- [x] verify.rs — full verify pipeline (gates + score + audit)
-- [x] sync_claude.rs — CLAUDE.md sync
-- [x] Tests (6 passing)
-
-## Phase 8: cli Crate — Commands
-- [x] app.rs — clap App definition with all subcommands
-- [x] commands/init.rs
-- [x] commands/contract.rs (new, list, lint stub)
-- [x] commands/score.rs (init, explain)
-- [x] commands/gate.rs (init)
-- [x] commands/verify.rs — colored gate/score output
-- [x] commands/doctor.rs — repo health check
-- [x] commands/sync.rs — CLAUDE.md sync
-- [x] output.rs — heading, success, warning, error, info, divider
-
-## Phase 9: tui Crate — Terminal UI
-- [x] app.rs — AppState, Tab enum, run_tui()
-- [x] event.rs — keyboard handling (inline in app.rs)
-- [x] ui.rs — draw functions (dashboard, contracts, gates, score, help)
-- [x] Tab navigation (Tab/arrow/1-5), refresh (r), quit (q/Esc)
-
-## Phase 10: Tests, Docs, Samples
-- [x] Integration tests (2 end-to-end tempdir flows)
-- [x] Snapshot tests (insta) — 7 tests across spec, scoring, ai
-- [x] Sample contract.toml
-- [x] Sample scoring_model.toml
-- [x] Sample gates.toml
-- [x] Sample conversation_session.json
-- [x] Sample audit_record.json
-- [x] Sample CLAUDE.md managed block
-- [x] README.md
-- [x] Architecture doc (reference/architecture.mdx)
-
-## Phase 11: Documentation Site (Astro + Starlight)
-- [x] Initialize Astro + Starlight project in docs/ (pnpm)
-- [x] Configure sidebar, site title, themes
-- [x] Landing page with hero, CardGrid, key features
-- [x] Getting Started pages (installation, quickstart)
-- [x] Concepts pages (contracts, conformance, scoring, gates, conversations, AI integration)
-- [x] Command reference pages (init, contract, score, gate, verify, sync, doctor, tui)
-- [x] Schema reference pages (schemas, repo-layout, audit)
-- [x] Tutorial guides (first-contract, ci-integration)
-- [x] GitHub Actions workflow for Pages deployment
-- [x] Justfile recipes (docs-dev, docs-build, docs-preview)
-- [x] Pagefind search indexing (23 pages)
-- [x] Verify site builds and renders
+Previous sprint archived at `specs/sprints/001-initial-implementation.md`.
 
 ---
 
-**Total: 103 tests passing across 13 crates, 24-page docs site**
+## Phase 12: New Crates — api + coverage
+
+### 12a: `crates/api` — Public API Extraction
+- [ ] Create crate with workspace deps (syn, serde, serde_json)
+- [ ] `extract.rs` — parse Rust source files, extract public items (structs, enums, traits, functions, methods, modules, constants, types)
+- [ ] `schema.rs` — `ApiItem` type (kind, name, module_path, signature, visibility, trait_associations, stability, doc_summary)
+- [ ] `baseline.rs` — save/load baseline JSON (`.lexicon/api/baseline.json`)
+- [ ] `diff.rs` — compare current vs baseline (added, removed, changed signature/visibility/bounds/generics)
+- [ ] `report.rs` — human-readable + machine-readable diff report (breaking, additive, dangerous changes)
+- [ ] Tests (extraction, diffing, round-trip serialization)
+
+### 12b: `crates/coverage` — Contract Coverage Analysis
+- [ ] Create crate with workspace deps
+- [ ] `analyzer.rs` — scan test files for `lexicon::tags(...)` or `#[lexicon_tag("...")]` attributes
+- [ ] `matcher.rs` — match test tags to contract clause `test_tags` fields
+- [ ] `report.rs` — compute coverage % per contract, list uncovered clauses
+- [ ] Tests
+
+---
+
+## Phase 13: Spec Extensions
+
+- [ ] Add `expected_api` field to Contract (list of expected traits/methods/types)
+- [ ] Add `test_tags` field to Invariant type (already on Semantic)
+- [ ] Add `contract_coverage` scoring dimension to default model
+- [ ] Add `api_drift` scoring dimension to default model
+- [ ] Add `ApiScan`, `ApiDiff`, `CoverageReport` audit actions
+- [ ] Add `api_dir()` path to RepoLayout (`.lexicon/api/`)
+- [ ] Validation for expected_api references
+- [ ] Tests for schema changes
+
+---
+
+## Phase 14: Core Integration
+
+### 14a: API Commands
+- [ ] `core/api.rs` — `api_scan()`, `api_diff()`, `api_report()` orchestration
+- [ ] Write scan results to `.lexicon/api/current.json`
+- [ ] Baseline management (save current as baseline)
+- [ ] Audit records for API scan/diff
+
+### 14b: Coverage Commands
+- [ ] `core/coverage.rs` — `coverage_report()` orchestration
+- [ ] Compute coverage per contract
+- [ ] Integrate coverage into scoring (contract_coverage dimension)
+
+### 14c: Verify Pipeline Extension
+- [ ] Extend `verify()` to include API drift check
+- [ ] Extend `verify()` to include contract coverage
+- [ ] Score breakdown includes contract_coverage and api_drift dimensions
+- [ ] Verify output shows coverage report and API drift report
+
+### 14d: Doctor Extension
+- [ ] Detect contract vs API mismatches (expected_api vs extracted API)
+- [ ] Detect uncovered contract clauses (no matching test tags)
+- [ ] Detect undocumented public API (not referenced by any contract)
+- [ ] Detect API drift from baseline
+
+---
+
+## Phase 15: CLI Commands
+
+- [ ] `lexicon api scan` — extract and store public API
+- [ ] `lexicon api diff` — compare current vs baseline
+- [ ] `lexicon api report` — summary with contract mismatch warnings
+- [ ] `lexicon api baseline` — save current as baseline
+- [ ] `lexicon coverage report` — contract coverage analysis
+- [ ] Update `lexicon verify` output to include coverage + API drift
+- [ ] Update `lexicon doctor` output to include new drift checks
+- [ ] Update `lexicon score explain` to show contract_coverage dimension
+
+---
+
+## Phase 16: TUI Updates
+
+- [ ] Add API tab to TUI (extracted API summary, drift status)
+- [ ] Add Coverage view (per-contract coverage %, uncovered clauses)
+- [ ] Update Dashboard to show API drift and coverage status
+
+---
+
+## Phase 17: Tests & Documentation
+
+- [ ] Integration tests for API scan -> diff -> report flow
+- [ ] Integration tests for coverage analysis flow
+- [ ] Integration test for extended verify pipeline
+- [ ] Snapshot tests for API diff output
+- [ ] Snapshot tests for coverage report
+- [ ] Update docs: new concept pages (API extraction, coverage)
+- [ ] Update docs: new command reference pages (api, coverage)
+- [ ] Update architecture doc with new crates
+- [ ] Update quickstart guide
+
+---
+
+**Starting state**: 103 tests, 13 crates, 24-page docs site

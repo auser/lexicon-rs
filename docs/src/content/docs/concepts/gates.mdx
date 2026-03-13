@@ -1,9 +1,23 @@
 ---
 title: Gates
-description: Verification gates that run shell commands as subprocesses during lexicon verify.
+description: No-regression verification gates that run shell commands as subprocesses during lexicon verify.
 ---
 
 Gates are concrete verification checks that run during `lexicon verify`. Each gate executes a shell command as a subprocess and reports pass, fail, skip, or error.
+
+The core idea: **make no-regression gates enforceable**. Gates are hard enforcement boundaries. They protect against both human and AI attempts to game the system.
+
+Examples of what gates protect against:
+
+- deleting tests to make CI pass
+- weakening assertions without acknowledgment
+- silently loosening score thresholds
+- rewriting contract semantics without updating contract status/history
+- weakening required gates without policy approval
+- gaming performance baselines
+- hiding failures behind skipped tests
+
+The architecture assumes that AI can make "locally clever but globally bad" choices and defends against that.
 
 The gates model is stored at `specs/gates.toml`.
 
@@ -51,7 +65,24 @@ Lexicon detects when a gate configuration change constitutes a "weakening":
 - **Lowering the category** (e.g., Required to Scored, or Scored to Advisory) is a weakening
 - **Making a non-skippable gate skippable** (`allow_skip: false` to `true`) is a weakening
 
-When `gate_weakening_requires_approval` is enabled in the manifest policy (the default), weakening changes are flagged and audited.
+When `gate_weakening_requires_approval` is enabled in the manifest policy (the default), weakening changes are flagged and audited. This is a critical safety boundary -- AI must not weaken gates to "fix" verification failures.
+
+## What Gates Can Cover
+
+The gate system supports a wide range of no-regression checks:
+
+- **fmt** -- Code formatting
+- **clippy** -- Lint quality
+- **unit tests** -- Core correctness
+- **conformance tests** -- Contract verification
+- **behavior tests** -- Scenario-level assertions
+- **property tests** -- Randomized invariant checking
+- **fuzz smoke** -- Crash-resistance validation
+- **benchmark smoke** -- Performance regression detection
+- **snapshot validation** -- Output stability
+- **contract drift validation** -- Contract vs. code consistency
+- **public API drift checks** -- API surface stability
+- **required file integrity checks** -- Critical file protection
 
 ## Default Gates
 

@@ -18,6 +18,10 @@ export default defineConfig({
 					],
 				},
 				{
+					label: 'Commands',
+					autogenerate: { directory: 'commands' },
+				},
+				{
 					label: 'Concepts',
 					items: [
 						{ label: 'Contracts', slug: 'concepts/contracts' },
@@ -27,10 +31,6 @@ export default defineConfig({
 						{ label: 'Conversations', slug: 'concepts/conversations' },
 						{ label: 'AI Integration', slug: 'concepts/ai-integration' },
 					],
-				},
-				{
-					label: 'Commands',
-					autogenerate: { directory: 'commands' },
 				},
 				{
 					label: 'Reference',

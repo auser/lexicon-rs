@@ -1,9 +1,20 @@
 ---
 title: Conformance Suites
-description: Auto-generated test harnesses that verify your code against contracts.
+description: Reusable test harnesses that verify your code against contracts.
 ---
 
 Conformance suites are test harnesses generated from contracts. They translate your contract's invariants, required semantics, and forbidden semantics into Rust test functions that you fill in with real assertions.
+
+The core idea: **make conformance suites reusable**. Lexicon guides you toward reusable structure, not scattered ad hoc tests. Multiple implementations can be tested against the same contract, and the harness logic is shared.
+
+The generated approach supports:
+
+- **shared harness logic** -- common setup and assertions
+- **implementation adapters** -- each implementation provides a factory or trait impl
+- **fixture reuse** -- test data and setup shared across implementations
+- **table-driven cases** -- where appropriate for systematic coverage
+- **extension points** -- for implementation-specific behavior beyond the contract
+- **separation between required contract tests and optional implementation tests**
 
 ## Harness Patterns
 
@@ -107,6 +118,12 @@ The generator reads a `Contract` and produces test code:
 3. **Forbidden semantics** become test functions that verify the behavior does NOT occur
 4. **Test tags** on semantics link back to contract IDs for traceability
 
+## Conformance and the Verification Pipeline
+
+Conformance coverage feeds directly into the scoring and verification systems. Each contract clause can reference tests or test tags, and `lexicon verify` checks how many contract clauses are exercised by tests. Missing coverage is surfaced in the score breakdown and in `lexicon doctor` reports.
+
+This means the system can tell you not just whether tests pass, but whether your tests actually cover what the contract requires.
+
 ## Configuring Conformance Style
 
 Set the style in `.lexicon/manifest.toml` under preferences:
@@ -123,7 +140,16 @@ conformance_style = "trait_based"  # or "factory_based"
 lexicon conformance add <contract-id>
 ```
 
-This generates the harness code at `tests/conformance/<contract-id>.rs`.
+This opens a conversational workflow that:
+
+1. Inspects the contract artifacts
+2. Infers trait/factory/test harness structure from your code
+3. Proposes reusable conformance scaffolding
+4. Lets you refine it conversationally
+5. Optionally uses AI to improve harness completeness
+6. Preserves the distinction between stable conformance obligations, generated starter tests, and optional/advisory tests
+
+The generated harness code is placed at `tests/conformance/<contract-id>.rs`.
 
 To regenerate after contract changes:
 

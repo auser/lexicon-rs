@@ -5,6 +5,17 @@ description: Behavioral specifications that define what your code must and must 
 
 Contracts are the primary artifact in lexicon. A contract declares the stable behavioral specification for a component -- what it must do, what it must not do, and what is explicitly out of scope.
 
+The core idea: **make stable contracts explicit**. Contracts govern what the API exposes. They are not documentation -- they are enforceable declarations that the verification pipeline checks against.
+
+The contract system clearly distinguishes between:
+
+- **stable contract** -- behavior that is committed and enforced
+- **draft contract** -- behavior being defined but not yet enforced
+- **advisory notes** -- implementation hints and non-goals that inform but do not constrain
+- **speculative ideas** -- explicitly separated from stable requirements
+
+Do not blur these together. This separation is what makes contracts safe for AI-assisted workflows -- an AI tool can read a contract and immediately understand what can and cannot change.
+
 Contracts are stored as TOML files at `specs/contracts/<id>.toml`.
 
 ## Contract Structure
@@ -63,6 +74,8 @@ Invariants are conditions that must always hold. Each invariant has an `id`, `de
 
 **Required semantics** declare behavior the implementation must provide. **Forbidden semantics** declare behavior that must never occur. Each has an `id`, `description`, and optional `test_tags` for linking to conformance tests.
 
+Forbidden semantics are especially important for AI safety. They make it explicit what an AI assistant must not introduce, even if it seems "locally clever."
+
 ## Edge Cases
 
 Edge cases describe specific scenarios with expected behavior. Each has an `id`, `scenario` description, and `expected_behavior`.
@@ -73,7 +86,7 @@ Examples have a `title`, `description`, and optional `code` snippet.
 
 ## Version History
 
-The `history` array tracks contract changes with `version`, `date`, `description`, and `author` fields.
+The `history` array tracks contract changes with `version`, `date`, `description`, and `author` fields. Rewriting contract semantics without updating contract status and history is a policy violation that lexicon detects and flags.
 
 ## TOML Example
 
@@ -130,6 +143,19 @@ Use the interactive workflow:
 ```bash
 lexicon contract new
 ```
+
+This does not just dump a static file. Instead, it opens an interactive, guided workflow that:
+
+1. Inspects the repo and infers likely public API shape
+2. Asks structured questions about scope, capabilities, and invariants
+3. Proposes an initial contract draft
+4. Shows the draft for review
+5. Opens an AI-assisted refinement conversation
+6. Lets you iterate on the artifact conversationally
+7. Preserves explicit boundaries between stable contract and speculative ideas
+8. Validates the result and writes the final contract
+
+The tool treats artifact creation as an evolving conversation, not a one-shot form.
 
 Or list existing contracts:
 
