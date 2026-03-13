@@ -3,11 +3,9 @@ use crate::error::AiResult;
 /// Trait for AI provider integration.
 ///
 /// This defines the boundary between lexicon and external AI services.
-/// In v1, no live AI provider is implemented — prompts are prepared
-/// for manual use with Claude Code or future API integration.
 pub trait AiProvider {
-    /// Enhance a proposed artifact draft with AI suggestions.
-    fn enhance_proposal(&self, prompt: &str, context: &str) -> AiResult<String>;
+    /// Generate an artifact or enhancement given a system prompt and user message.
+    fn complete(&self, system: &str, user_message: &str) -> AiResult<String>;
 
     /// Generate an improvement suggestion for a failing verification.
     fn suggest_improvement(&self, context: &str, failure: &str) -> AiResult<String>;
@@ -20,7 +18,7 @@ pub trait AiProvider {
 pub struct NoOpProvider;
 
 impl AiProvider for NoOpProvider {
-    fn enhance_proposal(&self, _prompt: &str, _context: &str) -> AiResult<String> {
+    fn complete(&self, _system: &str, _user_message: &str) -> AiResult<String> {
         Err(crate::error::AiError::NotAvailable)
     }
 

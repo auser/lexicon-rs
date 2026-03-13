@@ -23,18 +23,27 @@ pub struct GeneratedArtifact {
     pub format: String,
 }
 
+/// Result of artifact generation, including any context warnings.
+#[derive(Debug, Clone)]
+pub struct GenerateResult {
+    /// The generated artifact.
+    pub artifact: GeneratedArtifact,
+    /// Warnings from context loading (e.g. missing manifest, no contracts).
+    pub warnings: Vec<String>,
+}
+
 /// Generate an artifact from a natural language intent.
 pub fn generate_artifact(
     provider: &dyn AiProvider,
     layout: &RepoLayout,
     kind: ArtifactKind,
     intent: &str,
-) -> AiResult<GeneratedArtifact> {
-    let context = load_context(layout);
+) -> AiResult<GenerateResult> {
+    let (context, warnings) = load_context(layout);
     let system = system_prompt(kind);
     let user_msg = intent_prompt(kind, intent, &context);
 
-    let content = provider.enhance_proposal(system, &user_msg)?;
+    let content = provider.complete(system, &user_msg)?;
 
     let slug = slugify(intent);
     let (path, format) = match kind {
@@ -46,12 +55,34 @@ pub fn generate_artifact(
         ArtifactKind::Improve => ("".to_string(), "markdown".to_string()),
     };
 
-    Ok(GeneratedArtifact {
-        kind,
-        path,
-        content,
-        format,
+    Ok(GenerateResult {
+        artifact: GeneratedArtifact {
+            kind,
+            path,
+            content,
+            format,
+        },
+        warnings,
     })
+}
+
+/// Generate multiple artifacts (contract + conformance + behavior) from a single intent.
+pub fn generate_multi_artifact(
+    provider: &dyn AiProvider,
+    layout: &RepoLayout,
+    intent: &str,
+) -> AiResult<Vec<GenerateResult>> {
+    let kinds = [
+        ArtifactKind::Contract,
+        ArtifactKind::Conformance,
+        ArtifactKind::Behavior,
+    ];
+
+    let mut results = Vec::new();
+    for kind in kinds {
+        results.push(generate_artifact(provider, layout, kind, intent)?);
+    }
+    Ok(results)
 }
 
 /// Generate improvement suggestions for the repository.
@@ -59,28 +90,40 @@ pub fn generate_improvements(
     provider: &dyn AiProvider,
     layout: &RepoLayout,
     goal: Option<&str>,
-) -> AiResult<String> {
-    let context = load_context(layout);
-    let artifact_summary = ""; // Could include current artifacts summary
+) -> AiResult<(String, Vec<String>)> {
+    let (context, warnings) = load_context(layout);
+    let artifact_summary = "";
     let user_msg = crate::prompt::improve_prompt(&context, artifact_summary, goal);
     let system = system_prompt(ArtifactKind::Improve);
 
-    provider.enhance_proposal(system, &user_msg)
+    let result = provider.complete(system, &user_msg)?;
+    Ok((result, warnings))
 }
 
-/// Load repo context for AI prompts. Returns empty string on any error.
-fn load_context(layout: &RepoLayout) -> String {
+/// Load repo context for AI prompts. Returns the context string and any warnings.
+pub fn load_context(layout: &RepoLayout) -> (String, Vec<String>) {
+    let mut warnings = Vec::new();
+
     let manifest_path = layout.manifest_path();
     let manifest = match std::fs::read_to_string(&manifest_path) {
         Ok(text) => match toml::from_str(&text) {
             Ok(m) => m,
-            Err(_) => return String::new(),
+            Err(e) => {
+                warnings.push(format!("Failed to parse manifest: {e}"));
+                return (String::new(), warnings);
+            }
         },
-        Err(_) => return String::new(),
+        Err(_) => {
+            warnings.push("No manifest found — AI will have limited context".to_string());
+            return (String::new(), warnings);
+        }
     };
 
     let contracts_dir = layout.contracts_dir();
     let contracts = load_contracts(&contracts_dir);
+    if contracts.is_empty() {
+        warnings.push("No contracts found — AI context will lack contract details".to_string());
+    }
 
     let score_path = layout.scoring_model_path();
     let score_model = std::fs::read_to_string(&score_path)
@@ -92,7 +135,8 @@ fn load_context(layout: &RepoLayout) -> String {
         .ok()
         .and_then(|t| toml::from_str(&t).ok());
 
-    assemble_context(&manifest, &contracts, score_model.as_ref(), gates_model.as_ref())
+    let ctx = assemble_context(&manifest, &contracts, score_model.as_ref(), gates_model.as_ref());
+    (ctx, warnings)
 }
 
 fn load_contracts(dir: &std::path::Path) -> Vec<lexicon_spec::contract::Contract> {

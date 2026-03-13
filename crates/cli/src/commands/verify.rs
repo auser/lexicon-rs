@@ -1,7 +1,9 @@
 use lexicon_core::verify::verify;
 use lexicon_gates::result::GateOutcome;
+use lexicon_repo::detect::detect_mode;
 use lexicon_repo::layout::RepoLayout;
 use lexicon_scoring::engine::Verdict;
+use lexicon_spec::mode::OperatingMode;
 
 use crate::output;
 
@@ -96,6 +98,20 @@ pub fn run() -> miette::Result<()> {
         output::success("All gates passed");
     } else {
         output::error("Some gates failed");
+    }
+
+    // Mode-aware suggestion
+    let mode = detect_mode(&layout);
+    match mode {
+        OperatingMode::Workspace => {
+            println!();
+            output::info("Run `lexicon workspace verify` for workspace-level checks.");
+        }
+        OperatingMode::Ecosystem => {
+            println!();
+            output::info("Run `lexicon ecosystem verify` for ecosystem-level checks.");
+        }
+        OperatingMode::Repo => {}
     }
 
     Ok(())

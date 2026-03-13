@@ -28,6 +28,7 @@ pub fn draw(f: &mut Frame, state: &AppState) {
         Tab::Score => draw_score(f, state, chunks[1]),
         Tab::Api => draw_api_tab(f, state, chunks[1]),
         Tab::Coverage => draw_coverage_tab(f, state, chunks[1]),
+        Tab::Architecture => draw_architecture_tab(f, state, chunks[1]),
         Tab::Help => draw_help(f, chunks[1]),
     }
 
@@ -35,7 +36,7 @@ pub fn draw(f: &mut Frame, state: &AppState) {
 }
 
 fn draw_tabs(f: &mut Frame, state: &AppState, area: Rect) {
-    let titles: Vec<Line> = Tab::all()
+    let titles: Vec<Line> = state.tabs
         .iter()
         .map(|t| {
             let style = if *t == state.tab {
@@ -47,9 +48,14 @@ fn draw_tabs(f: &mut Frame, state: &AppState, area: Rect) {
         })
         .collect();
 
-    let idx = Tab::all().iter().position(|t| *t == state.tab).unwrap_or(0);
+    let idx = state.tabs.iter().position(|t| *t == state.tab).unwrap_or(0);
+    let mode_label = match state.mode {
+        lexicon_spec::mode::OperatingMode::Repo => " lexicon [Repo] ",
+        lexicon_spec::mode::OperatingMode::Workspace => " lexicon [Workspace] ",
+        lexicon_spec::mode::OperatingMode::Ecosystem => " lexicon [Ecosystem] ",
+    };
     let tabs = Tabs::new(titles)
-        .block(Block::default().borders(Borders::ALL).title(" lexicon "))
+        .block(Block::default().borders(Borders::ALL).title(mode_label))
         .select(idx)
         .highlight_style(Style::default().fg(Color::Cyan));
 
@@ -488,6 +494,72 @@ fn draw_coverage_tab(f: &mut Frame, state: &AppState, area: Rect) {
             .block(Block::default().borders(Borders::ALL).title(" Uncovered Clauses "));
         f.render_widget(uncovered_list, detail_chunks[1]);
     }
+}
+
+fn draw_architecture_tab(f: &mut Frame, state: &AppState, area: Rect) {
+    let arch_rules_path = state.layout.architecture_rules_path();
+    let graph_path = state.layout.architecture_graph_path();
+
+    let has_rules = arch_rules_path.is_file();
+    let has_graph = graph_path.is_file();
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(6), Constraint::Min(0)])
+        .split(area);
+
+    // Status summary
+    let mode_info = match state.mode {
+        lexicon_spec::mode::OperatingMode::Workspace => "Workspace Mode — architecture governance active",
+        lexicon_spec::mode::OperatingMode::Ecosystem => "Ecosystem Mode — full governance active",
+        _ => "Repo Mode — run `lexicon workspace init` to enable",
+    };
+
+    let lines = vec![
+        Line::from(Span::styled(
+            mode_info,
+            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+        )),
+        Line::from(""),
+        Line::from(format!(
+            "  Architecture rules: {}",
+            if has_rules { "✓ loaded" } else { "✗ not found" }
+        )),
+        Line::from(format!(
+            "  Architecture graph: {}",
+            if has_graph { "✓ loaded" } else { "✗ not generated" }
+        )),
+    ];
+
+    let summary = Paragraph::new(lines)
+        .block(Block::default().borders(Borders::ALL).title(" Architecture "));
+    f.render_widget(summary, chunks[0]);
+
+    // Crate roles / dependency info (if workspace manifest exists)
+    let ws_path = state.layout.workspace_manifest_path();
+    let info = if let Ok(text) = std::fs::read_to_string(&ws_path) {
+        if let Ok(ws) = toml::from_str::<lexicon_spec::workspace::WorkspaceManifest>(&text) {
+            let mut role_lines: Vec<Line> = Vec::new();
+            for cr in &ws.crate_roles {
+                role_lines.push(Line::from(format!(
+                    "  {:20} {:?}  {}",
+                    cr.name, cr.role, cr.description
+                )));
+            }
+            if role_lines.is_empty() {
+                role_lines.push(Line::from("  No crate roles assigned"));
+            }
+            role_lines
+        } else {
+            vec![Line::from("  Could not parse workspace manifest")]
+        }
+    } else {
+        vec![Line::from("  No workspace manifest found. Run `lexicon workspace init`.")]
+    };
+
+    let roles_para = Paragraph::new(info)
+        .block(Block::default().borders(Borders::ALL).title(" Crate Roles "));
+    f.render_widget(roles_para, chunks[1]);
 }
 
 fn draw_help(f: &mut Frame, area: Rect) {

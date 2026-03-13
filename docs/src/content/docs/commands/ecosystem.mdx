@@ -1,0 +1,78 @@
+---
+title: ecosystem
+description: Ecosystem governance commands for multi-repository projects.
+---
+
+The `ecosystem` command group manages governance across multiple repositories.
+
+## `lexicon ecosystem init`
+
+Initialize ecosystem governance. Requires `lexicon init` to have been run first.
+
+```bash
+lexicon ecosystem init
+```
+
+This command:
+1. Creates `.lexicon/ecosystem.toml` with a default manifest
+2. Creates `.lexicon/ecosystem/` directory for shared state
+3. Infers the ecosystem name from the directory name
+
+After initialization, edit `ecosystem.toml` to add repository entries.
+
+### Ecosystem Manifest
+
+```toml
+name = "my-ecosystem"
+repos = []
+shared_contracts = []
+governance_rules = []
+```
+
+Add repositories to the manifest:
+
+```toml
+[[repos]]
+name = "core-lib"
+url = "https://github.com/org/core-lib"
+role = "foundation"
+
+[[repos]]
+name = "web-api"
+url = "https://github.com/org/web-api"
+role = "application"
+```
+
+### Repository Roles
+
+| Role | Description |
+|------|-------------|
+| Foundation | Core libraries that others depend on |
+| Application | End-user facing applications |
+| Infrastructure | Build tools, CI/CD, deployment |
+| Support | Documentation, examples, templates |
+| Experimental | Unstable or prototype repositories |
+
+## `lexicon ecosystem verify`
+
+Verify ecosystem governance configuration.
+
+```bash
+lexicon ecosystem verify
+```
+
+Checks:
+- Ecosystem manifest exists and is valid
+- At least one repository is registered
+
+## `lexicon ecosystem doctor`
+
+Check ecosystem health and report issues.
+
+```bash
+lexicon ecosystem doctor
+```
+
+Reports on:
+- Missing ecosystem manifest
+- Missing ecosystem directory

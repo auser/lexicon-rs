@@ -75,6 +75,32 @@ impl RepoLayout {
         self.auth_dir().join(format!("{provider}.json"))
     }
 
+    // --- mode-aware paths ---
+
+    pub fn workspace_manifest_path(&self) -> PathBuf {
+        self.lexicon_dir().join("workspace.toml")
+    }
+
+    pub fn ecosystem_manifest_path(&self) -> PathBuf {
+        self.lexicon_dir().join("ecosystem.toml")
+    }
+
+    pub fn architecture_dir(&self) -> PathBuf {
+        self.lexicon_dir().join("architecture")
+    }
+
+    pub fn architecture_rules_path(&self) -> PathBuf {
+        self.architecture_dir().join("rules.toml")
+    }
+
+    pub fn architecture_graph_path(&self) -> PathBuf {
+        self.architecture_dir().join("graph.json")
+    }
+
+    pub fn ecosystem_dir(&self) -> PathBuf {
+        self.lexicon_dir().join("ecosystem")
+    }
+
     // --- specs/ directories ---
 
     pub fn specs_dir(&self) -> PathBuf {
@@ -139,7 +165,7 @@ impl RepoLayout {
 
     /// All directories that should be created during `lexicon init`.
     pub fn init_dirs(&self) -> Vec<PathBuf> {
-        vec![
+        let mut dirs = vec![
             self.lexicon_dir(),
             self.context_dir(),
             self.conversations_dir(),
@@ -153,7 +179,15 @@ impl RepoLayout {
             self.scoring_dir(),
             self.non_goals_dir(),
             self.conformance_specs_dir(),
-        ]
+        ];
+
+        // Only create architecture/ and ecosystem/ dirs if .lexicon/ already exists.
+        if self.lexicon_dir().is_dir() {
+            dirs.push(self.architecture_dir());
+            dirs.push(self.ecosystem_dir());
+        }
+
+        dirs
     }
 
     /// Returns true if lexicon has been initialized in this repo.
@@ -192,5 +226,34 @@ mod tests {
     fn test_init_dirs_count() {
         let layout = RepoLayout::new(PathBuf::from("/tmp/test"));
         assert!(layout.init_dirs().len() >= 10);
+    }
+
+    #[test]
+    fn test_mode_aware_paths() {
+        let layout = RepoLayout::new(PathBuf::from("/tmp/my-repo"));
+        assert_eq!(
+            layout.workspace_manifest_path(),
+            PathBuf::from("/tmp/my-repo/.lexicon/workspace.toml")
+        );
+        assert_eq!(
+            layout.ecosystem_manifest_path(),
+            PathBuf::from("/tmp/my-repo/.lexicon/ecosystem.toml")
+        );
+        assert_eq!(
+            layout.architecture_dir(),
+            PathBuf::from("/tmp/my-repo/.lexicon/architecture")
+        );
+        assert_eq!(
+            layout.architecture_rules_path(),
+            PathBuf::from("/tmp/my-repo/.lexicon/architecture/rules.toml")
+        );
+        assert_eq!(
+            layout.architecture_graph_path(),
+            PathBuf::from("/tmp/my-repo/.lexicon/architecture/graph.json")
+        );
+        assert_eq!(
+            layout.ecosystem_dir(),
+            PathBuf::from("/tmp/my-repo/.lexicon/ecosystem")
+        );
     }
 }

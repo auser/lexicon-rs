@@ -1,79 +1,79 @@
 ---
 /**
  * Verification pipeline diagram.
- * Shows the flow: Contracts → Conformance → Tests → Coverage → API → Gates → Scoring → Result
+ * Horizontal flow: Contracts -> Conformance Tests -> Coverage Analysis ->
+ * API Validation -> Gates -> Scoring -> Verification Result
  */
 ---
 
-<figure class="diagram-wrapper">
-  <svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Verification pipeline: Contracts flow through conformance, tests, coverage, API validation, gates, scoring, to a verification result">
+<figure class="diagram-wrapper" aria-label="Verification Pipeline">
+  <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Verification pipeline: contracts flow through conformance, coverage, API validation, gates, scoring, to a verification result">
     <defs>
-      <marker id="vp-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-        <path d="M0,0 L8,3 L0,6" fill="none" stroke="var(--diagram-arrow)" stroke-width="1.2" />
+      <marker id="vp-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <path d="M0,0 L10,3.5 L0,7" fill="none" stroke="var(--diagram-border)" stroke-width="1.2" stroke-linejoin="round" />
       </marker>
-      <linearGradient id="vp-result-pass" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#22c55e" stop-opacity="0.2" />
-        <stop offset="100%" stop-color="#22c55e" stop-opacity="0.05" />
+      <marker id="vp-arrow-result" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <path d="M0,0 L10,3.5 L0,7" fill="none" stroke="var(--diagram-secondary)" stroke-width="1.4" stroke-linejoin="round" />
+      </marker>
+      <linearGradient id="vp-result-grad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--diagram-secondary)" stop-opacity="0.22" />
+        <stop offset="100%" stop-color="var(--diagram-secondary)" stop-opacity="0.06" />
       </linearGradient>
+      <filter id="vp-shadow" x="-4%" y="-4%" width="108%" height="108%">
+        <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="var(--diagram-text)" flood-opacity="0.05" />
+      </filter>
     </defs>
 
-    <!-- Pipeline stages -->
+    <!-- Title -->
+    <text x="380" y="22" text-anchor="middle" class="vp-title" fill="var(--diagram-text-muted)">VERIFICATION PIPELINE</text>
+    <line x1="140" y1="32" x2="620" y2="32" stroke="var(--diagram-border)" stroke-width="0.5" stroke-opacity="0.4" stroke-dasharray="4,4" />
+
     <!-- Stage 1: Contracts -->
-    <rect x="12" y="60" width="80" height="80" rx="10" class="vp-node vp-node-spec" />
-    <text x="52" y="96" text-anchor="middle" class="vp-label" fill="var(--diagram-text)">Contracts</text>
-    <text x="52" y="113" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">define</text>
+    <rect x="12" y="60" width="88" height="88" rx="12" class="vp-node vp-node-primary" filter="url(#vp-shadow)" />
+    <text x="56" y="98" text-anchor="middle" class="vp-label" fill="var(--diagram-text)">Contracts</text>
+    <text x="56" y="116" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">define</text>
+    <line x1="100" y1="104" x2="116" y2="104" stroke="var(--diagram-border)" stroke-width="1.5" marker-end="url(#vp-arrow)" />
 
-    <line x1="92" y1="100" x2="108" y2="100" stroke="var(--diagram-arrow)" stroke-width="1.5" marker-end="url(#vp-arrow)" />
+    <!-- Stage 2: Conformance Tests -->
+    <rect x="118" y="60" width="88" height="88" rx="12" class="vp-node vp-node-primary" filter="url(#vp-shadow)" />
+    <text x="162" y="93" text-anchor="middle" class="vp-label" fill="var(--diagram-text)">Confor-</text>
+    <text x="162" y="108" text-anchor="middle" class="vp-label" fill="var(--diagram-text)">mance</text>
+    <text x="162" y="126" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">prove</text>
+    <line x1="206" y1="104" x2="222" y2="104" stroke="var(--diagram-border)" stroke-width="1.5" marker-end="url(#vp-arrow)" />
 
-    <!-- Stage 2: Conformance -->
-    <rect x="110" y="60" width="80" height="80" rx="10" class="vp-node vp-node-test" />
-    <text x="150" y="93" text-anchor="middle" class="vp-label" fill="var(--diagram-text)">Confor-</text>
-    <text x="150" y="108" text-anchor="middle" class="vp-label" fill="var(--diagram-text)">mance</text>
-    <text x="150" y="125" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">prove</text>
-
-    <line x1="190" y1="100" x2="206" y2="100" stroke="var(--diagram-arrow)" stroke-width="1.5" marker-end="url(#vp-arrow)" />
-
-    <!-- Stage 3: Coverage -->
-    <rect x="208" y="60" width="80" height="80" rx="10" class="vp-node vp-node-test" />
-    <text x="248" y="96" text-anchor="middle" class="vp-label" fill="var(--diagram-text)">Coverage</text>
-    <text x="248" y="113" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">measure</text>
-
-    <line x1="288" y1="100" x2="304" y2="100" stroke="var(--diagram-arrow)" stroke-width="1.5" marker-end="url(#vp-arrow)" />
+    <!-- Stage 3: Coverage Analysis -->
+    <rect x="224" y="60" width="88" height="88" rx="12" class="vp-node vp-node-primary" filter="url(#vp-shadow)" />
+    <text x="268" y="98" text-anchor="middle" class="vp-label" fill="var(--diagram-text)">Coverage</text>
+    <text x="268" y="116" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">measure</text>
+    <line x1="312" y1="104" x2="328" y2="104" stroke="var(--diagram-border)" stroke-width="1.5" marker-end="url(#vp-arrow)" />
 
     <!-- Stage 4: API Validation -->
-    <rect x="306" y="60" width="80" height="80" rx="10" class="vp-node vp-node-check" />
-    <text x="346" y="93" text-anchor="middle" class="vp-label" fill="var(--diagram-text)">API</text>
-    <text x="346" y="108" text-anchor="middle" class="vp-label" fill="var(--diagram-text)">Drift</text>
-    <text x="346" y="125" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">validate</text>
-
-    <line x1="386" y1="100" x2="402" y2="100" stroke="var(--diagram-arrow)" stroke-width="1.5" marker-end="url(#vp-arrow)" />
+    <rect x="330" y="60" width="88" height="88" rx="12" class="vp-node vp-node-accent" filter="url(#vp-shadow)" />
+    <text x="374" y="93" text-anchor="middle" class="vp-label" fill="var(--diagram-text)">API</text>
+    <text x="374" y="108" text-anchor="middle" class="vp-label" fill="var(--diagram-text)">Validation</text>
+    <text x="374" y="126" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">drift check</text>
+    <line x1="418" y1="104" x2="434" y2="104" stroke="var(--diagram-border)" stroke-width="1.5" marker-end="url(#vp-arrow)" />
 
     <!-- Stage 5: Gates -->
-    <rect x="404" y="60" width="80" height="80" rx="10" class="vp-node vp-node-gate" />
-    <text x="444" y="96" text-anchor="middle" class="vp-label" fill="var(--diagram-text)">Gates</text>
-    <text x="444" y="113" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">enforce</text>
-
-    <line x1="484" y1="100" x2="500" y2="100" stroke="var(--diagram-arrow)" stroke-width="1.5" marker-end="url(#vp-arrow)" />
+    <rect x="436" y="60" width="88" height="88" rx="12" class="vp-node vp-node-accent" filter="url(#vp-shadow)" />
+    <text x="480" y="98" text-anchor="middle" class="vp-label" fill="var(--diagram-text)">Gates</text>
+    <text x="480" y="116" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">enforce</text>
+    <line x1="524" y1="104" x2="540" y2="104" stroke="var(--diagram-border)" stroke-width="1.5" marker-end="url(#vp-arrow)" />
 
     <!-- Stage 6: Scoring -->
-    <rect x="502" y="60" width="80" height="80" rx="10" class="vp-node vp-node-score" />
-    <text x="542" y="96" text-anchor="middle" class="vp-label" fill="var(--diagram-text)">Scoring</text>
-    <text x="542" y="113" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">evaluate</text>
+    <rect x="542" y="60" width="88" height="88" rx="12" class="vp-node vp-node-secondary" filter="url(#vp-shadow)" />
+    <text x="586" y="98" text-anchor="middle" class="vp-label" fill="var(--diagram-text)">Scoring</text>
+    <text x="586" y="116" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">evaluate</text>
+    <line x1="630" y1="104" x2="650" y2="104" stroke="var(--diagram-secondary)" stroke-width="2" marker-end="url(#vp-arrow-result)" />
 
-    <line x1="582" y1="100" x2="606" y2="100" stroke="var(--diagram-arrow)" stroke-width="2" marker-end="url(#vp-arrow)" />
+    <!-- Stage 7: Verification Result -->
+    <rect x="652" y="50" width="100" height="108" rx="14" fill="url(#vp-result-grad)" stroke="var(--diagram-secondary)" stroke-width="2" stroke-opacity="0.7" filter="url(#vp-shadow)" />
+    <text x="702" y="90" text-anchor="middle" class="vp-label-result" fill="var(--diagram-text)">Verdict</text>
+    <text x="702" y="110" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">Pass / Warn / Fail</text>
+    <text x="702" y="130" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">+ Audit Record</text>
 
-    <!-- Stage 7: Result -->
-    <rect x="608" y="52" width="100" height="96" rx="12" fill="url(#vp-result-pass)" stroke="#22c55e" stroke-width="2" stroke-opacity="0.5" />
-    <text x="658" y="88" text-anchor="middle" class="vp-label-result" fill="var(--diagram-text)">Verdict</text>
-    <text x="658" y="108" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">Pass / Warn / Fail</text>
-    <text x="658" y="128" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">+ Audit Record</text>
-
-    <!-- Pipeline label -->
-    <text x="360" y="28" text-anchor="middle" class="vp-title" fill="var(--diagram-text-muted)">VERIFICATION PIPELINE</text>
-    <line x1="120" y1="38" x2="600" y2="38" stroke="var(--diagram-border)" stroke-width="1" stroke-dasharray="4,4" />
-
-    <!-- Bottom description -->
-    <text x="360" y="178" text-anchor="middle" class="vp-sublabel" fill="var(--diagram-text-muted)">lexicon verify</text>
+    <!-- Bottom annotation -->
+    <text x="380" y="196" text-anchor="middle" class="vp-cmd" fill="var(--diagram-text-muted)">lexicon verify</text>
   </svg>
 </figure>
 
@@ -84,34 +84,40 @@
   }
   .diagram-wrapper svg {
     width: 100%;
-    max-width: 720px;
+    max-width: 760px;
     height: auto;
     margin: 0 auto;
     display: block;
-    --diagram-accent: #6366f1;
-    --diagram-text: var(--sl-color-text, #1e293b);
-    --diagram-text-muted: var(--sl-color-text-accent, #64748b);
-    --diagram-border: var(--sl-color-gray-4, #cbd5e1);
-    --diagram-arrow: var(--sl-color-gray-4, #94a3b8);
-    --diagram-node-bg: var(--sl-color-bg-nav, #ffffff);
+    --diagram-bg: #f8f9fa;
+    --diagram-text: #2d3748;
+    --diagram-text-muted: #718096;
+    --diagram-primary: #4a90d9;
+    --diagram-secondary: #48bb78;
+    --diagram-accent: #ed8936;
+    --diagram-danger: #e53e3e;
+    --diagram-border: #cbd5e1;
+    --diagram-fill: #ffffff;
   }
   :global([data-theme='dark']) .diagram-wrapper svg,
   :global(.sl-theme-dark) .diagram-wrapper svg {
-    --diagram-text: var(--sl-color-text, #e2e8f0);
-    --diagram-text-muted: var(--sl-color-text-accent, #94a3b8);
-    --diagram-border: var(--sl-color-gray-5, #475569);
-    --diagram-arrow: var(--sl-color-gray-5, #64748b);
-    --diagram-node-bg: var(--sl-color-bg-nav, #1e293b);
+    --diagram-bg: #1a1b26;
+    --diagram-text: #e2e8f0;
+    --diagram-text-muted: #a0aec0;
+    --diagram-primary: #7fb3ff;
+    --diagram-secondary: #68d391;
+    --diagram-accent: #fbd38d;
+    --diagram-danger: #fc8181;
+    --diagram-border: #4a5568;
+    --diagram-fill: #24253a;
   }
   .vp-node {
-    fill: var(--diagram-node-bg);
+    fill: var(--diagram-fill);
+    stroke: var(--diagram-border);
     stroke-width: 1.5;
   }
-  .vp-node-spec { stroke: #6366f1; stroke-opacity: 0.6; }
-  .vp-node-test { stroke: #8b5cf6; stroke-opacity: 0.5; }
-  .vp-node-check { stroke: #a78bfa; stroke-opacity: 0.5; }
-  .vp-node-gate { stroke: #f59e0b; stroke-opacity: 0.6; }
-  .vp-node-score { stroke: #06b6d4; stroke-opacity: 0.6; }
+  .vp-node-primary { stroke: var(--diagram-primary); stroke-opacity: 0.7; }
+  .vp-node-accent { stroke: var(--diagram-accent); stroke-opacity: 0.7; }
+  .vp-node-secondary { stroke: var(--diagram-secondary); stroke-opacity: 0.7; }
   .vp-label {
     font-family: var(--sl-font, system-ui, sans-serif);
     font-size: 12px;
@@ -130,8 +136,13 @@
   .vp-title {
     font-family: var(--sl-font, system-ui, sans-serif);
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
+  }
+  .vp-cmd {
+    font-family: var(--sl-font-mono, monospace);
+    font-size: 11px;
+    font-weight: 500;
   }
 </style>

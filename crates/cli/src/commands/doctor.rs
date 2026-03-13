@@ -1,4 +1,6 @@
+use lexicon_repo::detect::detect_mode;
 use lexicon_repo::layout::RepoLayout;
+use lexicon_spec::mode::OperatingMode;
 
 use crate::output;
 
@@ -107,6 +109,20 @@ pub fn run() -> miette::Result<()> {
                 }
             }
         }
+    }
+
+    // Mode-aware suggestion
+    let mode = detect_mode(&layout);
+    match mode {
+        OperatingMode::Workspace => {
+            println!();
+            output::info("Run `lexicon workspace doctor` for workspace-level health checks.");
+        }
+        OperatingMode::Ecosystem => {
+            println!();
+            output::info("Run `lexicon ecosystem doctor` for ecosystem-level health checks.");
+        }
+        OperatingMode::Repo => {}
     }
 
     Ok(())

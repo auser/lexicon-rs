@@ -1,98 +1,126 @@
 ---
 /**
  * Architecture governance diagram.
- * Shows layered crate architecture with dependency law enforcement.
+ * Layered crate architecture with dependency law enforcement.
+ * Bottom: Foundation, Middle: Interface, Above: Adapter, Top: Application.
+ * Downward arrows are allowed (green), upward arrows are forbidden (red, crossed out).
  */
 ---
 
-<figure class="diagram-wrapper">
-  <svg viewBox="0 0 720 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Architecture governance: layered crate architecture with allowed and forbidden dependency directions">
+<figure class="diagram-wrapper" aria-label="Architecture Governance">
+  <svg viewBox="0 0 760 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Architecture governance: layered crate architecture from Foundation at bottom through Interface and Adapter to Application at top, with allowed downward dependencies and forbidden upward dependencies">
     <defs>
-      <marker id="ag-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-        <path d="M0,0 L8,3 L0,6" fill="none" stroke="var(--diagram-arrow)" stroke-width="1.2" />
+      <marker id="ag-arrow-ok" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <path d="M0,0 L10,3.5 L0,7" fill="none" stroke="var(--diagram-secondary)" stroke-width="1.3" stroke-linejoin="round" />
       </marker>
-      <marker id="ag-arrow-ok" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-        <path d="M0,0 L8,3 L0,6" fill="none" stroke="#22c55e" stroke-width="1.2" />
+      <marker id="ag-arrow-no" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <path d="M0,0 L10,3.5 L0,7" fill="none" stroke="var(--diagram-danger)" stroke-width="1.3" stroke-linejoin="round" />
       </marker>
-      <marker id="ag-arrow-no" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-        <path d="M0,0 L8,3 L0,6" fill="none" stroke="#ef4444" stroke-width="1.2" />
-      </marker>
+      <linearGradient id="ag-layer-app" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="var(--diagram-accent)" stop-opacity="0.06" />
+        <stop offset="100%" stop-color="var(--diagram-accent)" stop-opacity="0.02" />
+      </linearGradient>
+      <linearGradient id="ag-layer-adapt" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="var(--diagram-primary)" stop-opacity="0.05" />
+        <stop offset="100%" stop-color="var(--diagram-primary)" stop-opacity="0.02" />
+      </linearGradient>
+      <linearGradient id="ag-layer-iface" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="var(--diagram-secondary)" stop-opacity="0.06" />
+        <stop offset="100%" stop-color="var(--diagram-secondary)" stop-opacity="0.02" />
+      </linearGradient>
+      <linearGradient id="ag-layer-found" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="var(--diagram-primary)" stop-opacity="0.08" />
+        <stop offset="100%" stop-color="var(--diagram-primary)" stop-opacity="0.03" />
+      </linearGradient>
+      <filter id="ag-shadow" x="-3%" y="-3%" width="106%" height="106%">
+        <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="var(--diagram-text)" flood-opacity="0.05" />
+      </filter>
     </defs>
 
     <!-- Title -->
-    <text x="360" y="28" text-anchor="middle" class="ag-title" fill="var(--diagram-text-muted)">DEPENDENCY LAW</text>
+    <text x="380" y="24" text-anchor="middle" class="ag-title" fill="var(--diagram-text)">DEPENDENCY LAW</text>
+    <line x1="220" y1="34" x2="540" y2="34" stroke="var(--diagram-border)" stroke-width="0.5" stroke-opacity="0.5" />
+
+    <!-- Layer backgrounds -->
+    <rect x="100" y="48" width="480" height="86" rx="8" fill="url(#ag-layer-app)" />
+    <rect x="100" y="142" width="480" height="86" rx="8" fill="url(#ag-layer-adapt)" />
+    <rect x="100" y="236" width="480" height="86" rx="8" fill="url(#ag-layer-iface)" />
+    <rect x="100" y="330" width="480" height="86" rx="8" fill="url(#ag-layer-found)" />
 
     <!-- Layer labels (left side) -->
-    <text x="30" y="78" class="ag-layer-label" fill="var(--diagram-text-muted)">Application</text>
-    <text x="30" y="158" class="ag-layer-label" fill="var(--diagram-text-muted)">Adapter</text>
-    <text x="30" y="238" class="ag-layer-label" fill="var(--diagram-text-muted)">Interface</text>
-    <text x="30" y="318" class="ag-layer-label" fill="var(--diagram-text-muted)">Foundation</text>
+    <text x="36" y="96" text-anchor="middle" class="ag-layer-label" fill="var(--diagram-text-muted)">APP</text>
+    <text x="36" y="190" text-anchor="middle" class="ag-layer-label" fill="var(--diagram-text-muted)">ADAPTER</text>
+    <text x="36" y="284" text-anchor="middle" class="ag-layer-label" fill="var(--diagram-text-muted)">IFACE</text>
+    <text x="36" y="378" text-anchor="middle" class="ag-layer-label" fill="var(--diagram-text-muted)">FOUND</text>
 
-    <!-- Layer separators -->
-    <line x1="110" y1="110" x2="600" y2="110" stroke="var(--diagram-border)" stroke-width="1" stroke-dasharray="4,4" />
-    <line x1="110" y1="190" x2="600" y2="190" stroke="var(--diagram-border)" stroke-width="1" stroke-dasharray="4,4" />
-    <line x1="110" y1="270" x2="600" y2="270" stroke="var(--diagram-border)" stroke-width="1" stroke-dasharray="4,4" />
+    <!-- Layer dividers -->
+    <line x1="100" y1="134" x2="580" y2="134" stroke="var(--diagram-border)" stroke-width="1" stroke-dasharray="5,4" stroke-opacity="0.4" />
+    <line x1="100" y1="228" x2="580" y2="228" stroke="var(--diagram-border)" stroke-width="1" stroke-dasharray="5,4" stroke-opacity="0.4" />
+    <line x1="100" y1="322" x2="580" y2="322" stroke="var(--diagram-border)" stroke-width="1" stroke-dasharray="5,4" stroke-opacity="0.4" />
 
     <!-- Application layer boxes -->
-    <rect x="130" y="52" width="120" height="48" rx="8" class="ag-node ag-app" />
-    <text x="190" y="80" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Web App</text>
+    <rect x="130" y="62" width="140" height="56" rx="10" class="ag-node ag-app" filter="url(#ag-shadow)" />
+    <text x="200" y="86" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">CLI</text>
+    <text x="200" y="102" text-anchor="middle" class="ag-sublabel" fill="var(--diagram-text-muted)">lexicon binary</text>
 
-    <rect x="270" y="52" width="100" height="48" rx="8" class="ag-node ag-app" />
-    <text x="320" y="80" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">CLI</text>
+    <rect x="290" y="62" width="140" height="56" rx="10" class="ag-node ag-app" filter="url(#ag-shadow)" />
+    <text x="360" y="86" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">TUI</text>
+    <text x="360" y="102" text-anchor="middle" class="ag-sublabel" fill="var(--diagram-text-muted)">dashboard</text>
 
     <!-- Adapter layer boxes -->
-    <rect x="130" y="130" width="130" height="48" rx="8" class="ag-node ag-adapter" />
-    <text x="195" y="158" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Postgres Adapter</text>
+    <rect x="130" y="156" width="160" height="56" rx="10" class="ag-node ag-adapter" filter="url(#ag-shadow)" />
+    <text x="210" y="180" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">TOML Adapter</text>
+    <text x="210" y="196" text-anchor="middle" class="ag-sublabel" fill="var(--diagram-text-muted)">file I/O</text>
 
-    <rect x="280" y="130" width="130" height="48" rx="8" class="ag-node ag-adapter" />
-    <text x="345" y="158" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Redis Adapter</text>
+    <rect x="310" y="156" width="160" height="56" rx="10" class="ag-node ag-adapter" filter="url(#ag-shadow)" />
+    <text x="390" y="180" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Git Adapter</text>
+    <text x="390" y="196" text-anchor="middle" class="ag-sublabel" fill="var(--diagram-text-muted)">repo operations</text>
 
     <!-- Interface layer boxes -->
-    <rect x="130" y="210" width="140" height="48" rx="8" class="ag-node ag-interface" />
-    <text x="200" y="238" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Storage Trait</text>
+    <rect x="130" y="250" width="150" height="56" rx="10" class="ag-node ag-iface" filter="url(#ag-shadow)" />
+    <text x="205" y="274" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Traits</text>
+    <text x="205" y="290" text-anchor="middle" class="ag-sublabel" fill="var(--diagram-text-muted)">port definitions</text>
 
-    <rect x="290" y="210" width="130" height="48" rx="8" class="ag-node ag-interface" />
-    <text x="355" y="238" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Cache Trait</text>
+    <rect x="300" y="250" width="150" height="56" rx="10" class="ag-node ag-iface" filter="url(#ag-shadow)" />
+    <text x="375" y="274" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">APIs</text>
+    <text x="375" y="290" text-anchor="middle" class="ag-sublabel" fill="var(--diagram-text-muted)">public surface</text>
 
     <!-- Foundation layer boxes -->
-    <rect x="130" y="290" width="110" height="48" rx="8" class="ag-node ag-foundation" />
-    <text x="185" y="318" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Core Types</text>
+    <rect x="130" y="344" width="140" height="56" rx="10" class="ag-node ag-found" filter="url(#ag-shadow)" />
+    <text x="200" y="368" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Core Types</text>
+    <text x="200" y="384" text-anchor="middle" class="ag-sublabel" fill="var(--diagram-text-muted)">lexicon-core</text>
 
-    <rect x="260" y="290" width="120" height="48" rx="8" class="ag-node ag-foundation" />
-    <text x="320" y="318" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Serialization</text>
-
-    <!-- Shared Contract box (right side) -->
-    <rect x="490" y="180" width="150" height="56" rx="10" fill="var(--diagram-node-bg)" stroke="#f59e0b" stroke-width="1.5" stroke-opacity="0.6" stroke-dasharray="6,3" />
-    <text x="565" y="204" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Shared Contract</text>
-    <text x="565" y="220" text-anchor="middle" class="ag-sublabel" fill="var(--diagram-text-muted)">Storage trait spec</text>
+    <rect x="290" y="344" width="140" height="56" rx="10" class="ag-node ag-found" filter="url(#ag-shadow)" />
+    <text x="360" y="368" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Spec Parser</text>
+    <text x="360" y="384" text-anchor="middle" class="ag-sublabel" fill="var(--diagram-text-muted)">lexicon-spec</text>
 
     <!-- Allowed arrows (green, downward) -->
-    <line x1="190" y1="100" x2="190" y2="128" stroke="#22c55e" stroke-width="1.5" marker-end="url(#ag-arrow-ok)" />
-    <line x1="195" y1="178" x2="195" y2="208" stroke="#22c55e" stroke-width="1.5" marker-end="url(#ag-arrow-ok)" />
-    <line x1="200" y1="258" x2="195" y2="288" stroke="#22c55e" stroke-width="1.5" marker-end="url(#ag-arrow-ok)" />
-    <line x1="345" y1="178" x2="350" y2="208" stroke="#22c55e" stroke-width="1.5" marker-end="url(#ag-arrow-ok)" />
+    <line x1="200" y1="118" x2="200" y2="154" stroke="var(--diagram-secondary)" stroke-width="1.8" marker-end="url(#ag-arrow-ok)" />
+    <line x1="360" y1="118" x2="370" y2="154" stroke="var(--diagram-secondary)" stroke-width="1.8" marker-end="url(#ag-arrow-ok)" />
+    <line x1="210" y1="212" x2="205" y2="248" stroke="var(--diagram-secondary)" stroke-width="1.8" marker-end="url(#ag-arrow-ok)" />
+    <line x1="390" y1="212" x2="380" y2="248" stroke="var(--diagram-secondary)" stroke-width="1.8" marker-end="url(#ag-arrow-ok)" />
+    <line x1="205" y1="306" x2="200" y2="342" stroke="var(--diagram-secondary)" stroke-width="1.8" marker-end="url(#ag-arrow-ok)" />
+    <line x1="375" y1="306" x2="365" y2="342" stroke="var(--diagram-secondary)" stroke-width="1.8" marker-end="url(#ag-arrow-ok)" />
 
-    <!-- Forbidden arrow (red, upward from foundation to app) -->
-    <path d="M400,314 Q450,314 450,240 Q450,100 400,76" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#ag-arrow-no)" />
+    <!-- Forbidden arrow (red, upward from Foundation to Application) -->
+    <path d="M460,370 Q520,370 520,280 Q520,120 480,90" fill="none" stroke="var(--diagram-danger)" stroke-width="2" stroke-dasharray="8,4" marker-end="url(#ag-arrow-no)" />
 
-    <!-- Forbidden X -->
-    <circle cx="450" cy="200" r="12" fill="var(--diagram-node-bg)" stroke="#ef4444" stroke-width="1.5" />
-    <line x1="444" y1="194" x2="456" y2="206" stroke="#ef4444" stroke-width="2" />
-    <line x1="456" y1="194" x2="444" y2="206" stroke="#ef4444" stroke-width="2" />
+    <!-- Forbidden X circle -->
+    <circle cx="520" cy="228" r="14" fill="var(--diagram-fill)" stroke="var(--diagram-danger)" stroke-width="2" />
+    <line x1="513" y1="221" x2="527" y2="235" stroke="var(--diagram-danger)" stroke-width="2.5" stroke-linecap="round" />
+    <line x1="527" y1="221" x2="513" y2="235" stroke="var(--diagram-danger)" stroke-width="2.5" stroke-linecap="round" />
 
-    <!-- Shared contract arrow -->
-    <line x1="490" y1="208" x2="432" y2="234" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,3" />
+    <!-- Violation label -->
+    <text x="550" y="228" class="ag-violation-label" fill="var(--diagram-danger)">VIOLATION</text>
+    <text x="550" y="242" class="ag-sublabel" fill="var(--diagram-danger)">detected &amp; blocked</text>
 
     <!-- Legend -->
-    <g transform="translate(490, 290)">
-      <line x1="0" y1="10" x2="30" y2="10" stroke="#22c55e" stroke-width="1.5" />
-      <text x="38" y="14" class="ag-sublabel" fill="var(--diagram-text-muted)">allowed dependency</text>
+    <g transform="translate(610, 340)">
+      <line x1="0" y1="12" x2="28" y2="12" stroke="var(--diagram-secondary)" stroke-width="2" />
+      <text x="36" y="16" class="ag-sublabel" fill="var(--diagram-text-muted)">allowed dep</text>
 
-      <line x1="0" y1="30" x2="30" y2="30" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,3" />
-      <text x="38" y="34" class="ag-sublabel" fill="var(--diagram-text-muted)">forbidden dependency</text>
-
-      <line x1="0" y1="50" x2="30" y2="50" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,3" />
-      <text x="38" y="54" class="ag-sublabel" fill="var(--diagram-text-muted)">shared contract</text>
+      <line x1="0" y1="34" x2="28" y2="34" stroke="var(--diagram-danger)" stroke-width="2" stroke-dasharray="6,3" />
+      <text x="36" y="38" class="ag-sublabel" fill="var(--diagram-text-muted)">forbidden dep</text>
     </g>
   </svg>
 </figure>
@@ -104,56 +132,68 @@
   }
   .diagram-wrapper svg {
     width: 100%;
-    max-width: 720px;
+    max-width: 760px;
     height: auto;
     margin: 0 auto;
     display: block;
-    --diagram-text: var(--sl-color-text, #1e293b);
-    --diagram-text-muted: var(--sl-color-text-accent, #64748b);
-    --diagram-border: var(--sl-color-gray-4, #cbd5e1);
-    --diagram-arrow: var(--sl-color-gray-4, #94a3b8);
-    --diagram-node-bg: var(--sl-color-bg-nav, #ffffff);
-    --diagram-node-border: var(--sl-color-gray-4, #e2e8f0);
+    --diagram-bg: #f8f9fa;
+    --diagram-text: #2d3748;
+    --diagram-text-muted: #718096;
+    --diagram-primary: #4a90d9;
+    --diagram-secondary: #48bb78;
+    --diagram-accent: #ed8936;
+    --diagram-danger: #e53e3e;
+    --diagram-border: #cbd5e1;
+    --diagram-fill: #ffffff;
   }
   :global([data-theme='dark']) .diagram-wrapper svg,
   :global(.sl-theme-dark) .diagram-wrapper svg {
-    --diagram-text: var(--sl-color-text, #e2e8f0);
-    --diagram-text-muted: var(--sl-color-text-accent, #94a3b8);
-    --diagram-border: var(--sl-color-gray-5, #475569);
-    --diagram-arrow: var(--sl-color-gray-5, #64748b);
-    --diagram-node-bg: var(--sl-color-bg-nav, #1e293b);
-    --diagram-node-border: var(--sl-color-gray-5, #334155);
+    --diagram-bg: #1a1b26;
+    --diagram-text: #e2e8f0;
+    --diagram-text-muted: #a0aec0;
+    --diagram-primary: #7fb3ff;
+    --diagram-secondary: #68d391;
+    --diagram-accent: #fbd38d;
+    --diagram-danger: #fc8181;
+    --diagram-border: #4a5568;
+    --diagram-fill: #24253a;
   }
   .ag-node {
-    fill: var(--diagram-node-bg);
+    fill: var(--diagram-fill);
     stroke-width: 1.5;
   }
-  .ag-app { stroke: #a78bfa; stroke-opacity: 0.6; }
-  .ag-adapter { stroke: #8b5cf6; stroke-opacity: 0.5; }
-  .ag-interface { stroke: #6366f1; stroke-opacity: 0.6; }
-  .ag-foundation { stroke: #4f46e5; stroke-opacity: 0.7; }
+  .ag-app { stroke: var(--diagram-accent); stroke-opacity: 0.6; }
+  .ag-adapter { stroke: var(--diagram-primary); stroke-opacity: 0.5; }
+  .ag-iface { stroke: var(--diagram-secondary); stroke-opacity: 0.6; }
+  .ag-found { stroke: var(--diagram-primary); stroke-opacity: 0.7; }
   .ag-title {
     font-family: var(--sl-font, system-ui, sans-serif);
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    letter-spacing: 0.12em;
   }
   .ag-layer-label {
     font-family: var(--sl-font, system-ui, sans-serif);
-    font-size: 10px;
-    font-weight: 500;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
   }
   .ag-label {
     font-family: var(--sl-font, system-ui, sans-serif);
-    font-size: 11.5px;
+    font-size: 12.5px;
     font-weight: 600;
   }
   .ag-sublabel {
     font-family: var(--sl-font, system-ui, sans-serif);
     font-size: 10px;
     font-weight: 400;
+  }
+  .ag-violation-label {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 </style>

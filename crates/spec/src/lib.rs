@@ -7,16 +7,20 @@
 pub mod auth;
 pub mod audit;
 pub mod behavior;
+pub mod capability;
 pub mod common;
 pub mod conformance;
 pub mod contract;
+pub mod ecosystem;
 pub mod error;
 pub mod gates;
 pub mod manifest;
+pub mod mode;
 pub mod scoring;
 pub mod session;
 pub mod validation;
 pub mod version;
+pub mod workspace;
 
 #[cfg(test)]
 mod snapshot_tests;

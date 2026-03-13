@@ -1,0 +1,101 @@
+---
+title: Progressive Adoption
+description: How Lexicon scales from a single repo to an entire ecosystem.
+---
+
+import ProgressiveScopeDiagram from '../../../components/diagrams/ProgressiveScopeDiagram.astro';
+
+Lexicon supports three operating modes that progressively expand the scope of governance. Start with what you need — grow into what you want.
+
+<ProgressiveScopeDiagram />
+
+## Operating Modes
+
+### Repo Mode (default)
+
+The starting point. Repo Mode provides contract-driven verification for a single crate or binary.
+
+**Capabilities:**
+- Contracts (behavioral law)
+- Conformance suites (reusable proof)
+- Scoring (quantified health)
+- Gates (no-regression enforcement)
+- API extraction and drift detection
+- Contract coverage analysis
+- AI-assisted artifact generation
+
+**Triggered by:** Running `lexicon init` in any repository.
+
+### Workspace Mode
+
+Extends Repo Mode with architecture governance across a Cargo workspace. All Repo Mode capabilities remain available.
+
+**Additional capabilities:**
+- Crate role assignment (Foundation, Interface, Adapter, Application, Utility, Test)
+- Dependency law (which crates may depend on which)
+- Shared contracts across workspace members
+- Architecture drift detection
+
+**Triggered by:** Running `lexicon workspace init` in a Cargo workspace, or having a `.lexicon/workspace.toml` file.
+
+### Ecosystem Mode
+
+Extends Workspace Mode with governance across multiple repositories. All Workspace and Repo Mode capabilities remain available.
+
+**Additional capabilities:**
+- Repository roles and registry
+- Federated contracts across repositories
+- Ecosystem-wide governance rules
+- Cross-repository verification
+
+**Triggered by:** Running `lexicon ecosystem init`, or having a `.lexicon/ecosystem.toml` file.
+
+## Mode Detection
+
+Lexicon auto-detects the operating mode from your repository structure:
+
+1. If `.lexicon/ecosystem.toml` exists → **Ecosystem Mode**
+2. If `.lexicon/workspace.toml` exists or `Cargo.toml` has a `[workspace]` section → **Workspace Mode**
+3. Otherwise → **Repo Mode**
+
+You can always check your current mode by running `lexicon doctor`, which shows the detected mode and any mode-specific health checks.
+
+## Migration Path
+
+Each mode upgrade is **additive** — nothing is removed or broken:
+
+- **Repo → Workspace:** Run `lexicon workspace init`. This detects your workspace members, auto-assigns crate roles based on naming conventions, and creates default dependency rules. All existing contracts, scoring, and gates continue working.
+
+- **Workspace → Ecosystem:** Run `lexicon ecosystem init`. This creates an ecosystem manifest and directory structure. All existing workspace governance continues working.
+
+## Mode-Aware Commands
+
+Commands adapt their output based on the current mode:
+
+- `lexicon verify` shows mode-appropriate suggestions (e.g., "Run `lexicon workspace verify` for workspace-level checks")
+- `lexicon doctor` includes mode-specific health checks
+- `lexicon init` detects workspace structure and suggests upgrading
+- Contract creation conversations ask mode-appropriate questions
+
+## Mode-Aware TUI
+
+The terminal UI adapts to the current mode:
+
+- **Repo Mode:** Dashboard, Contracts, Gates, Score, API, Coverage, Help
+- **Workspace/Ecosystem Mode:** Adds an **Architecture** tab showing crate roles, dependency rules, and architecture graph
+- A mode badge in the title bar shows the current operating mode
+
+## Schema Layering
+
+Each mode adds configuration files in `.lexicon/`:
+
+```
+.lexicon/
+├── manifest.toml              # Always present (Repo Mode)
+├── workspace.toml             # Workspace Mode
+├── ecosystem.toml             # Ecosystem Mode
+├── architecture/
+│   ├── rules.toml             # Workspace Mode — dependency law
+│   └── graph.json             # Workspace Mode — architecture graph
+└── ecosystem/                 # Ecosystem Mode — shared state
+```

@@ -18,12 +18,30 @@ pub enum Tab {
     Score,
     Api,
     Coverage,
+    Architecture,
     Help,
 }
 
 impl Tab {
-    pub fn all() -> &'static [Tab] {
-        &[Tab::Dashboard, Tab::Contracts, Tab::Gates, Tab::Score, Tab::Api, Tab::Coverage, Tab::Help]
+    /// Return tabs appropriate for the current operating mode.
+    pub fn for_mode(mode: lexicon_spec::mode::OperatingMode) -> Vec<Tab> {
+        use lexicon_spec::mode::OperatingMode;
+        let mut tabs = vec![
+            Tab::Dashboard,
+            Tab::Contracts,
+            Tab::Gates,
+            Tab::Score,
+            Tab::Api,
+            Tab::Coverage,
+        ];
+        match mode {
+            OperatingMode::Workspace | OperatingMode::Ecosystem => {
+                tabs.push(Tab::Architecture);
+            }
+            OperatingMode::Repo => {}
+        }
+        tabs.push(Tab::Help);
+        tabs
     }
 
     pub fn label(&self) -> &'static str {
@@ -34,18 +52,17 @@ impl Tab {
             Tab::Score => "Score",
             Tab::Api => "API",
             Tab::Coverage => "Coverage",
+            Tab::Architecture => "Architecture",
             Tab::Help => "Help",
         }
     }
 
-    pub fn next(&self) -> Tab {
-        let tabs = Self::all();
+    pub fn next(&self, tabs: &[Tab]) -> Tab {
         let idx = tabs.iter().position(|t| t == self).unwrap_or(0);
         tabs[(idx + 1) % tabs.len()]
     }
 
-    pub fn prev(&self) -> Tab {
-        let tabs = Self::all();
+    pub fn prev(&self, tabs: &[Tab]) -> Tab {
         let idx = tabs.iter().position(|t| t == self).unwrap_or(0);
         tabs[(idx + tabs.len() - 1) % tabs.len()]
     }
@@ -54,6 +71,8 @@ impl Tab {
 /// Application state for the TUI.
 pub struct AppState {
     pub tab: Tab,
+    pub tabs: Vec<Tab>,
+    pub mode: lexicon_spec::mode::OperatingMode,
     pub layout: RepoLayout,
     pub contracts: Vec<String>,
     pub gate_results: Vec<lexicon_gates::result::GateResult>,
@@ -68,9 +87,13 @@ pub struct AppState {
 impl AppState {
     pub fn new(layout: RepoLayout) -> Self {
         let (api_snapshot, api_diff) = Self::load_api_data(&layout);
+        let mode = lexicon_repo::detect::detect_mode(&layout);
+        let tabs = Tab::for_mode(mode);
 
         Self {
             tab: Tab::Dashboard,
+            tabs,
+            mode,
             layout,
             contracts: Vec::new(),
             gate_results: Vec::new(),
@@ -152,8 +175,8 @@ pub fn run_tui(layout: RepoLayout) -> io::Result<()> {
                     KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                         state.should_quit = true;
                     }
-                    KeyCode::Tab | KeyCode::Right => state.tab = state.tab.next(),
-                    KeyCode::BackTab | KeyCode::Left => state.tab = state.tab.prev(),
+                    KeyCode::Tab | KeyCode::Right => state.tab = state.tab.next(&state.tabs),
+                    KeyCode::BackTab | KeyCode::Left => state.tab = state.tab.prev(&state.tabs),
                     KeyCode::Char('1') => state.tab = Tab::Dashboard,
                     KeyCode::Char('2') => state.tab = Tab::Contracts,
                     KeyCode::Char('3') => state.tab = Tab::Gates,

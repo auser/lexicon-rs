@@ -89,8 +89,40 @@ pub enum Command {
         action: SyncAction,
     },
 
+    /// Workspace governance commands
+    Workspace {
+        #[command(subcommand)]
+        action: WorkspaceAction,
+    },
+
+    /// Ecosystem governance commands
+    Ecosystem {
+        #[command(subcommand)]
+        action: EcosystemAction,
+    },
+
     /// Launch the terminal UI
     Tui,
+}
+
+#[derive(Subcommand)]
+pub enum WorkspaceAction {
+    /// Initialize workspace governance
+    Init,
+    /// Verify workspace architecture
+    Verify,
+    /// Check workspace health
+    Doctor,
+}
+
+#[derive(Subcommand)]
+pub enum EcosystemAction {
+    /// Initialize ecosystem governance
+    Init,
+    /// Verify ecosystem governance
+    Verify,
+    /// Check ecosystem health
+    Doctor,
 }
 
 #[derive(Subcommand)]

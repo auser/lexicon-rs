@@ -3,5 +3,6 @@
 pub mod driver;
 pub mod engine;
 pub mod error;
+pub mod mode_hints;
 pub mod session;
 pub mod workflow;

@@ -22,6 +22,8 @@ fn main() -> miette::Result<()> {
         Command::Auth { action } => commands::auth::run(action),
         Command::Improve { goal } => commands::generate::run_improve(goal.as_deref()),
         Command::Generate { intent } => commands::generate::run(&intent),
+        Command::Workspace { action } => commands::workspace_cmd::run(action),
+        Command::Ecosystem { action } => commands::ecosystem_cmd::run(action),
         Command::Doctor => commands::doctor::run(),
         Command::Sync { action } => commands::sync::run(action),
         Command::Tui => {

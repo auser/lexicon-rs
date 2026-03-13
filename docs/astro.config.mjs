@@ -49,6 +49,13 @@ export default defineConfig({
 							],
 						},
 						{
+							label: 'Governance',
+							items: [
+								{ label: 'workspace', slug: 'commands/workspace' },
+								{ label: 'ecosystem', slug: 'commands/ecosystem' },
+							],
+						},
+						{
 							label: 'Utilities',
 							items: [
 								{ label: 'init', slug: 'commands/init' },
@@ -62,6 +69,7 @@ export default defineConfig({
 					label: 'Concepts',
 					items: [
 						{ label: 'The Lexicon Model', slug: 'concepts/lexicon' },
+						{ label: 'Progressive Adoption', slug: 'concepts/progressive-adoption' },
 						{ label: 'Contracts', slug: 'concepts/contracts' },
 						{ label: 'Conformance', slug: 'concepts/conformance' },
 						{ label: 'API Extraction', slug: 'concepts/api-extraction' },

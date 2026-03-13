@@ -5,6 +5,7 @@ use lexicon_conversation::session::save_session;
 use lexicon_conversation::workflow::{
     Question, StepInput, StepOutput, Workflow, WorkflowStep,
 };
+use lexicon_repo::detect::{detect_shape, RepoShape};
 use lexicon_repo::inspect::inspect_repo;
 use lexicon_repo::layout::RepoLayout;
 use lexicon_spec::audit::AuditRecord;
@@ -127,6 +128,9 @@ pub fn init_repo(
         // Initialize the repo
         lexicon_scaffold::init::init_repo(layout, &manifest)?;
 
+        // Detect repo shape and print workspace hint
+        print_workspace_hint(layout);
+
         // Write audit record
         let record = AuditRecord::new(
             AuditAction::RepoInit,
@@ -150,6 +154,9 @@ pub fn init_repo_noninteractive(
     let manifest = Manifest::new(name.clone(), description, repo_type, domain);
     lexicon_scaffold::init::init_repo(layout, &manifest)?;
 
+    // Detect repo shape and print workspace hint
+    print_workspace_hint(layout);
+
     let record = AuditRecord::new(
         AuditAction::RepoInit,
         Actor::User,
@@ -158,6 +165,18 @@ pub fn init_repo_noninteractive(
     write_audit_record(&layout.audit_dir(), &record)?;
 
     Ok(())
+}
+
+/// Detect the repo shape and print an informational message if it's a workspace.
+fn print_workspace_hint(layout: &RepoLayout) {
+    let shape = detect_shape(&layout.root);
+    if let RepoShape::Workspace { member_count } = shape {
+        eprintln!(
+            "Detected Cargo workspace with {} members. Using Repo Mode. \
+             Run `lexicon workspace init` to enable workspace governance.",
+            member_count
+        );
+    }
 }
 
 #[cfg(test)]

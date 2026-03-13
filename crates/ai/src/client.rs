@@ -24,7 +24,7 @@ impl ClaudeClient {
     }
 
     /// Send a prompt to Claude and return the text response.
-    pub fn complete(&self, system: &str, user_message: &str) -> AiResult<String> {
+    fn send(&self, system: &str, user_message: &str) -> AiResult<String> {
         let client = reqwest::blocking::Client::builder()
             .timeout(std::time::Duration::from_secs(120))
             .build()
@@ -85,14 +85,8 @@ impl ClaudeClient {
 }
 
 impl crate::boundary::AiProvider for ClaudeClient {
-    fn enhance_proposal(&self, prompt: &str, context: &str) -> AiResult<String> {
-        let system = "You are an expert software architect helping to define and improve \
-            repository artifacts (contracts, conformance tests, behavior scenarios). \
-            Generate structured, precise artifacts that follow the templates and schemas provided. \
-            Be concise and specific. Output only the artifact content, no explanations.";
-
-        let user_msg = format!("{context}\n\n---\n\n{prompt}");
-        self.complete(system, &user_msg)
+    fn complete(&self, system: &str, user_message: &str) -> AiResult<String> {
+        self.send(system, user_message)
     }
 
     fn suggest_improvement(&self, context: &str, failure: &str) -> AiResult<String> {
@@ -104,7 +98,7 @@ impl crate::boundary::AiProvider for ClaudeClient {
         let user_msg = format!(
             "## Repository State\n{context}\n\n## Verification Failure\n{failure}"
         );
-        self.complete(system, &user_msg)
+        self.send(system, &user_msg)
     }
 }
 

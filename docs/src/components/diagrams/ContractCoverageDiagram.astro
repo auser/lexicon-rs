@@ -1,75 +1,111 @@
 ---
 /**
  * Contract coverage diagram.
- * Shows how contract clauses map to tests and where coverage gaps exist.
+ * Left: Contract with clauses (some checked, some not).
+ * Middle: Arrow connections labeled "test_tags".
+ * Right: Test files with tag annotations.
+ * Bottom: Coverage Report showing percentage.
  */
 ---
 
-<figure class="diagram-wrapper">
-  <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Contract coverage: mapping contract clauses to test tags, showing covered and missing clauses">
+<figure class="diagram-wrapper" aria-label="Contract Coverage">
+  <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Contract coverage mapping: contract clauses on the left connected by test_tags to conformance tests on the right, with covered clauses in green and uncovered in red, and a coverage report at the bottom">
     <defs>
-      <marker id="cc-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-        <path d="M0,0 L8,3 L0,6" fill="none" stroke="var(--diagram-arrow)" stroke-width="1.2" />
+      <marker id="cc-arrow-ok" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <path d="M0,0 L10,3.5 L0,7" fill="none" stroke="var(--diagram-secondary)" stroke-width="1.3" stroke-linejoin="round" />
       </marker>
-      <marker id="cc-arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-        <path d="M0,0 L8,3 L0,6" fill="none" stroke="#22c55e" stroke-width="1.2" />
+      <marker id="cc-arrow-miss" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <path d="M0,0 L10,3.5 L0,7" fill="none" stroke="var(--diagram-danger)" stroke-width="1.3" stroke-linejoin="round" />
       </marker>
+      <filter id="cc-shadow" x="-3%" y="-3%" width="106%" height="106%">
+        <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="var(--diagram-text)" flood-opacity="0.05" />
+      </filter>
     </defs>
 
-    <!-- Contract box (left) -->
-    <rect x="20" y="30" width="220" height="260" rx="12" fill="var(--diagram-node-bg)" stroke="#6366f1" stroke-width="1.5" stroke-opacity="0.5" />
-    <text x="130" y="56" text-anchor="middle" class="cc-section-label" fill="#6366f1">CONTRACT CLAUSES</text>
+    <!-- Contract panel (left) -->
+    <rect x="20" y="20" width="240" height="270" rx="14" fill="var(--diagram-fill)" stroke="var(--diagram-primary)" stroke-width="1.5" stroke-opacity="0.5" filter="url(#cc-shadow)" />
+    <text x="140" y="48" text-anchor="middle" class="cc-section-label" fill="var(--diagram-primary)">CONTRACT CLAUSES</text>
 
-    <!-- Clause items -->
-    <rect x="36" y="72" width="188" height="32" rx="6" class="cc-clause cc-covered" />
-    <text x="130" y="92" text-anchor="middle" class="cc-clause-text" fill="var(--diagram-text)">inv-001: value retrievable</text>
+    <!-- Clause 1: covered -->
+    <rect x="36" y="64" width="208" height="36" rx="7" class="cc-clause cc-covered" />
+    <text x="48" y="82" class="cc-check" fill="var(--diagram-secondary)">&#10003;</text>
+    <text x="68" y="86" class="cc-clause-text" fill="var(--diagram-text)">inv-001</text>
+    <text x="120" y="86" class="cc-clause-desc" fill="var(--diagram-text-muted)">value retrievable</text>
 
-    <rect x="36" y="112" width="188" height="32" rx="6" class="cc-clause cc-covered" />
-    <text x="130" y="132" text-anchor="middle" class="cc-clause-text" fill="var(--diagram-text)">req-001: missing key → None</text>
+    <!-- Clause 2: covered -->
+    <rect x="36" y="108" width="208" height="36" rx="7" class="cc-clause cc-covered" />
+    <text x="48" y="126" class="cc-check" fill="var(--diagram-secondary)">&#10003;</text>
+    <text x="68" y="130" class="cc-clause-text" fill="var(--diagram-text)">req-001</text>
+    <text x="120" y="130" class="cc-clause-desc" fill="var(--diagram-text-muted)">missing key -> None</text>
 
-    <rect x="36" y="152" width="188" height="32" rx="6" class="cc-clause cc-covered" />
-    <text x="130" y="172" text-anchor="middle" class="cc-clause-text" fill="var(--diagram-text)">req-002: delete idempotent</text>
+    <!-- Clause 3: covered -->
+    <rect x="36" y="152" width="208" height="36" rx="7" class="cc-clause cc-covered" />
+    <text x="48" y="170" class="cc-check" fill="var(--diagram-secondary)">&#10003;</text>
+    <text x="68" y="174" class="cc-clause-text" fill="var(--diagram-text)">req-002</text>
+    <text x="120" y="174" class="cc-clause-desc" fill="var(--diagram-text-muted)">delete idempotent</text>
 
-    <rect x="36" y="192" width="188" height="32" rx="6" class="cc-clause cc-missing" />
-    <text x="130" y="212" text-anchor="middle" class="cc-clause-text" fill="var(--diagram-text)">req-003: concurrent writes</text>
+    <!-- Clause 4: uncovered -->
+    <rect x="36" y="196" width="208" height="36" rx="7" class="cc-clause cc-missing" />
+    <text x="48" y="214" class="cc-cross" fill="var(--diagram-danger)">&#10007;</text>
+    <text x="68" y="218" class="cc-clause-text" fill="var(--diagram-text)">req-003</text>
+    <text x="120" y="218" class="cc-clause-desc" fill="var(--diagram-text-muted)">concurrent writes</text>
 
-    <rect x="36" y="232" width="188" height="32" rx="6" class="cc-clause cc-missing" />
-    <text x="130" y="252" text-anchor="middle" class="cc-clause-text" fill="var(--diagram-text)">edge-001: large keys</text>
+    <!-- Clause 5: uncovered -->
+    <rect x="36" y="240" width="208" height="36" rx="7" class="cc-clause cc-missing" />
+    <text x="48" y="258" class="cc-cross" fill="var(--diagram-danger)">&#10007;</text>
+    <text x="68" y="262" class="cc-clause-text" fill="var(--diagram-text)">edge-001</text>
+    <text x="120" y="262" class="cc-clause-desc" fill="var(--diagram-text-muted)">large key handling</text>
 
-    <!-- Test box (right) -->
-    <rect x="400" y="30" width="300" height="200" rx="12" fill="var(--diagram-node-bg)" stroke="#22c55e" stroke-width="1.5" stroke-opacity="0.5" />
-    <text x="550" y="56" text-anchor="middle" class="cc-section-label" fill="#22c55e">CONFORMANCE TESTS</text>
+    <!-- Middle: test_tags label -->
+    <text x="380" y="48" text-anchor="middle" class="cc-tag-label" fill="var(--diagram-text-muted)">test_tags</text>
 
-    <!-- Test items -->
-    <rect x="416" y="72" width="268" height="32" rx="6" class="cc-test" />
-    <text x="550" y="92" text-anchor="middle" class="cc-clause-text" fill="var(--diagram-text)">test inv_get_after_set [conformance.value_retrieval]</text>
-
-    <rect x="416" y="112" width="268" height="32" rx="6" class="cc-test" />
-    <text x="550" y="132" text-anchor="middle" class="cc-clause-text" fill="var(--diagram-text)">test req_missing_key [conformance.missing_key]</text>
-
-    <rect x="416" y="152" width="268" height="32" rx="6" class="cc-test" />
-    <text x="550" y="172" text-anchor="middle" class="cc-clause-text" fill="var(--diagram-text)">test req_delete_idempotent [conformance.delete]</text>
-
-    <!-- Connecting lines (covered) -->
-    <line x1="224" y1="88" x2="414" y2="88" stroke="#22c55e" stroke-width="1.5" stroke-opacity="0.6" marker-end="url(#cc-arrow-green)" />
-    <line x1="224" y1="128" x2="414" y2="128" stroke="#22c55e" stroke-width="1.5" stroke-opacity="0.6" marker-end="url(#cc-arrow-green)" />
-    <line x1="224" y1="168" x2="414" y2="168" stroke="#22c55e" stroke-width="1.5" stroke-opacity="0.6" marker-end="url(#cc-arrow-green)" />
+    <!-- Connection lines: covered clauses to tests -->
+    <line x1="244" y1="82" x2="416" y2="82" stroke="var(--diagram-secondary)" stroke-width="1.5" stroke-opacity="0.6" marker-end="url(#cc-arrow-ok)" />
+    <line x1="244" y1="126" x2="416" y2="126" stroke="var(--diagram-secondary)" stroke-width="1.5" stroke-opacity="0.6" marker-end="url(#cc-arrow-ok)" />
+    <line x1="244" y1="170" x2="416" y2="170" stroke="var(--diagram-secondary)" stroke-width="1.5" stroke-opacity="0.6" marker-end="url(#cc-arrow-ok)" />
 
     <!-- Missing clause indicators -->
-    <text x="300" y="210" text-anchor="middle" class="cc-missing-label" fill="#ef4444">no test</text>
-    <line x1="224" y1="208" x2="270" y2="208" stroke="#ef4444" stroke-width="1" stroke-dasharray="4,3" />
-    <text x="300" y="250" text-anchor="middle" class="cc-missing-label" fill="#ef4444">no test</text>
-    <line x1="224" y1="248" x2="270" y2="248" stroke="#ef4444" stroke-width="1" stroke-dasharray="4,3" />
+    <line x1="244" y1="214" x2="300" y2="214" stroke="var(--diagram-danger)" stroke-width="1.2" stroke-dasharray="5,3" />
+    <text x="330" y="218" text-anchor="middle" class="cc-missing-label" fill="var(--diagram-danger)">no test</text>
+    <line x1="244" y1="258" x2="300" y2="258" stroke="var(--diagram-danger)" stroke-width="1.2" stroke-dasharray="5,3" />
+    <text x="330" y="262" text-anchor="middle" class="cc-missing-label" fill="var(--diagram-danger)">no test</text>
 
-    <!-- Coverage report box (bottom right) -->
-    <rect x="400" y="252" width="300" height="56" rx="10" fill="var(--diagram-node-bg)" stroke="var(--diagram-node-border)" stroke-width="1.5" />
-    <text x="416" y="273" class="cc-report-label" fill="var(--diagram-text-muted)">COVERAGE REPORT</text>
-    <text x="416" y="294" class="cc-report-value" fill="var(--diagram-text)">3 / 5 clauses covered</text>
-    <text x="620" y="294" text-anchor="middle" class="cc-report-pct" fill="#f59e0b">60%</text>
+    <!-- Test panel (right) -->
+    <rect x="418" y="20" width="322" height="220" rx="14" fill="var(--diagram-fill)" stroke="var(--diagram-secondary)" stroke-width="1.5" stroke-opacity="0.5" filter="url(#cc-shadow)" />
+    <text x="579" y="48" text-anchor="middle" class="cc-section-label" fill="var(--diagram-secondary)">CONFORMANCE TESTS</text>
+
+    <!-- Test 1 -->
+    <rect x="434" y="64" width="290" height="36" rx="7" class="cc-test" />
+    <text x="440" y="80" class="cc-test-fn" fill="var(--diagram-text)">test</text>
+    <text x="464" y="80" class="cc-test-name" fill="var(--diagram-primary)">inv_get_after_set</text>
+    <text x="440" y="94" class="cc-test-tag" fill="var(--diagram-text-muted)">[conformance.value_retrieval]</text>
+
+    <!-- Test 2 -->
+    <rect x="434" y="108" width="290" height="36" rx="7" class="cc-test" />
+    <text x="440" y="124" class="cc-test-fn" fill="var(--diagram-text)">test</text>
+    <text x="464" y="124" class="cc-test-name" fill="var(--diagram-primary)">req_missing_key</text>
+    <text x="440" y="138" class="cc-test-tag" fill="var(--diagram-text-muted)">[conformance.missing_key]</text>
+
+    <!-- Test 3 -->
+    <rect x="434" y="152" width="290" height="36" rx="7" class="cc-test" />
+    <text x="440" y="168" class="cc-test-fn" fill="var(--diagram-text)">test</text>
+    <text x="464" y="168" class="cc-test-name" fill="var(--diagram-primary)">req_delete_idempotent</text>
+    <text x="440" y="182" class="cc-test-tag" fill="var(--diagram-text-muted)">[conformance.delete]</text>
+
+    <!-- Empty space hint -->
+    <text x="579" y="218" text-anchor="middle" class="cc-hint" fill="var(--diagram-text-muted)">tests needed for req-003, edge-001</text>
+
+    <!-- Coverage Report (bottom) -->
+    <rect x="20" y="302" width="720" height="50" rx="12" fill="var(--diagram-fill)" stroke="var(--diagram-border)" stroke-width="1.5" filter="url(#cc-shadow)" />
+    <text x="36" y="322" class="cc-report-label" fill="var(--diagram-text-muted)">COVERAGE REPORT</text>
+    <text x="36" y="340" class="cc-report-value" fill="var(--diagram-text)">3 of 5 clauses covered</text>
 
     <!-- Coverage bar -->
-    <rect x="570" y="264" width="120" height="8" rx="4" fill="var(--diagram-border)" fill-opacity="0.3" />
-    <rect x="570" y="264" width="72" height="8" rx="4" fill="#f59e0b" fill-opacity="0.7" />
+    <rect x="460" y="314" width="200" height="10" rx="5" fill="var(--diagram-border)" fill-opacity="0.3" />
+    <rect x="460" y="314" width="120" height="10" rx="5" fill="var(--diagram-accent)" fill-opacity="0.8" />
+
+    <!-- Coverage percentage -->
+    <text x="680" y="328" text-anchor="middle" class="cc-report-pct" fill="var(--diagram-accent)">60%</text>
   </svg>
 </figure>
 
@@ -80,25 +116,31 @@
   }
   .diagram-wrapper svg {
     width: 100%;
-    max-width: 720px;
+    max-width: 760px;
     height: auto;
     margin: 0 auto;
     display: block;
-    --diagram-text: var(--sl-color-text, #1e293b);
-    --diagram-text-muted: var(--sl-color-text-accent, #64748b);
-    --diagram-border: var(--sl-color-gray-4, #cbd5e1);
-    --diagram-arrow: var(--sl-color-gray-4, #94a3b8);
-    --diagram-node-bg: var(--sl-color-bg-nav, #ffffff);
-    --diagram-node-border: var(--sl-color-gray-4, #e2e8f0);
+    --diagram-bg: #f8f9fa;
+    --diagram-text: #2d3748;
+    --diagram-text-muted: #718096;
+    --diagram-primary: #4a90d9;
+    --diagram-secondary: #48bb78;
+    --diagram-accent: #ed8936;
+    --diagram-danger: #e53e3e;
+    --diagram-border: #cbd5e1;
+    --diagram-fill: #ffffff;
   }
   :global([data-theme='dark']) .diagram-wrapper svg,
   :global(.sl-theme-dark) .diagram-wrapper svg {
-    --diagram-text: var(--sl-color-text, #e2e8f0);
-    --diagram-text-muted: var(--sl-color-text-accent, #94a3b8);
-    --diagram-border: var(--sl-color-gray-5, #475569);
-    --diagram-arrow: var(--sl-color-gray-5, #64748b);
-    --diagram-node-bg: var(--sl-color-bg-nav, #1e293b);
-    --diagram-node-border: var(--sl-color-gray-5, #334155);
+    --diagram-bg: #1a1b26;
+    --diagram-text: #e2e8f0;
+    --diagram-text-muted: #a0aec0;
+    --diagram-primary: #7fb3ff;
+    --diagram-secondary: #68d391;
+    --diagram-accent: #fbd38d;
+    --diagram-danger: #fc8181;
+    --diagram-border: #4a5568;
+    --diagram-fill: #24253a;
   }
   .cc-section-label {
     font-family: var(--sl-font, system-ui, sans-serif);
@@ -111,30 +153,70 @@
     stroke-width: 1.5;
   }
   .cc-covered {
-    fill: var(--diagram-node-bg);
-    stroke: #22c55e;
+    fill: var(--diagram-fill);
+    stroke: var(--diagram-secondary);
     stroke-opacity: 0.4;
   }
   .cc-missing {
-    fill: var(--diagram-node-bg);
-    stroke: #ef4444;
+    fill: var(--diagram-fill);
+    stroke: var(--diagram-danger);
     stroke-opacity: 0.4;
-    stroke-dasharray: 4,3;
+    stroke-dasharray: 5,3;
   }
   .cc-test {
-    fill: var(--diagram-node-bg);
-    stroke: var(--diagram-node-border);
+    fill: var(--diagram-fill);
+    stroke: var(--diagram-border);
     stroke-width: 1;
+  }
+  .cc-check {
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .cc-cross {
+    font-size: 13px;
+    font-weight: 700;
   }
   .cc-clause-text {
     font-family: var(--sl-font-mono, monospace);
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .cc-clause-desc {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 10px;
+    font-weight: 400;
+  }
+  .cc-tag-label {
+    font-family: var(--sl-font-mono, monospace);
+    font-size: 10px;
+    font-weight: 500;
+    font-style: italic;
+  }
+  .cc-test-fn {
+    font-family: var(--sl-font-mono, monospace);
     font-size: 9.5px;
+    font-weight: 400;
+  }
+  .cc-test-name {
+    font-family: var(--sl-font-mono, monospace);
+    font-size: 9.5px;
+    font-weight: 600;
+  }
+  .cc-test-tag {
+    font-family: var(--sl-font-mono, monospace);
+    font-size: 8.5px;
     font-weight: 400;
   }
   .cc-missing-label {
     font-family: var(--sl-font, system-ui, sans-serif);
     font-size: 10px;
     font-weight: 500;
+    font-style: italic;
+  }
+  .cc-hint {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 10px;
+    font-weight: 400;
     font-style: italic;
   }
   .cc-report-label {
@@ -151,7 +233,7 @@
   }
   .cc-report-pct {
     font-family: var(--sl-font, system-ui, sans-serif);
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
   }
 </style>
