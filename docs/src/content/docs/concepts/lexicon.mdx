@@ -1,0 +1,71 @@
+---
+title: The Lexicon Model
+description: The layered system for defining and enforcing the behavioral law of software.
+---
+
+import LexiconModelDiagram from '../../../components/diagrams/LexiconModelDiagram.astro';
+import ProgressiveScopeDiagram from '../../../components/diagrams/ProgressiveScopeDiagram.astro';
+
+Lexicon defines the language used to describe the behavior of a software system.
+
+<LexiconModelDiagram />
+
+Most software projects rely on a combination of unit tests, code review, CI pipelines, and architectural conventions. While these tools help maintain quality, they rarely define explicit **behavioral law** for a system. Lexicon introduces a structured system for expressing that law.
+
+This language is composed of several layers:
+
+- **Contracts** -- define expected behavior: capabilities, invariants, required and forbidden semantics
+- **Conformance** -- prove implementations satisfy contracts through reusable test harnesses
+- **Coverage** -- measure how much of a contract is actually verified by tests
+- **Gates** -- prevent regressions with enforceable pass/fail verification checks
+- **Scoring** -- measure system health across weighted dimensions
+- **Architecture** -- define structural rules: crate roles, dependency directions, module boundaries
+- **Ecosystem Governance** -- coordinate contracts, roles, and compatibility across multiple repositories
+- **AI Context** -- ensure AI agents understand system constraints and can work safely
+
+Each layer represents a different aspect of system law. Together they create a **governed software system**.
+
+## How the Layers Work Together
+
+Contracts are the source of truth. They declare what a component must do and must not do.
+
+Conformance suites translate contracts into executable tests. Coverage analysis checks whether those tests actually exercise the contract clauses.
+
+Gates enforce hard boundaries -- if a gate fails, verification fails. Scoring provides a weighted view of overall health, where some dimensions are required, some contribute to a numeric score, and some are advisory.
+
+Architecture rules govern structure: which crates may depend on which, what roles packages play, where boundaries must exist.
+
+At the ecosystem level, shared contracts and repository roles enable governance across a platform of many repositories.
+
+AI context generation makes all of this legible to AI agents, so they can participate in development without violating system law.
+
+## Progressive Scope
+
+Lexicon works at three levels. You start with what you need and grow into what you want.
+
+<ProgressiveScopeDiagram />
+
+### Repo Mode
+
+For single libraries. Defines contracts, conformance tests, coverage, gates, and scoring. This mode feels complete and first-class -- it is not a crippled subset.
+
+### Workspace Mode
+
+For multi-crate Rust workspaces. Adds crate roles, dependency rules, architecture validation, and local shared contracts. Builds on Repo Mode rather than replacing it.
+
+### Ecosystem Mode
+
+For multi-repository platforms. Adds shared contracts, repository roles, compatibility checks, and ecosystem-level governance. Fully opt-in.
+
+A small repo should feel lightweight and delightful. A large ecosystem should not hit a ceiling. The same tool supports both without forcing the complexity of the largest model onto the smallest use cases.
+
+## Design Principles
+
+Lexicon is:
+
+- **contract-first** -- behavior declarations drive everything
+- **deterministic where enforcement matters** -- verification and scoring produce repeatable results
+- **flexible where ideation matters** -- conversational workflows support iterative refinement
+- **AI-assisted but not AI-dependent** -- core verification works without any AI service
+- **safe against gaming** -- architectural protections prevent weakening of gates, contracts, or scores
+- **inspectable** -- all state is local, versioned, and human-readable

@@ -1,49 +1,104 @@
 ---
 title: Lexicon
-description: Contract-driven verification for Rust libraries and workspaces.
+description: Contract-driven verification and governance for software systems.
 template: splash
 hero:
-  tagline: Define behavioral contracts for your Rust code. Verify them automatically. Keep AI assistants aligned with your specifications.
+  tagline: Define the behavioral law of your software. Verify it automatically. Keep AI agents aligned with your specifications.
   actions:
     - text: Get Started
       link: /getting-started/quickstart/
       icon: right-arrow
-    - text: Concepts
-      link: /concepts/contracts/
+    - text: The Lexicon Model
+      link: /concepts/lexicon/
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import Section from '../../components/homepage/Section.astro';
+import FeatureGrid from '../../components/homepage/FeatureGrid.astro';
+import ScopeCards from '../../components/homepage/ScopeCards.astro';
+import CTARow from '../../components/homepage/CTARow.astro';
+import LexiconModelDiagram from '../../components/diagrams/LexiconModelDiagram.astro';
+import VerificationPipelineDiagram from '../../components/diagrams/VerificationPipelineDiagram.astro';
 
-## What is Lexicon?
+<Section>
 
-Lexicon is a contract-driven verification tool for Rust. It lets you declare what your code must do, must not do, and what is out of scope -- then continuously verifies that your implementation matches.
+## Define and enforce system behavior
 
-Lexicon works with or without AI. When used with Claude Code, it syncs your contracts and verification context into `CLAUDE.md` so the AI always operates within defined boundaries.
+Lexicon is a system for defining and enforcing the **behavioral law of software systems**. It lets you declare what your code must do, must not do, and what is out of scope — then continuously verifies that your implementation matches.
 
-## Core Workflow
+Lexicon provides a language for describing the meaning of a codebase. This language is the **Lexicon**.
 
-<CardGrid>
-	<Card title="Define Contracts" icon="pencil">
-		Write TOML contracts that declare invariants, required semantics, forbidden behaviors, and edge cases.
-	</Card>
-	<Card title="Generate Conformance Tests" icon="document">
-		Lexicon generates trait-based or factory-based test harnesses from your contracts.
-	</Card>
-	<Card title="Score and Gate" icon="setting">
-		Configure weighted scoring dimensions and verification gates that run as part of CI.
-	</Card>
-	<Card title="Verify Continuously" icon="approve-check">
-		Run `lexicon verify` to execute all gates, compute scores, and write audit records.
-	</Card>
-</CardGrid>
+<LexiconModelDiagram />
 
-## Key Features
+</Section>
 
-- **Behavioral contracts** -- TOML-based specifications with invariants, required/forbidden semantics, and edge cases
-- **Conformance suites** -- auto-generated test harnesses from contracts
-- **Weighted scoring** -- multi-dimensional health scores with pass/warn/fail verdicts
-- **Verification gates** -- shell commands (cargo fmt, clippy, tests) run as subprocesses
-- **AI integration** -- optional, bounded, audited; syncs context to CLAUDE.md
-- **Audit trail** -- every verification run and change is recorded as JSON
-- **Terminal UI** -- tab-based dashboard for contracts, gates, and scores
+<Section accent>
+
+## Why Lexicon exists
+
+Tests alone do not define system law. Architecture conventions drift. Contracts are usually implicit — scattered across comments, wikis, and team memory. When AI agents enter the picture, the problem gets worse: tools that can change code need explicit boundaries, not tribal knowledge.
+
+Lexicon makes these boundaries concrete:
+
+- **Contracts make behavior explicit** — not implied by tests or convention
+- **Conformance suites make proof reusable** — not scattered across ad hoc test files
+- **Gates make enforcement deterministic** — not dependent on review diligence
+- **Scoring makes health measurable** — not a subjective judgment call
+- **Architecture rules make structure enforceable** — not just a diagram in a wiki
+- **AI context makes boundaries legible to agents** — not hidden in human assumptions
+
+</Section>
+
+<Section>
+
+## The Lexicon Model
+
+Lexicon combines eight interlocking concepts into a governed verification system.
+
+<FeatureGrid />
+
+</Section>
+
+<Section accent>
+
+## How verification works
+
+Every `lexicon verify` run executes a deterministic pipeline. Contracts are checked against conformance tests, coverage is measured, API drift is validated, gates are enforced, and a weighted score produces a clear verdict.
+
+<VerificationPipelineDiagram />
+
+Every run writes an audit record. Every score is explainable. Every gate result is attributable.
+
+</Section>
+
+<Section>
+
+## Progressive scope
+
+Lexicon works at three levels. Start with what you need. Grow into what you want.
+
+A single-library user gets contracts, tests, and verification in minutes. A systems architect gets architecture governance across an entire platform. The same tool serves both without forcing enterprise complexity on small projects.
+
+<ScopeCards />
+
+</Section>
+
+<Section accent>
+
+## Safe AI-assisted development
+
+Lexicon generates structured context so AI agents understand system law. When used with Claude Code, it syncs contracts, gates, scoring, and edit policies into `CLAUDE.md` — so the AI always operates within defined boundaries.
+
+AI can propose improvements, but every patch goes through verification. Patches that violate required gates are rejected. Every AI-driven change is recorded in the audit trail.
+
+The architecture assumes AI can make locally clever but globally bad choices — and defends against that.
+
+</Section>
+
+<Section>
+
+## Start building
+
+<CTARow />
+
+</Section>

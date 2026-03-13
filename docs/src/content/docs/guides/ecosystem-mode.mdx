@@ -1,0 +1,102 @@
+---
+title: Ecosystem Mode
+description: Governing contracts, roles, and architecture across multiple repositories.
+---
+
+Ecosystem Mode extends Lexicon for multi-repository platforms. It adds shared contracts, repository roles, cross-repo compatibility checks, and ecosystem-level governance.
+
+## When to Use Ecosystem Mode
+
+Use Ecosystem Mode when your platform spans multiple repositories and you want to:
+
+- share contracts across repositories
+- assign roles to repositories (core library, SDK, adapter, application)
+- enforce dependency law across the ecosystem
+- detect cross-repo contract drift and compatibility breaks
+
+## Activating Ecosystem Mode
+
+```bash
+lexicon ecosystem init
+```
+
+This command:
+
+1. Preserves existing repo-local and workspace state
+2. Adds an ecosystem manifest at `.lexicon/ecosystem.toml`
+3. Proposes repository roles and shared contracts
+4. Creates ecosystem governance structures
+5. Supports guided refinement through conversational workflow
+
+## Repository Roles
+
+Each repository in the ecosystem has a declared role:
+
+- **core library** -- foundational code with strict stability requirements
+- **runtime** -- execution environment with performance and safety contracts
+- **interface definition** -- API surface declarations consumed by others
+- **adapter / backend** -- implementations of shared traits
+- **SDK** -- developer-facing libraries with compatibility constraints
+- **plugin / extension** -- code operating within a host contract
+- **application** -- end-user-facing code
+- **experimental** -- exploratory code that cannot publish stable shared contracts
+
+## Shared Contracts
+
+Shared contracts are referenced by multiple repositories:
+
+- API compatibility rules
+- data interchange invariants
+- trait semantics expected across implementations
+- wire format guarantees
+- plugin interface contracts
+
+These are stored under `.lexicon/ecosystem/contracts/` and can be validated across the ecosystem.
+
+## Ecosystem Verification
+
+```bash
+lexicon ecosystem verify
+```
+
+Validates:
+
+- repo role constraints
+- cross-repo shared contract conformance
+- interface compatibility assumptions
+- dependency law across repositories
+- ecosystem-level drift
+
+## Ecosystem Doctor
+
+```bash
+lexicon ecosystem doctor
+```
+
+Detects:
+
+- forbidden dependency edges
+- role violations
+- cross-repo contract drift
+- interface compatibility breaks
+- orphan shared contracts
+- inconsistent scoring/gate policies across related repos
+
+## Impact Analysis
+
+When a contract or API changes, ecosystem commands can estimate:
+
+- downstream repo impact
+- shared contract consumers affected
+- likely breaking change severity
+- compatibility risk
+
+## Upgrading from Workspace Mode
+
+Migration from Workspace Mode is additive:
+
+- existing workspace architecture rules are preserved
+- ecosystem governance is added alongside existing configuration
+- no existing state is modified
+
+Standard commands (`lexicon verify`, `lexicon workspace verify`) continue to work at their respective scopes. Ecosystem commands provide the broader cross-repo view.

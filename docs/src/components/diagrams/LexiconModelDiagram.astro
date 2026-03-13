@@ -1,0 +1,172 @@
+---
+/**
+ * The canonical Lexicon model diagram.
+ * Shows the layered architecture of a governed software system.
+ */
+---
+
+<figure class="diagram-wrapper">
+  <svg viewBox="0 0 720 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The Lexicon Model: layered architecture of contracts, conformance, coverage, gates, scoring, architecture, ecosystem governance, and AI context">
+    <defs>
+      <linearGradient id="lm-grad-core" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--diagram-accent)" stop-opacity="0.15" />
+        <stop offset="100%" stop-color="var(--diagram-accent)" stop-opacity="0.05" />
+      </linearGradient>
+      <linearGradient id="lm-grad-mid" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--diagram-secondary)" stop-opacity="0.12" />
+        <stop offset="100%" stop-color="var(--diagram-secondary)" stop-opacity="0.04" />
+      </linearGradient>
+      <linearGradient id="lm-grad-outer" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--diagram-tertiary)" stop-opacity="0.10" />
+        <stop offset="100%" stop-color="var(--diagram-tertiary)" stop-opacity="0.03" />
+      </linearGradient>
+    </defs>
+
+    <!-- Outer ring: Ecosystem + AI -->
+    <rect x="20" y="20" width="680" height="480" rx="20" fill="url(#lm-grad-outer)" stroke="var(--diagram-border)" stroke-width="1.5" />
+    <text x="360" y="50" text-anchor="middle" class="diagram-label-sm" fill="var(--diagram-text-muted)">Ecosystem Governance</text>
+
+    <!-- Middle ring: Architecture + Scoring + Gates -->
+    <rect x="60" y="70" width="600" height="380" rx="16" fill="url(#lm-grad-mid)" stroke="var(--diagram-border)" stroke-width="1.5" />
+
+    <!-- Core ring: Contracts + Conformance + Coverage -->
+    <rect x="110" y="130" width="500" height="240" rx="12" fill="url(#lm-grad-core)" stroke="var(--diagram-accent)" stroke-width="1.5" stroke-opacity="0.5" />
+
+    <!-- Core boxes -->
+    <g class="diagram-node-group">
+      <!-- Contracts -->
+      <rect x="140" y="170" width="140" height="64" rx="8" class="diagram-node diagram-node-primary" />
+      <text x="210" y="198" text-anchor="middle" class="diagram-label" fill="var(--diagram-text)">Contracts</text>
+      <text x="210" y="218" text-anchor="middle" class="diagram-label-xs" fill="var(--diagram-text-muted)">behavioral law</text>
+
+      <!-- Conformance -->
+      <rect x="300" y="170" width="140" height="64" rx="8" class="diagram-node diagram-node-primary" />
+      <text x="370" y="198" text-anchor="middle" class="diagram-label" fill="var(--diagram-text)">Conformance</text>
+      <text x="370" y="218" text-anchor="middle" class="diagram-label-xs" fill="var(--diagram-text-muted)">proof of behavior</text>
+
+      <!-- Coverage -->
+      <rect x="460" y="170" width="120" height="64" rx="8" class="diagram-node diagram-node-primary" />
+      <text x="520" y="198" text-anchor="middle" class="diagram-label" fill="var(--diagram-text)">Coverage</text>
+      <text x="520" y="218" text-anchor="middle" class="diagram-label-xs" fill="var(--diagram-text-muted)">clause verification</text>
+
+      <!-- API Surface -->
+      <rect x="140" y="260" width="140" height="64" rx="8" class="diagram-node diagram-node-primary" />
+      <text x="210" y="288" text-anchor="middle" class="diagram-label" fill="var(--diagram-text)">API Surface</text>
+      <text x="210" y="308" text-anchor="middle" class="diagram-label-xs" fill="var(--diagram-text-muted)">public interface</text>
+
+      <!-- Behavior -->
+      <rect x="300" y="260" width="140" height="64" rx="8" class="diagram-node diagram-node-primary" />
+      <text x="370" y="288" text-anchor="middle" class="diagram-label" fill="var(--diagram-text)">Behavior</text>
+      <text x="370" y="308" text-anchor="middle" class="diagram-label-xs" fill="var(--diagram-text-muted)">scenario testing</text>
+    </g>
+
+    <!-- Arrows from Contracts -->
+    <line x1="280" y1="202" x2="298" y2="202" stroke="var(--diagram-arrow)" stroke-width="1.5" marker-end="url(#lm-arrowhead)" />
+    <line x1="370" y1="234" x2="370" y2="258" stroke="var(--diagram-arrow)" stroke-width="1.5" marker-end="url(#lm-arrowhead)" />
+
+    <!-- Middle tier boxes -->
+    <g class="diagram-node-group">
+      <!-- Gates -->
+      <rect x="90" y="400" width="130" height="56" rx="8" class="diagram-node diagram-node-secondary" />
+      <text x="155" y="424" text-anchor="middle" class="diagram-label" fill="var(--diagram-text)">Gates</text>
+      <text x="155" y="441" text-anchor="middle" class="diagram-label-xs" fill="var(--diagram-text-muted)">enforcement</text>
+
+      <!-- Scoring -->
+      <rect x="240" y="400" width="130" height="56" rx="8" class="diagram-node diagram-node-secondary" />
+      <text x="305" y="424" text-anchor="middle" class="diagram-label" fill="var(--diagram-text)">Scoring</text>
+      <text x="305" y="441" text-anchor="middle" class="diagram-label-xs" fill="var(--diagram-text-muted)">health metrics</text>
+
+      <!-- Architecture -->
+      <rect x="390" y="400" width="130" height="56" rx="8" class="diagram-node diagram-node-secondary" />
+      <text x="455" y="424" text-anchor="middle" class="diagram-label" fill="var(--diagram-text)">Architecture</text>
+      <text x="455" y="441" text-anchor="middle" class="diagram-label-xs" fill="var(--diagram-text-muted)">structural rules</text>
+    </g>
+
+    <!-- AI Context box (outer ring) -->
+    <rect x="545" y="400" width="120" height="56" rx="8" class="diagram-node diagram-node-tertiary" />
+    <text x="605" y="424" text-anchor="middle" class="diagram-label" fill="var(--diagram-text)">AI Context</text>
+    <text x="605" y="441" text-anchor="middle" class="diagram-label-xs" fill="var(--diagram-text-muted)">agent boundaries</text>
+
+    <!-- Core label -->
+    <text x="360" y="155" text-anchor="middle" class="diagram-label-sm" fill="var(--diagram-accent)">Core Specification</text>
+
+    <!-- Middle label -->
+    <text x="360" y="95" text-anchor="middle" class="diagram-label-sm" fill="var(--diagram-text-muted)">Verification &amp; Governance</text>
+
+    <!-- Arrowhead marker -->
+    <defs>
+      <marker id="lm-arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6" fill="none" stroke="var(--diagram-arrow)" stroke-width="1.2" />
+      </marker>
+    </defs>
+  </svg>
+</figure>
+
+<style>
+  .diagram-wrapper {
+    margin: 2rem 0;
+    padding: 0;
+  }
+  .diagram-wrapper svg {
+    width: 100%;
+    max-width: 720px;
+    height: auto;
+    margin: 0 auto;
+    display: block;
+    --diagram-accent: #6366f1;
+    --diagram-secondary: #8b5cf6;
+    --diagram-tertiary: #a78bfa;
+    --diagram-text: var(--sl-color-text, #1e293b);
+    --diagram-text-muted: var(--sl-color-text-accent, #64748b);
+    --diagram-border: var(--sl-color-gray-4, #cbd5e1);
+    --diagram-arrow: var(--sl-color-gray-4, #94a3b8);
+    --diagram-node-bg: var(--sl-color-bg-nav, #ffffff);
+    --diagram-node-border: var(--sl-color-gray-4, #e2e8f0);
+  }
+  :global([data-theme='dark']) .diagram-wrapper svg,
+  :global(.sl-theme-dark) .diagram-wrapper svg {
+    --diagram-accent: #818cf8;
+    --diagram-secondary: #a78bfa;
+    --diagram-tertiary: #c4b5fd;
+    --diagram-text: var(--sl-color-text, #e2e8f0);
+    --diagram-text-muted: var(--sl-color-text-accent, #94a3b8);
+    --diagram-border: var(--sl-color-gray-5, #475569);
+    --diagram-arrow: var(--sl-color-gray-5, #64748b);
+    --diagram-node-bg: var(--sl-color-bg-nav, #1e293b);
+    --diagram-node-border: var(--sl-color-gray-5, #334155);
+  }
+  .diagram-node {
+    fill: var(--diagram-node-bg);
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.5;
+  }
+  .diagram-node-primary {
+    stroke: var(--diagram-accent);
+    stroke-opacity: 0.6;
+  }
+  .diagram-node-secondary {
+    stroke: var(--diagram-secondary);
+    stroke-opacity: 0.5;
+  }
+  .diagram-node-tertiary {
+    stroke: var(--diagram-tertiary);
+    stroke-opacity: 0.5;
+  }
+  .diagram-label {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .diagram-label-sm {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .diagram-label-xs {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 10.5px;
+    font-weight: 400;
+  }
+</style>

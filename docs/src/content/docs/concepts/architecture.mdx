@@ -1,10 +1,14 @@
 ---
 title: Architecture
-description: Internal architecture of the lexicon workspace
+description: Internal architecture and governance model of the lexicon workspace.
 ---
+
+import ArchitectureGovernanceDiagram from '../../../components/diagrams/ArchitectureGovernanceDiagram.astro';
 
 Lexicon is a Rust workspace of 12 crates organized into strict dependency layers.
 This document describes the crate graph, key design decisions, data flow, and extension points.
+
+<ArchitectureGovernanceDiagram />
 
 ## Crate dependency graph
 

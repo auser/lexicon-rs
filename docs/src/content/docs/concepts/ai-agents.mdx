@@ -1,0 +1,145 @@
+---
+title: AI Agents
+description: How Lexicon enables safe AI-assisted development within system law.
+---
+
+import AISafetyDiagram from '../../../components/diagrams/AISafetyDiagram.astro';
+
+Lexicon enables safe AI-assisted development. It generates structured context so AI agents understand system constraints, and enforces boundaries so agents evolve software without violating system law.
+
+The core idea: **make AI useful, but bounded and auditable**. The architecture assumes AI can make "locally clever but globally bad" choices and defends against that. AI is never required for core verification -- the deterministic pipeline (contracts, conformance, scoring, gates) is the source of truth.
+
+<AISafetyDiagram />
+
+## What AI Agents Learn
+
+Lexicon generates context so that an AI agent can immediately understand:
+
+- what the repo does
+- what behavior is stable
+- what can and cannot change
+- how to add tests
+- how to interpret conformance
+- how score is computed
+- what gates are mandatory
+- what changes require spec updates
+- how to work safely in the repo
+
+This context is assembled from contracts, scoring models, gates, and policy into a structured summary. The `lexicon sync claude` command writes this into `CLAUDE.md` as managed blocks that stay current with the repo state.
+
+## What AI Agents Must Not Do
+
+AI agents must respect system law. They cannot:
+
+- weaken contracts or remove invariants
+- delete tests to satisfy gates
+- violate architecture rules
+- silently loosen score thresholds
+- weaken required gates without policy approval
+- rewrite contract semantics without updating status/history
+- game performance baselines
+- hide failures behind skipped tests
+- bypass ecosystem governance for local convenience
+- introduce forbidden dependency edges
+- move a repo across architectural layers silently
+- redefine shared contracts without history/policy updates
+- modify interfaces with many downstream consumers without surfacing impact
+
+The system builds architectural protections for all of these.
+
+## Edit Policy
+
+The manifest's `PolicyConfig` controls what AI may edit at the file level:
+
+| Policy Level          | Default Patterns                             | Behavior                         |
+|-----------------------|----------------------------------------------|----------------------------------|
+| `ai_may_edit`         | `src/**/*.rs`, `tests/**/*.rs`               | AI may freely edit these files   |
+| `ai_requires_review`  | `specs/**/*.toml`, `CLAUDE.md`               | AI changes require manual review |
+| `ai_protected`        | `.lexicon/manifest.toml`, `specs/gates.toml` | AI must never edit these         |
+
+Files not matching any pattern default to `RequiresReview`. The system checks patterns in order: protected first, then requires-review, then allowed.
+
+## Safety Mechanisms
+
+### Gate Weakening Detection
+Changes that lower a gate's category or make a non-skippable gate skippable are flagged as weakening. The `gate_weakening_requires_approval` policy (default: `true`) requires explicit approval.
+
+### Test Deletion Approval
+The `test_deletion_requires_approval` policy (default: `true`) prevents AI from silently removing tests.
+
+### Audit Trail
+Every AI-driven change is recorded as an audit record with:
+- The action type (`AiImprove` or `AiImproveRejected`)
+- Actor set to `Ai`
+- Content hashes before and after
+- Score impact (before and after)
+- Whether gates still pass
+
+Conversation memory is not hidden magic -- it is inspectable. Every session is local to the repo and reviewable.
+
+## The AiProvider Trait
+
+AI integration is abstracted behind a trait:
+
+```rust
+pub trait AiProvider {
+    fn enhance_proposal(&self, prompt: &str, context: &str) -> AiResult<String>;
+    fn suggest_improvement(&self, context: &str, failure: &str) -> AiResult<String>;
+}
+```
+
+The default provider is `NoOpProvider`, which returns `AiError::NotAvailable` for all calls. This ensures lexicon works completely without any AI service configured. AI is an enhancement layer, not a dependency.
+
+## The Improvement Loop
+
+The `lexicon improve` command runs a safe, AI-guided improvement cycle:
+
+1. Read contracts, scoring, gates, and repo context
+2. Identify failures, weaknesses, or improvement opportunities
+3. Propose a narrow patch
+4. Explain why the patch should help
+5. Apply the patch in a controlled way
+6. Run verification
+7. Compare score delta
+8. Reject patches that violate required gates
+9. Generate an audit record
+10. Produce a human-readable summary
+
+This is not an uncontrolled auto-rewrite feature. It is bounded and auditable. The AI can propose improvements -- adding missing tests, strengthening conformance harnesses, updating contracts, documenting new API behavior -- but it must not silently weaken contracts or remove tests.
+
+## Context Assembly
+
+The `assemble_context` function creates a structured text summary from repository state:
+
+```
+# Project: my-lib
+Domain: key-value store
+Type: Library
+
+## Contracts
+- **KV Store** (kv): Basic KV [status: Active, stability: Stable]
+  Invariants:
+  - inv-001: Keys set must be retrievable
+
+## Scoring
+Pass threshold: 80%, Warn threshold: 60%
+- Correctness (weight: 30, Required)
+
+## Gates
+- Format Check (Required): `cargo fmt -- --check`
+- Clippy Lints (Required): `cargo clippy -- -D warnings`
+```
+
+At ecosystem scale, context also includes repo role, architecture layer, allowed and forbidden dependencies, shared contracts referenced, cross-repo responsibilities, and compatibility constraints.
+
+## Claude Code Sync
+
+The `lexicon sync claude` command generates and maintains a `CLAUDE.md` file with explicit managed blocks containing:
+
+- active contracts and their invariants
+- scoring dimensions and thresholds
+- required and advisory gates
+- safe edit zones from the edit policy
+- stability boundaries
+
+The managed blocks are updated repeatably while preserving any user-authored content outside the managed sections.

@@ -1,0 +1,159 @@
+---
+/**
+ * Architecture governance diagram.
+ * Shows layered crate architecture with dependency law enforcement.
+ */
+---
+
+<figure class="diagram-wrapper">
+  <svg viewBox="0 0 720 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Architecture governance: layered crate architecture with allowed and forbidden dependency directions">
+    <defs>
+      <marker id="ag-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6" fill="none" stroke="var(--diagram-arrow)" stroke-width="1.2" />
+      </marker>
+      <marker id="ag-arrow-ok" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6" fill="none" stroke="#22c55e" stroke-width="1.2" />
+      </marker>
+      <marker id="ag-arrow-no" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6" fill="none" stroke="#ef4444" stroke-width="1.2" />
+      </marker>
+    </defs>
+
+    <!-- Title -->
+    <text x="360" y="28" text-anchor="middle" class="ag-title" fill="var(--diagram-text-muted)">DEPENDENCY LAW</text>
+
+    <!-- Layer labels (left side) -->
+    <text x="30" y="78" class="ag-layer-label" fill="var(--diagram-text-muted)">Application</text>
+    <text x="30" y="158" class="ag-layer-label" fill="var(--diagram-text-muted)">Adapter</text>
+    <text x="30" y="238" class="ag-layer-label" fill="var(--diagram-text-muted)">Interface</text>
+    <text x="30" y="318" class="ag-layer-label" fill="var(--diagram-text-muted)">Foundation</text>
+
+    <!-- Layer separators -->
+    <line x1="110" y1="110" x2="600" y2="110" stroke="var(--diagram-border)" stroke-width="1" stroke-dasharray="4,4" />
+    <line x1="110" y1="190" x2="600" y2="190" stroke="var(--diagram-border)" stroke-width="1" stroke-dasharray="4,4" />
+    <line x1="110" y1="270" x2="600" y2="270" stroke="var(--diagram-border)" stroke-width="1" stroke-dasharray="4,4" />
+
+    <!-- Application layer boxes -->
+    <rect x="130" y="52" width="120" height="48" rx="8" class="ag-node ag-app" />
+    <text x="190" y="80" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Web App</text>
+
+    <rect x="270" y="52" width="100" height="48" rx="8" class="ag-node ag-app" />
+    <text x="320" y="80" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">CLI</text>
+
+    <!-- Adapter layer boxes -->
+    <rect x="130" y="130" width="130" height="48" rx="8" class="ag-node ag-adapter" />
+    <text x="195" y="158" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Postgres Adapter</text>
+
+    <rect x="280" y="130" width="130" height="48" rx="8" class="ag-node ag-adapter" />
+    <text x="345" y="158" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Redis Adapter</text>
+
+    <!-- Interface layer boxes -->
+    <rect x="130" y="210" width="140" height="48" rx="8" class="ag-node ag-interface" />
+    <text x="200" y="238" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Storage Trait</text>
+
+    <rect x="290" y="210" width="130" height="48" rx="8" class="ag-node ag-interface" />
+    <text x="355" y="238" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Cache Trait</text>
+
+    <!-- Foundation layer boxes -->
+    <rect x="130" y="290" width="110" height="48" rx="8" class="ag-node ag-foundation" />
+    <text x="185" y="318" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Core Types</text>
+
+    <rect x="260" y="290" width="120" height="48" rx="8" class="ag-node ag-foundation" />
+    <text x="320" y="318" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Serialization</text>
+
+    <!-- Shared Contract box (right side) -->
+    <rect x="490" y="180" width="150" height="56" rx="10" fill="var(--diagram-node-bg)" stroke="#f59e0b" stroke-width="1.5" stroke-opacity="0.6" stroke-dasharray="6,3" />
+    <text x="565" y="204" text-anchor="middle" class="ag-label" fill="var(--diagram-text)">Shared Contract</text>
+    <text x="565" y="220" text-anchor="middle" class="ag-sublabel" fill="var(--diagram-text-muted)">Storage trait spec</text>
+
+    <!-- Allowed arrows (green, downward) -->
+    <line x1="190" y1="100" x2="190" y2="128" stroke="#22c55e" stroke-width="1.5" marker-end="url(#ag-arrow-ok)" />
+    <line x1="195" y1="178" x2="195" y2="208" stroke="#22c55e" stroke-width="1.5" marker-end="url(#ag-arrow-ok)" />
+    <line x1="200" y1="258" x2="195" y2="288" stroke="#22c55e" stroke-width="1.5" marker-end="url(#ag-arrow-ok)" />
+    <line x1="345" y1="178" x2="350" y2="208" stroke="#22c55e" stroke-width="1.5" marker-end="url(#ag-arrow-ok)" />
+
+    <!-- Forbidden arrow (red, upward from foundation to app) -->
+    <path d="M400,314 Q450,314 450,240 Q450,100 400,76" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#ag-arrow-no)" />
+
+    <!-- Forbidden X -->
+    <circle cx="450" cy="200" r="12" fill="var(--diagram-node-bg)" stroke="#ef4444" stroke-width="1.5" />
+    <line x1="444" y1="194" x2="456" y2="206" stroke="#ef4444" stroke-width="2" />
+    <line x1="456" y1="194" x2="444" y2="206" stroke="#ef4444" stroke-width="2" />
+
+    <!-- Shared contract arrow -->
+    <line x1="490" y1="208" x2="432" y2="234" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,3" />
+
+    <!-- Legend -->
+    <g transform="translate(490, 290)">
+      <line x1="0" y1="10" x2="30" y2="10" stroke="#22c55e" stroke-width="1.5" />
+      <text x="38" y="14" class="ag-sublabel" fill="var(--diagram-text-muted)">allowed dependency</text>
+
+      <line x1="0" y1="30" x2="30" y2="30" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,3" />
+      <text x="38" y="34" class="ag-sublabel" fill="var(--diagram-text-muted)">forbidden dependency</text>
+
+      <line x1="0" y1="50" x2="30" y2="50" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,3" />
+      <text x="38" y="54" class="ag-sublabel" fill="var(--diagram-text-muted)">shared contract</text>
+    </g>
+  </svg>
+</figure>
+
+<style>
+  .diagram-wrapper {
+    margin: 2rem 0;
+    padding: 0;
+  }
+  .diagram-wrapper svg {
+    width: 100%;
+    max-width: 720px;
+    height: auto;
+    margin: 0 auto;
+    display: block;
+    --diagram-text: var(--sl-color-text, #1e293b);
+    --diagram-text-muted: var(--sl-color-text-accent, #64748b);
+    --diagram-border: var(--sl-color-gray-4, #cbd5e1);
+    --diagram-arrow: var(--sl-color-gray-4, #94a3b8);
+    --diagram-node-bg: var(--sl-color-bg-nav, #ffffff);
+    --diagram-node-border: var(--sl-color-gray-4, #e2e8f0);
+  }
+  :global([data-theme='dark']) .diagram-wrapper svg,
+  :global(.sl-theme-dark) .diagram-wrapper svg {
+    --diagram-text: var(--sl-color-text, #e2e8f0);
+    --diagram-text-muted: var(--sl-color-text-accent, #94a3b8);
+    --diagram-border: var(--sl-color-gray-5, #475569);
+    --diagram-arrow: var(--sl-color-gray-5, #64748b);
+    --diagram-node-bg: var(--sl-color-bg-nav, #1e293b);
+    --diagram-node-border: var(--sl-color-gray-5, #334155);
+  }
+  .ag-node {
+    fill: var(--diagram-node-bg);
+    stroke-width: 1.5;
+  }
+  .ag-app { stroke: #a78bfa; stroke-opacity: 0.6; }
+  .ag-adapter { stroke: #8b5cf6; stroke-opacity: 0.5; }
+  .ag-interface { stroke: #6366f1; stroke-opacity: 0.6; }
+  .ag-foundation { stroke: #4f46e5; stroke-opacity: 0.7; }
+  .ag-title {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .ag-layer-label {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .ag-label {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .ag-sublabel {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 10px;
+    font-weight: 400;
+  }
+</style>

@@ -1,0 +1,98 @@
+---
+title: Ecosystem Governance
+description: Coordinating contracts, roles, and architecture across multiple repositories.
+---
+
+Large systems often span multiple repositories. Lexicon supports governance across repositories through shared contracts, repository roles, compatibility validation, and dependency law.
+
+This enables coordinated architecture across a large platform without forcing all repositories to adopt the full model at once. Ecosystem governance is fully opt-in.
+
+## Repository Roles
+
+A repository may have a declared role that influences what contracts are expected, what gates are mandatory, what dependencies are allowed, and how AI is permitted to modify the repo.
+
+Roles include:
+
+- **core library** -- foundational code with strict stability requirements
+- **runtime** -- execution environment with performance and safety contracts
+- **interface definition** -- API surface declarations consumed by others
+- **adapter / backend** -- implementations of shared traits
+- **application** -- end-user-facing code with broader edit permissions
+- **SDK** -- developer-facing libraries with compatibility constraints
+- **plugin / extension** -- code operating within a host contract
+- **tooling / CLI** -- developer tools with relaxed stability expectations
+- **experimental** -- exploratory code that cannot publish stable shared contracts
+
+## Shared Contracts
+
+Some contracts should be shareable across multiple repositories:
+
+- API compatibility rules
+- data interchange invariants
+- trait semantics expected across implementations
+- serialization / wire format guarantees
+- plugin interface contracts
+- backend capability contracts
+
+Shared contracts can be referenced by many repos and validated across the ecosystem.
+
+## Dependency Law
+
+The system supports explicit dependency law:
+
+- foundation repos may not depend on application repos
+- interface crates may not import adapter internals
+- runtime crates may depend on interfaces but not applications
+- experimental repos cannot publish stable shared contracts
+- plugins may only use approved extension interfaces
+- adapters may implement shared traits but not define core policy
+
+Violations are surfaced clearly in `lexicon ecosystem verify` and `lexicon ecosystem doctor`.
+
+## Architecture Rules
+
+Architecture rule definitions govern:
+
+- allowed and forbidden dependency edges
+- required isolation boundaries
+- public API visibility constraints
+- layering constraints
+- package ownership boundaries
+- stability expectations by layer
+
+These rules are versioned, inspectable, and enforceable.
+
+## Ecosystem Verification
+
+Higher-level verification modes detect:
+
+- forbidden dependency edges
+- role violations
+- layering violations
+- cross-repo contract drift
+- interface compatibility breaks
+- architecture drift over time
+- orphan shared contracts
+- inconsistent scoring/gate policies across related repos
+
+## Impact Analysis
+
+When a contract or public API changes, the system estimates impact:
+
+- local repo impact
+- workspace package impact
+- downstream repo impact
+- shared contract consumers affected
+- likely breaking change severity
+
+This does not need to be perfect, but it provides structured, actionable information for making change decisions.
+
+## Progressive Adoption
+
+Ecosystem governance is layered. A user can:
+
+1. Start with **Repo Mode** -- local contracts, gates, scoring
+2. Grow into **Workspace Mode** -- add crate roles, dependency rules, architecture validation
+3. Opt into **Ecosystem Mode** -- add shared contracts, repo roles, cross-repo governance
+
+Each level builds on the previous one. Migration is additive and safe -- you never need to restart from scratch.

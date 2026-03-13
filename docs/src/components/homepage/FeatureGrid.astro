@@ -1,0 +1,105 @@
+---
+/**
+ * A polished feature grid for the homepage.
+ * Displays core Lexicon concepts as styled cards.
+ */
+interface Feature {
+  title: string;
+  description: string;
+  accent: string;
+}
+const features: Feature[] = [
+  {
+    title: 'Contracts',
+    description: 'Declare what your system must do, must not do, and what is out of scope. Contracts are the source of truth for behavioral law.',
+    accent: '#6366f1',
+  },
+  {
+    title: 'Conformance',
+    description: 'Generate reusable test harnesses from contracts. Multiple implementations can be verified against the same specification.',
+    accent: '#8b5cf6',
+  },
+  {
+    title: 'Coverage',
+    description: 'Measure which contract clauses are actually tested. Know whether your tests prove behavior, not just exercise code.',
+    accent: '#a78bfa',
+  },
+  {
+    title: 'Gates',
+    description: 'Enforce hard pass/fail verification checks. Gates prevent regressions from entering the system — by humans or AI.',
+    accent: '#f59e0b',
+  },
+  {
+    title: 'Scoring',
+    description: 'Measure system health across weighted dimensions. Deterministic, explainable, and resistant to gaming.',
+    accent: '#06b6d4',
+  },
+  {
+    title: 'Architecture',
+    description: 'Define structural rules: crate roles, dependency directions, layer boundaries. Detect drift before it becomes debt.',
+    accent: '#4f46e5',
+  },
+  {
+    title: 'Ecosystem',
+    description: 'Govern multiple repositories with shared contracts, role-based policies, and cross-repo compatibility checks.',
+    accent: '#7c3aed',
+  },
+  {
+    title: 'AI Context',
+    description: 'Generate structured context for AI agents. Agents understand system law and operate within defined boundaries.',
+    accent: '#818cf8',
+  },
+];
+---
+
+<div class="fg-grid">
+  {features.map((f) => (
+    <div class="fg-card" style={`--fg-accent: ${f.accent}`}>
+      <div class="fg-card-bar" />
+      <h3 class="fg-card-title">{f.title}</h3>
+      <p class="fg-card-desc">{f.description}</p>
+    </div>
+  ))}
+</div>
+
+<style>
+  .fg-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.25rem;
+    margin: 2rem 0;
+  }
+  .fg-card {
+    position: relative;
+    padding: 1.5rem 1.25rem 1.25rem;
+    border-radius: 10px;
+    border: 1px solid var(--sl-color-gray-5, #e2e8f0);
+    background: var(--sl-color-bg-nav, #fff);
+    transition: border-color 0.2s;
+  }
+  .fg-card:hover {
+    border-color: var(--fg-accent, var(--sl-color-gray-4));
+  }
+  .fg-card-bar {
+    position: absolute;
+    top: 0;
+    left: 1.25rem;
+    right: 1.25rem;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    background: var(--fg-accent, #6366f1);
+    opacity: 0.6;
+  }
+  .fg-card-title {
+    font-size: 1rem;
+    font-weight: 650;
+    margin: 0 0 0.5rem;
+    color: var(--sl-color-text, #1e293b);
+  }
+  .fg-card-desc {
+    font-size: 0.875rem;
+    line-height: 1.55;
+    margin: 0;
+    color: var(--sl-color-text-accent, #64748b);
+  }
+</style>

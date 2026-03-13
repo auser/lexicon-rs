@@ -1,0 +1,75 @@
+---
+/**
+ * Call-to-action row for the homepage.
+ * Provides clear next-step links into the docs.
+ */
+interface CTAItem {
+  label: string;
+  href: string;
+  description: string;
+}
+const items: CTAItem[] = [
+  { label: 'Get Started', href: '/getting-started/quickstart/', description: 'Initialize Lexicon in your repository' },
+  { label: 'The Lexicon Model', href: '/concepts/lexicon/', description: 'Understand the layered architecture' },
+  { label: 'Create a Contract', href: '/guides/first-contract/', description: 'Define your first behavioral specification' },
+  { label: 'Verification', href: '/guides/verification/', description: 'Run the full verification pipeline' },
+];
+---
+
+<div class="cta-row">
+  {items.map((item) => (
+    <a class="cta-link" href={item.href}>
+      <span class="cta-label">{item.label}</span>
+      <span class="cta-desc">{item.description}</span>
+      <span class="cta-arrow">→</span>
+    </a>
+  ))}
+</div>
+
+<style>
+  .cta-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+  .cta-link {
+    display: block;
+    padding: 1.25rem;
+    border-radius: 10px;
+    border: 1px solid var(--sl-color-gray-5, #e2e8f0);
+    background: var(--sl-color-bg-nav, #fff);
+    text-decoration: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+  .cta-link:hover {
+    border-color: #6366f1;
+    box-shadow: 0 2px 12px rgba(99, 102, 241, 0.08);
+  }
+  .cta-label {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 650;
+    color: var(--sl-color-text, #1e293b);
+    margin-bottom: 0.3rem;
+  }
+  .cta-desc {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--sl-color-text-accent, #64748b);
+    line-height: 1.4;
+  }
+  .cta-arrow {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    font-size: 1rem;
+    color: var(--sl-color-text-accent, #94a3b8);
+    transition: color 0.2s, transform 0.2s;
+  }
+  .cta-link:hover .cta-arrow {
+    color: #6366f1;
+    transform: translateX(2px);
+  }
+</style>

@@ -1,0 +1,123 @@
+---
+/**
+ * Progressive scope diagram.
+ * Shows Repo → Workspace → Ecosystem as concentric expansions.
+ */
+---
+
+<figure class="diagram-wrapper">
+  <svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Progressive scope: Repo Mode as the core, Workspace Mode as expansion, Ecosystem Mode as the broadest layer">
+    <defs>
+      <linearGradient id="ps-eco" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.10" />
+        <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.03" />
+      </linearGradient>
+      <linearGradient id="ps-ws" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.14" />
+        <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.04" />
+      </linearGradient>
+      <linearGradient id="ps-repo" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#6366f1" stop-opacity="0.18" />
+        <stop offset="100%" stop-color="#6366f1" stop-opacity="0.06" />
+      </linearGradient>
+    </defs>
+
+    <!-- Ecosystem ring -->
+    <rect x="20" y="20" width="680" height="300" rx="20" fill="url(#ps-eco)" stroke="#a78bfa" stroke-width="1.5" stroke-opacity="0.4" />
+    <text x="360" y="48" text-anchor="middle" class="ps-ring-label" fill="#a78bfa">ECOSYSTEM MODE</text>
+
+    <!-- Ecosystem features (left side) -->
+    <text x="60" y="80" class="ps-feature" fill="var(--diagram-text-muted)">shared contracts</text>
+    <text x="60" y="98" class="ps-feature" fill="var(--diagram-text-muted)">repository roles</text>
+    <text x="60" y="116" class="ps-feature" fill="var(--diagram-text-muted)">compatibility checks</text>
+    <text x="60" y="134" class="ps-feature" fill="var(--diagram-text-muted)">dependency law</text>
+    <text x="60" y="152" class="ps-feature" fill="var(--diagram-text-muted)">impact analysis</text>
+
+    <!-- Workspace ring -->
+    <rect x="190" y="70" width="510" height="230" rx="16" fill="url(#ps-ws)" stroke="#8b5cf6" stroke-width="1.5" stroke-opacity="0.4" />
+    <text x="445" y="96" text-anchor="middle" class="ps-ring-label" fill="#8b5cf6">WORKSPACE MODE</text>
+
+    <!-- Workspace features (right side of workspace) -->
+    <text x="540" y="126" class="ps-feature" fill="var(--diagram-text-muted)">crate roles</text>
+    <text x="540" y="144" class="ps-feature" fill="var(--diagram-text-muted)">dependency rules</text>
+    <text x="540" y="162" class="ps-feature" fill="var(--diagram-text-muted)">architecture graph</text>
+    <text x="540" y="180" class="ps-feature" fill="var(--diagram-text-muted)">local shared contracts</text>
+
+    <!-- Repo ring -->
+    <rect x="220" y="118" width="290" height="164" rx="12" fill="url(#ps-repo)" stroke="#6366f1" stroke-width="2" stroke-opacity="0.5" />
+    <text x="365" y="142" text-anchor="middle" class="ps-ring-label" fill="#6366f1">REPO MODE</text>
+
+    <!-- Repo features (grid) -->
+    <g class="ps-repo-features">
+      <rect x="240" y="155" width="110" height="32" rx="6" class="ps-chip" />
+      <text x="295" y="175" text-anchor="middle" class="ps-chip-label" fill="var(--diagram-text)">Contracts</text>
+
+      <rect x="360" y="155" width="130" height="32" rx="6" class="ps-chip" />
+      <text x="425" y="175" text-anchor="middle" class="ps-chip-label" fill="var(--diagram-text)">Conformance</text>
+
+      <rect x="240" y="197" width="95" height="32" rx="6" class="ps-chip" />
+      <text x="287" y="217" text-anchor="middle" class="ps-chip-label" fill="var(--diagram-text)">Coverage</text>
+
+      <rect x="345" y="197" width="72" height="32" rx="6" class="ps-chip" />
+      <text x="381" y="217" text-anchor="middle" class="ps-chip-label" fill="var(--diagram-text)">Gates</text>
+
+      <rect x="427" y="197" width="76" height="32" rx="6" class="ps-chip" />
+      <text x="465" y="217" text-anchor="middle" class="ps-chip-label" fill="var(--diagram-text)">Scoring</text>
+
+      <rect x="240" y="239" width="110" height="32" rx="6" class="ps-chip" />
+      <text x="295" y="259" text-anchor="middle" class="ps-chip-label" fill="var(--diagram-text)">AI Context</text>
+
+      <rect x="360" y="239" width="90" height="32" rx="6" class="ps-chip" />
+      <text x="405" y="259" text-anchor="middle" class="ps-chip-label" fill="var(--diagram-text)">Doctor</text>
+    </g>
+  </svg>
+</figure>
+
+<style>
+  .diagram-wrapper {
+    margin: 2rem 0;
+    padding: 0;
+  }
+  .diagram-wrapper svg {
+    width: 100%;
+    max-width: 720px;
+    height: auto;
+    margin: 0 auto;
+    display: block;
+    --diagram-text: var(--sl-color-text, #1e293b);
+    --diagram-text-muted: var(--sl-color-text-accent, #64748b);
+    --diagram-border: var(--sl-color-gray-4, #cbd5e1);
+    --diagram-node-bg: var(--sl-color-bg-nav, #ffffff);
+    --diagram-node-border: var(--sl-color-gray-4, #e2e8f0);
+  }
+  :global([data-theme='dark']) .diagram-wrapper svg,
+  :global(.sl-theme-dark) .diagram-wrapper svg {
+    --diagram-text: var(--sl-color-text, #e2e8f0);
+    --diagram-text-muted: var(--sl-color-text-accent, #94a3b8);
+    --diagram-border: var(--sl-color-gray-5, #475569);
+    --diagram-node-bg: var(--sl-color-bg-nav, #1e293b);
+    --diagram-node-border: var(--sl-color-gray-5, #334155);
+  }
+  .ps-ring-label {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .ps-feature {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 11px;
+    font-weight: 400;
+  }
+  .ps-chip {
+    fill: var(--diagram-node-bg);
+    stroke: var(--diagram-node-border);
+    stroke-width: 1;
+  }
+  .ps-chip-label {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 11px;
+    font-weight: 500;
+  }
+</style>

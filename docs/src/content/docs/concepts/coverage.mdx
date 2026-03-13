@@ -1,0 +1,73 @@
+---
+title: Contract Coverage
+description: Measuring how much of a contract is verified by tests.
+---
+
+import ContractCoverageDiagram from '../../../components/diagrams/ContractCoverageDiagram.astro';
+
+Contract coverage measures how much of a declared contract is actually tested. Unlike code coverage, which measures lines executed, contract coverage measures **clauses exercised** -- the invariants, required semantics, and forbidden behaviors that have corresponding tests.
+
+Coverage ensures contracts are not merely documentation but are enforced.
+
+<ContractCoverageDiagram />
+
+## How It Works
+
+Each contract clause can reference tests or test tags:
+
+```toml
+[[invariants]]
+id = "inv-001"
+description = "A key set with a value must return that value on get"
+severity = "required"
+
+[[required_semantics]]
+id = "req-001"
+description = "get(key) returns None for missing keys"
+test_tags = ["conformance.value_retrieval"]
+
+[[required_semantics]]
+id = "req-002"
+description = "delete is idempotent for missing keys"
+test_tags = ["conformance.delete_behavior"]
+```
+
+Lexicon computes:
+
+- **clauses tested** -- contract elements with matching test tags
+- **clauses missing tests** -- contract elements with no test coverage
+- **coverage percentage** -- tested clauses / total clauses
+
+## Coverage Report
+
+A typical coverage report looks like:
+
+```
+Contract Coverage Report
+
+Contract: key-value-store
+
+Clauses: 12
+Covered: 9
+Missing coverage: 3
+
+Missing clauses:
+
+- concurrent_write_behavior
+- serialization_roundtrip
+- large_key_handling
+```
+
+This report is integrated into the verification pipeline and surfaces in both `lexicon verify` and `lexicon doctor`.
+
+## Scoring Integration
+
+Contract coverage influences the scoring model. The `conformance-coverage` dimension measures how thoroughly your tests exercise your contracts.
+
+Full coverage earns full points. Gaps reduce the score proportionally. This makes coverage a concrete, measurable dimension of system health rather than an aspirational goal.
+
+## Why Contract Coverage Matters
+
+Code coverage tells you what lines ran. Contract coverage tells you what **behaviors are proven**. A system can have 100% code coverage but 30% contract coverage if the tests exercise code paths without actually verifying the declared invariants.
+
+Contract coverage closes this gap. It connects the behavioral specification (what the system must do) to the test suite (what the tests actually check).

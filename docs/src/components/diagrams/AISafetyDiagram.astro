@@ -1,0 +1,153 @@
+---
+/**
+ * AI Safety boundary diagram.
+ * Shows how AI agents interact with Lexicon within bounded safety constraints.
+ */
+---
+
+<figure class="diagram-wrapper">
+  <svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AI safety boundaries: AI agent operates within Lexicon's contracts, gates, scoring, and audit constraints">
+    <defs>
+      <marker id="ai-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6" fill="none" stroke="var(--diagram-arrow)" stroke-width="1.2" />
+      </marker>
+      <marker id="ai-arrow-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6" fill="none" stroke="#ef4444" stroke-width="1.2" />
+      </marker>
+      <marker id="ai-arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6" fill="none" stroke="#22c55e" stroke-width="1.2" />
+      </marker>
+      <linearGradient id="ai-boundary" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.10" />
+        <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.03" />
+      </linearGradient>
+    </defs>
+
+    <!-- Safety boundary box -->
+    <rect x="180" y="20" width="520" height="340" rx="16" fill="url(#ai-boundary)" stroke="#f59e0b" stroke-width="2" stroke-opacity="0.4" stroke-dasharray="8,4" />
+    <text x="440" y="48" text-anchor="middle" class="ai-boundary-label" fill="#f59e0b">SYSTEM LAW BOUNDARY</text>
+
+    <!-- AI Agent (outside/left) -->
+    <rect x="20" y="130" width="130" height="80" rx="12" class="ai-node ai-node-agent" />
+    <text x="85" y="164" text-anchor="middle" class="ai-label" fill="var(--diagram-text)">AI Agent</text>
+    <text x="85" y="182" text-anchor="middle" class="ai-sublabel" fill="var(--diagram-text-muted)">Claude Code</text>
+
+    <!-- Arrow: AI → Context -->
+    <line x1="150" y1="155" x2="196" y2="105" stroke="var(--diagram-arrow)" stroke-width="1.5" marker-end="url(#ai-arrow)" />
+    <text x="164" y="120" class="ai-arrow-label" fill="var(--diagram-text-muted)">reads</text>
+
+    <!-- AI Context box -->
+    <rect x="200" y="72" width="140" height="56" rx="8" class="ai-node ai-node-context" />
+    <text x="270" y="96" text-anchor="middle" class="ai-label" fill="var(--diagram-text)">AI Context</text>
+    <text x="270" y="112" text-anchor="middle" class="ai-sublabel" fill="var(--diagram-text-muted)">CLAUDE.md</text>
+
+    <!-- Arrow: AI → Propose -->
+    <line x1="150" y1="180" x2="196" y2="200" stroke="#22c55e" stroke-width="1.5" marker-end="url(#ai-arrow-green)" />
+    <text x="155" y="198" class="ai-arrow-label" fill="#22c55e">propose</text>
+
+    <!-- Propose patch box -->
+    <rect x="200" y="176" width="140" height="56" rx="8" class="ai-node ai-node-action" />
+    <text x="270" y="200" text-anchor="middle" class="ai-label" fill="var(--diagram-text)">Patch</text>
+    <text x="270" y="216" text-anchor="middle" class="ai-sublabel" fill="var(--diagram-text-muted)">bounded change</text>
+
+    <!-- Arrow: Patch → Verify -->
+    <line x1="340" y1="204" x2="396" y2="204" stroke="var(--diagram-arrow)" stroke-width="1.5" marker-end="url(#ai-arrow)" />
+
+    <!-- Verification box -->
+    <rect x="400" y="170" width="140" height="68" rx="8" class="ai-node ai-node-verify" />
+    <text x="470" y="196" text-anchor="middle" class="ai-label" fill="var(--diagram-text)">Verification</text>
+    <text x="470" y="214" text-anchor="middle" class="ai-sublabel" fill="var(--diagram-text-muted)">gates + scoring</text>
+
+    <!-- Contracts box (inside boundary) -->
+    <rect x="400" y="72" width="120" height="56" rx="8" class="ai-node ai-node-law" />
+    <text x="460" y="96" text-anchor="middle" class="ai-label" fill="var(--diagram-text)">Contracts</text>
+    <text x="460" y="112" text-anchor="middle" class="ai-sublabel" fill="var(--diagram-text-muted)">immutable law</text>
+
+    <!-- Gates box -->
+    <rect x="560" y="72" width="120" height="56" rx="8" class="ai-node ai-node-law" />
+    <text x="620" y="96" text-anchor="middle" class="ai-label" fill="var(--diagram-text)">Gates</text>
+    <text x="620" y="112" text-anchor="middle" class="ai-sublabel" fill="var(--diagram-text-muted)">enforcement</text>
+
+    <!-- Pass path -->
+    <line x1="540" y1="190" x2="576" y2="190" stroke="#22c55e" stroke-width="1.5" marker-end="url(#ai-arrow-green)" />
+
+    <!-- Accept box -->
+    <rect x="580" y="170" width="100" height="40" rx="8" fill="var(--diagram-node-bg)" stroke="#22c55e" stroke-width="1.5" stroke-opacity="0.6" />
+    <text x="630" y="194" text-anchor="middle" class="ai-label" fill="#22c55e">Accept</text>
+
+    <!-- Fail path -->
+    <line x1="470" y1="238" x2="470" y2="270" stroke="#ef4444" stroke-width="1.5" marker-end="url(#ai-arrow-red)" />
+
+    <!-- Reject box -->
+    <rect x="410" y="272" width="120" height="40" rx="8" fill="var(--diagram-node-bg)" stroke="#ef4444" stroke-width="1.5" stroke-opacity="0.6" />
+    <text x="470" y="296" text-anchor="middle" class="ai-label" fill="#ef4444">Reject Patch</text>
+
+    <!-- Audit trail -->
+    <rect x="580" y="272" width="100" height="56" rx="8" class="ai-node ai-node-audit" />
+    <text x="630" y="296" text-anchor="middle" class="ai-label" fill="var(--diagram-text)">Audit</text>
+    <text x="630" y="312" text-anchor="middle" class="ai-sublabel" fill="var(--diagram-text-muted)">every action</text>
+
+    <!-- Arrows to audit -->
+    <line x1="630" y1="210" x2="630" y2="270" stroke="var(--diagram-arrow)" stroke-width="1" stroke-dasharray="4,3" />
+    <line x1="530" y1="292" x2="578" y2="292" stroke="var(--diagram-arrow)" stroke-width="1" stroke-dasharray="4,3" />
+  </svg>
+</figure>
+
+<style>
+  .diagram-wrapper {
+    margin: 2rem 0;
+    padding: 0;
+  }
+  .diagram-wrapper svg {
+    width: 100%;
+    max-width: 720px;
+    height: auto;
+    margin: 0 auto;
+    display: block;
+    --diagram-text: var(--sl-color-text, #1e293b);
+    --diagram-text-muted: var(--sl-color-text-accent, #64748b);
+    --diagram-arrow: var(--sl-color-gray-4, #94a3b8);
+    --diagram-node-bg: var(--sl-color-bg-nav, #ffffff);
+    --diagram-node-border: var(--sl-color-gray-4, #e2e8f0);
+  }
+  :global([data-theme='dark']) .diagram-wrapper svg,
+  :global(.sl-theme-dark) .diagram-wrapper svg {
+    --diagram-text: var(--sl-color-text, #e2e8f0);
+    --diagram-text-muted: var(--sl-color-text-accent, #94a3b8);
+    --diagram-arrow: var(--sl-color-gray-5, #64748b);
+    --diagram-node-bg: var(--sl-color-bg-nav, #1e293b);
+    --diagram-node-border: var(--sl-color-gray-5, #334155);
+  }
+  .ai-node {
+    fill: var(--diagram-node-bg);
+    stroke-width: 1.5;
+  }
+  .ai-node-agent { stroke: #6366f1; stroke-opacity: 0.7; }
+  .ai-node-context { stroke: #8b5cf6; stroke-opacity: 0.5; }
+  .ai-node-action { stroke: var(--diagram-node-border); }
+  .ai-node-verify { stroke: #f59e0b; stroke-opacity: 0.6; }
+  .ai-node-law { stroke: #ef4444; stroke-opacity: 0.3; }
+  .ai-node-audit { stroke: var(--diagram-node-border); stroke-dasharray: 4,3; }
+  .ai-label {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .ai-sublabel {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 10px;
+    font-weight: 400;
+  }
+  .ai-boundary-label {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .ai-arrow-label {
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: 9px;
+    font-weight: 500;
+  }
+</style>

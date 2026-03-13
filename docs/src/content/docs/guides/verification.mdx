@@ -1,0 +1,75 @@
+---
+title: Verification
+description: Running the full verification pipeline with gates, scoring, and audit.
+---
+
+import VerificationPipelineDiagram from '../../../components/diagrams/VerificationPipelineDiagram.astro';
+
+This guide covers the `lexicon verify` command -- the core of the verification pipeline. Verification runs gates, computes scores, checks coverage, and writes audit records.
+
+<VerificationPipelineDiagram />
+
+## Running Verification
+
+```bash
+lexicon verify
+```
+
+This executes the full pipeline:
+
+1. Loads gate definitions from `specs/gates.toml`
+2. Runs each gate command as a subprocess
+3. Loads the scoring model from `specs/scoring/model.toml`
+4. Maps gate results to scoring dimensions
+5. Computes the weighted score and verdict
+6. Writes an audit record to `.lexicon/audit/`
+7. Prints a summary with gate results and score breakdown
+
+## Understanding the Output
+
+### Gate Results
+
+Each gate reports one of:
+
+- **Pass** -- command exited with status 0
+- **Fail** -- command exited with non-zero status
+- **Skip** -- gate was in the skip list
+- **Error** -- command could not be executed
+
+### Score and Verdict
+
+The verdict follows this logic:
+
+1. If any **required** dimension failed → **Fail**
+2. If total score >= pass threshold (default 80%) → **Pass**
+3. If total score >= warn threshold (default 60%) → **Warn**
+4. Otherwise → **Fail**
+
+### Score Breakdown
+
+Use `lexicon score explain` for a detailed breakdown showing each dimension's weight, value, and contribution to the total score.
+
+## Skipping Gates
+
+You can skip specific gates:
+
+```bash
+lexicon verify --skip doc-tests
+```
+
+Only gates with `allow_skip = true` may be skipped. Required gates with `allow_skip = false` cannot be skipped -- the policy validator rejects the request.
+
+## CI Integration
+
+Add verification to your CI pipeline:
+
+```yaml
+- name: Run lexicon verify
+  run: lexicon verify
+```
+
+See the [CI Integration](/guides/ci-integration/) guide for a complete GitHub Actions example.
+
+## Audit Trail
+
+Every verification run is recorded as an audit entry in `.lexicon/audit/`. This provides a history of project health over time and ensures all verification results are attributable and reviewable.

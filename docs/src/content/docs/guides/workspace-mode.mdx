@@ -1,0 +1,90 @@
+---
+title: Workspace Mode
+description: Using Lexicon with multi-crate Rust workspaces.
+---
+
+Workspace Mode extends Lexicon for multi-crate Rust workspaces. It adds crate roles, dependency rules, architecture validation, and shared internal contracts on top of the standard Repo Mode capabilities.
+
+## When to Use Workspace Mode
+
+Use Workspace Mode when your repository is a Cargo workspace with multiple crates and you want to:
+
+- assign roles to crates (core, adapter, interface, application)
+- enforce dependency directions between layers
+- share contracts within the workspace
+- validate architecture rules as part of verification
+
+## Activating Workspace Mode
+
+```bash
+lexicon workspace init
+```
+
+This command:
+
+1. Inspects the current repo-local state
+2. Preserves existing contracts, scoring, and gates
+3. Adds a workspace manifest at `.lexicon/workspace.toml`
+4. Proposes architecture rules at `.lexicon/architecture/rules.toml`
+5. Proposes crate roles based on the workspace structure
+6. Lets you refine these through a conversational workflow
+
+## Crate Roles
+
+Each crate in the workspace can have a declared role:
+
+- **foundation** -- lowest layer, no upward dependencies
+- **core** -- central domain logic
+- **interface** -- trait and type definitions consumed by others
+- **adapter** -- implementations of interfaces
+- **integration** -- cross-crate glue
+- **application** -- end-user entrypoints
+- **tooling** -- developer utilities
+- **experimental** -- exploratory code with relaxed constraints
+
+Roles influence what dependencies are allowed and what gates are expected.
+
+## Dependency Rules
+
+Architecture rules define allowed dependency directions:
+
+- foundation crates may not depend on application crates
+- interface crates may not import adapter internals
+- experimental crates cannot publish stable contracts
+
+Violations are detected during `lexicon workspace verify` and reported in `lexicon workspace doctor`.
+
+## Workspace Verification
+
+```bash
+lexicon workspace verify
+```
+
+This runs:
+
+- standard repo-local verification (gates, scoring, coverage)
+- workspace architecture validation (dependency rules, role constraints)
+- shared contract compliance within the workspace
+
+## Workspace Doctor
+
+```bash
+lexicon workspace doctor
+```
+
+Detects workspace-level issues:
+
+- forbidden dependency edges between crates
+- crate role violations
+- architecture drift
+- shared contract inconsistencies
+
+## Upgrading from Repo Mode
+
+Migration from Repo Mode is additive and safe:
+
+- existing contracts, scoring, and gates are preserved
+- workspace configuration is added alongside existing files
+- no existing state is modified or deleted
+
+You can continue using all Repo Mode commands (`lexicon verify`, `lexicon doctor`, etc.) -- they remain focused on local repo health while workspace commands provide the broader architectural view.

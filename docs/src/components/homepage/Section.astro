@@ -1,0 +1,31 @@
+---
+/**
+ * A styled section wrapper for the homepage.
+ * Provides consistent spacing and optional accent border.
+ */
+interface Props {
+  accent?: boolean;
+}
+const { accent = false } = Astro.props;
+---
+
+<section class:list={['hp-section', { 'hp-section--accent': accent }]}>
+  <div class="hp-section-inner">
+    <slot />
+  </div>
+</section>
+
+<style>
+  .hp-section {
+    padding: 3rem 1.5rem;
+  }
+  .hp-section--accent {
+    border-top: 1px solid var(--sl-color-gray-5, #e2e8f0);
+    border-bottom: 1px solid var(--sl-color-gray-5, #e2e8f0);
+    background: var(--sl-color-bg-sidebar, transparent);
+  }
+  .hp-section-inner {
+    max-width: 72rem;
+    margin: 0 auto;
+  }
+</style>

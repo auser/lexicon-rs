@@ -1,0 +1,123 @@
+---
+/**
+ * Progressive scope cards for the homepage.
+ * Shows Repo → Workspace → Ecosystem modes with feature lists.
+ */
+interface ScopeLevel {
+  label: string;
+  tagline: string;
+  features: string[];
+  accent: string;
+}
+const scopes: ScopeLevel[] = [
+  {
+    label: 'Repo Mode',
+    tagline: 'For single libraries',
+    features: ['Contracts', 'Conformance tests', 'Coverage analysis', 'Verification gates', 'Scoring', 'AI context sync'],
+    accent: '#6366f1',
+  },
+  {
+    label: 'Workspace Mode',
+    tagline: 'For multi-crate workspaces',
+    features: ['Crate roles', 'Dependency rules', 'Architecture graph', 'Local shared contracts', 'Workspace verify'],
+    accent: '#8b5cf6',
+  },
+  {
+    label: 'Ecosystem Mode',
+    tagline: 'For multi-repo platforms',
+    features: ['Repository roles', 'Shared contracts', 'Dependency law', 'Impact analysis', 'Ecosystem governance'],
+    accent: '#a78bfa',
+  },
+];
+---
+
+<div class="sc-row">
+  {scopes.map((s, i) => (
+    <div class="sc-card" style={`--sc-accent: ${s.accent}`}>
+      <div class="sc-badge">{s.label}</div>
+      <p class="sc-tagline">{s.tagline}</p>
+      <ul class="sc-list">
+        {s.features.map((f) => (
+          <li>{f}</li>
+        ))}
+      </ul>
+      {i < scopes.length - 1 && <div class="sc-arrow-hint">+</div>}
+    </div>
+  ))}
+</div>
+
+<style>
+  .sc-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin: 2rem 0;
+  }
+  .sc-card {
+    position: relative;
+    padding: 1.5rem 1.25rem;
+    border-radius: 10px;
+    border: 1px solid var(--sl-color-gray-5, #e2e8f0);
+    background: var(--sl-color-bg-nav, #fff);
+  }
+  .sc-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--sc-accent, #6366f1);
+    border: 1px solid var(--sc-accent, #6366f1);
+    opacity: 0.85;
+  }
+  .sc-tagline {
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin: 0.75rem 0 0.5rem;
+    color: var(--sl-color-text, #1e293b);
+  }
+  .sc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .sc-list li {
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: var(--sl-color-text-accent, #64748b);
+    padding-left: 1rem;
+    position: relative;
+  }
+  .sc-list li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--sc-accent, #6366f1);
+    opacity: 0.5;
+  }
+  .sc-arrow-hint {
+    display: none;
+  }
+  @media (min-width: 720px) {
+    .sc-arrow-hint {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      right: -0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      background: var(--sl-color-bg, #fff);
+      border: 1px solid var(--sl-color-gray-5, #e2e8f0);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--sl-color-text-accent, #94a3b8);
+      z-index: 1;
+    }
+  }
+</style>

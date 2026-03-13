@@ -7,7 +7,7 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Lexicon',
-			description: 'Contract-driven verification for Rust libraries and workspaces',
+			description: 'Contract-driven verification and governance for software systems',
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/anthropics/lexicon' }],
 			sidebar: [
 				{
@@ -24,21 +24,25 @@ export default defineConfig({
 				{
 					label: 'Concepts',
 					items: [
+						{ label: 'The Lexicon Model', slug: 'concepts/lexicon' },
 						{ label: 'Contracts', slug: 'concepts/contracts' },
 						{ label: 'Conformance', slug: 'concepts/conformance' },
-						{ label: 'Scoring', slug: 'concepts/scoring' },
+						{ label: 'Contract Coverage', slug: 'concepts/coverage' },
 						{ label: 'Gates', slug: 'concepts/gates' },
+						{ label: 'Scoring', slug: 'concepts/scoring' },
+						{ label: 'Architecture', slug: 'concepts/architecture' },
+						{ label: 'Ecosystem Governance', slug: 'concepts/ecosystem' },
 						{ label: 'Conversations', slug: 'concepts/conversations' },
-						{ label: 'AI Integration', slug: 'concepts/ai-integration' },
+						{ label: 'AI Agents', slug: 'concepts/ai-agents' },
 					],
-				},
-				{
-					label: 'Reference',
-					autogenerate: { directory: 'reference' },
 				},
 				{
 					label: 'Guides',
 					autogenerate: { directory: 'guides' },
+				},
+				{
+					label: 'Reference',
+					autogenerate: { directory: 'reference' },
 				},
 			],
 		}),
