@@ -1041,10 +1041,12 @@ dependencies = [
  "lexicon-conversation",
  "lexicon-repo",
  "lexicon-spec",
+ "reqwest",
  "serde",
  "serde_json",
  "tempfile",
  "thiserror 2.0.18",
+ "toml",
 ]
 
 [[package]]
@@ -1185,6 +1187,7 @@ dependencies = [
  "console",
  "dialoguer",
  "indicatif",
+ "lexicon-ai",
  "lexicon-api",
  "lexicon-conversation",
  "lexicon-core",

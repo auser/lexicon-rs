@@ -139,5 +139,58 @@ Previous sprint archived at `specs/sprints/001-initial-implementation.md`.
 
 ---
 
+## Phase 19: AI-Assisted Artifact Creation & Intent-Driven Generation
+
+Implements specs `009-ai-assisted-work.md` and `010-ai-prompting.md`.
+
+### 19a: Claude API Client (`crates/ai/src/client.rs`)
+- [x] `ClaudeClient` struct implementing `AiProvider` trait
+- [x] `complete(system, user_message)` — call Claude Messages API with OAuth Bearer token
+- [x] Uses stored credentials from `lexicon auth login` (auto-refresh via `ensure_authenticated`)
+- [x] Configurable model (defaults to claude-sonnet-4)
+- [x] Response parsing (content blocks → text extraction)
+- [x] Unit tests for client creation and model override
+
+### 19b: Prompt Builder (`crates/ai/src/prompt.rs`)
+- [x] `ArtifactKind` enum (Contract, Conformance, Behavior, Improve)
+- [x] `system_prompt(kind)` — specialized system prompts per artifact type
+- [x] `intent_prompt(kind, intent, context)` — user message with repo context + templates
+- [x] `improve_prompt(context, artifacts, goal)` — improvement suggestion prompts
+- [x] Templates for contract (TOML), conformance (Rust), behavior (Markdown)
+- [x] Unit tests for prompt generation
+
+### 19c: Artifact Generation Engine (`crates/ai/src/generate.rs`)
+- [x] `GeneratedArtifact` struct (kind, path, content, format)
+- [x] `generate_artifact(provider, layout, kind, intent)` — full generation pipeline
+- [x] `generate_improvements(provider, layout, goal)` — improvement suggestions
+- [x] Context assembly from repo state (manifest, contracts, scoring, gates)
+- [x] Intent-to-slug path generation
+- [x] Unit tests for slugify
+
+### 19d: Core Integration (`crates/core/src/generate.rs`)
+- [x] `generate_from_intent(layout, kind, intent)` — auth + AI + generate
+- [x] `generate_improve(layout, goal)` — auth + AI + suggest improvements
+- [x] `accept_artifact(layout, artifact)` — write to disk + audit record
+- [x] `reject_artifact(layout, artifact)` — audit record for rejected suggestions
+- [x] `build_ai_provider(layout)` — authenticate and build ClaudeClient
+
+### 19e: CLI Commands
+- [x] `lexicon generate "<intent>"` — generate contract from description
+- [x] `lexicon contract generate "<intent>"` — AI-generate a contract
+- [x] `lexicon conformance generate "<intent>"` — AI-generate conformance tests
+- [x] `lexicon behavior generate "<intent>"` — AI-generate behavior scenarios
+- [x] `lexicon improve [--goal <goal>]` — AI-guided improvement suggestions
+- [x] Patch preview (content display + accept/reject flow)
+- [x] Audit trail for accepted/rejected artifacts
+
+### 19f: CLI Restructuring
+- [x] New `commands/conformance.rs` — conformance subcommand dispatch
+- [x] New `commands/behavior.rs` — behavior subcommand dispatch
+- [x] New `commands/generate.rs` — generate + improve command handlers
+- [x] Updated `app.rs` with Generate variants on Contract, Conformance, Behavior
+- [x] Updated `main.rs` to dispatch all new commands
+
+---
+
 **Starting state**: 103 tests, 13 crates, 24-page docs site
 **Ending state**: 167 tests, 15 crates, 28-page docs site

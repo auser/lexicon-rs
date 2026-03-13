@@ -3,6 +3,7 @@
 pub mod api;
 pub mod auth;
 pub mod contract;
+pub mod generate;
 pub mod coverage;
 pub mod error;
 pub mod init;

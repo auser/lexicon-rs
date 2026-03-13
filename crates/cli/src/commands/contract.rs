@@ -32,6 +32,13 @@ pub fn run(action: ContractAction) -> miette::Result<()> {
         ContractAction::Lint => {
             output::warning("Contract linting not yet implemented");
         }
+        ContractAction::Generate { intent } => {
+            return crate::commands::generate::run_generate(
+                &layout,
+                lexicon_ai::prompt::ArtifactKind::Contract,
+                &intent,
+            );
+        }
     }
     Ok(())
 }

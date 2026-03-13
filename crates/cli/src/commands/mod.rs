@@ -1,8 +1,11 @@
 pub mod api;
 pub mod auth;
+pub mod behavior;
+pub mod conformance;
 pub mod contract;
 pub mod coverage;
 pub mod doctor;
+pub mod generate;
 pub mod gate;
 pub mod init;
 pub mod score;

@@ -20,6 +20,7 @@ lexicon-scoring.workspace = true
 lexicon-tui.workspace = true
 lexicon-coverage.workspace = true
 lexicon-api.workspace = true
+lexicon-ai.workspace = true
 toml.workspace = true
 clap.workspace = true
 console.workspace = true

@@ -62,6 +62,12 @@ pub enum Command {
         goal: Option<String>,
     },
 
+    /// Generate artifacts from a natural language description
+    Generate {
+        /// What to generate (e.g. "rate limiter with burst capacity")
+        intent: String,
+    },
+
     /// Manage public API extraction and drift
     Api {
         #[command(subcommand)]
@@ -95,6 +101,11 @@ pub enum ContractAction {
     List,
     /// Lint contracts for issues
     Lint,
+    /// AI-generate a contract from a description
+    Generate {
+        /// Natural language description (e.g. "async key-value store with TTL")
+        intent: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -106,6 +117,11 @@ pub enum ConformanceAction {
     },
     /// Sync conformance harness code
     Sync,
+    /// AI-generate conformance tests from a description
+    Generate {
+        /// Natural language description (e.g. "cache trait with async get/set/delete")
+        intent: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -117,6 +133,11 @@ pub enum BehaviorAction {
     },
     /// Sync behavior scenarios
     Sync,
+    /// AI-generate behavior scenarios from a description
+    Generate {
+        /// Natural language description (e.g. "user session expiration after inactivity")
+        intent: String,
+    },
 }
 
 #[derive(Subcommand)]
