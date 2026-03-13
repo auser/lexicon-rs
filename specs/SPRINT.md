@@ -348,3 +348,13 @@ These are referenced in spec prompts but not yet broken into phases:
 - **AI Prompt Refinement**: conversation storage for artifact generation sessions, session replay/refinement, prompt training data collection. Extended from `009-ai-assisted-work.md`.
 - **Targeted Improve Commands**: `lexicon contract improve`, `lexicon conformance improve`, `lexicon coverage improve`, `lexicon architecture improve`, `lexicon scoring improve`. From `009-ai-assisted-work.md`.
 - **TUI Artifact Review**: AI suggestions as reviewable patches in TUI mode. From `009-ai-assisted-work.md` and `010-ai-prompting.md`.
+
+### Phase 19 Known Gaps (from review)
+
+These items are specified in `009-ai-assisted-work.md` / `010-ai-prompting.md` but not yet implemented in Phase 19:
+
+- [ ] **`AiProvider` trait semantics**: `enhance_proposal(prompt, context)` parameter names are misleading — system prompt goes into `prompt`, user message into `context`. Consider renaming to `(system, user_message)` for clarity.
+- [ ] **`load_context` silent failure**: returns empty string on any error (missing manifest, parse errors). Should warn the user when AI gets no context.
+- [ ] **Conversation storage**: specs call for storing AI conversations to `.lexicon/conversations/` for traceability and refinement. Not yet implemented.
+- [ ] **Edit option in patch preview**: accept/reject flow only offers Accept/Reject. Specs describe a three-way choice (accept/edit/reject).
+- [ ] **Multi-artifact generation**: `lexicon generate "..."` always generates a single contract. Spec envisions generating multiple artifact types (contract + conformance + behavior) from a single intent.
