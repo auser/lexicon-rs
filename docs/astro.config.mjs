@@ -4,6 +4,8 @@ import starlight from '@astrojs/starlight';
 
 // https://astro.build/config
 export default defineConfig({
+	site: 'https://auser.github.io',
+	base: '/lexicon-rs',
 	integrations: [
 		starlight({
 			title: 'Lexicon',
