@@ -485,7 +485,8 @@ fn execute_generate_prompt(
         return Ok("No contracts found. Create a contract first.".to_string());
     }
 
-    let mut results = Vec::new();
+    let mut successes = Vec::new();
+    let mut failures = Vec::new();
     for contract_id in &contract_ids {
         match crate::prompt_gen::generate_prompt(layout, contract_id, None, false) {
             Ok(result) => {
@@ -497,15 +498,26 @@ fn execute_generate_prompt(
                     path: path.clone(),
                     summary: format!("implementation prompt for {contract_id}"),
                 });
-                results.push(format!("✓ Generated prompt at {path}"));
+                successes.push(format!("Generated prompt at {path}"));
             }
             Err(e) => {
-                results.push(format!("✗ Failed to generate prompt for {contract_id}: {e}"));
+                failures.push(format!("Failed to generate prompt for {contract_id}: {e}"));
             }
         }
     }
 
-    Ok(results.join("\n"))
+    if failures.is_empty() {
+        Ok(successes.join("\n"))
+    } else if successes.is_empty() {
+        // All failed — return as error so it gets fed back to the AI
+        Err(CoreError::Other(failures.join("\n")))
+    } else {
+        // Mixed results — report successes but also return failures as error
+        let summary = successes.join("\n");
+        // Print successes directly since we'll return the failures as an error
+        println!("  {summary}");
+        Err(CoreError::Other(failures.join("\n")))
+    }
 }
 
 fn execute_verify(layout: &RepoLayout) -> CoreResult<String> {
