@@ -128,6 +128,12 @@ pub fn init_repo(
         // Initialize the repo
         lexicon_scaffold::init::init_repo(layout, &manifest)?;
 
+        // Initialize default gates and scoring model
+        crate::score::gate_init(layout)?;
+        eprintln!("  Default gates initialized");
+        crate::score::score_init(layout)?;
+        eprintln!("  Default scoring model initialized");
+
         // Detect repo shape and print workspace hint
         print_workspace_hint(layout);
 
@@ -153,6 +159,10 @@ pub fn init_repo_noninteractive(
 ) -> CoreResult<()> {
     let manifest = Manifest::new(name.clone(), description, repo_type, domain);
     lexicon_scaffold::init::init_repo(layout, &manifest)?;
+
+    // Initialize default gates and scoring model
+    crate::score::gate_init(layout)?;
+    crate::score::score_init(layout)?;
 
     // Detect repo shape and print workspace hint
     print_workspace_hint(layout);
@@ -201,6 +211,8 @@ mod tests {
         assert!(layout.manifest_path().exists());
         assert!(layout.contracts_dir().is_dir());
         assert!(layout.audit_dir().is_dir());
+        assert!(layout.gates_path().exists());
+        assert!(layout.scoring_model_path().exists());
 
         // Verify audit record was written
         let records = lexicon_audit::reader::list_audit_records(&layout.audit_dir()).unwrap();

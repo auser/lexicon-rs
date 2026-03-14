@@ -10,6 +10,6 @@ pub fn run() -> miette::Result<()> {
     output::heading("Initializing lexicon");
     let driver = TerminalDriver;
     init_repo(&layout, &driver)?;
-    output::success("Lexicon initialized successfully");
+    output::success("Lexicon initialized successfully (with default gates and scoring model)");
     Ok(())
 }

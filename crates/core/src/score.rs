@@ -82,12 +82,7 @@ mod tests {
         )
         .unwrap();
 
-        // Before init
-        let explanation = score_explain(&layout).unwrap();
-        assert!(explanation.contains("No scoring model"));
-
-        // After init
-        score_init(&layout).unwrap();
+        // Scoring model is now initialized by init_repo_noninteractive
         let explanation = score_explain(&layout).unwrap();
         assert!(explanation.contains("Scoring Model"));
         assert!(explanation.contains("Correctness"));
