@@ -151,6 +151,7 @@ pub enum WorkflowKind {
     GateInit,
     Improve,
     Coach,
+    Chat,
 }
 
 /// Status of a conversation session.

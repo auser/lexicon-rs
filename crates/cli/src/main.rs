@@ -11,6 +11,7 @@ fn main() -> miette::Result<()> {
 
     match cli.command {
         Command::Init => commands::init::run(),
+        Command::Chat => commands::chat::run(),
         Command::Contract { action } => commands::contract::run(action),
         Command::Conformance { action } => commands::conformance::run(action),
         Command::Behavior { action } => commands::behavior::run(action),

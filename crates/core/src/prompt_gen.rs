@@ -310,7 +310,7 @@ pub fn list_prompts(layout: &RepoLayout) -> CoreResult<Vec<String>> {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-fn collect_prompt_context(
+pub(crate) fn collect_prompt_context(
     layout: &RepoLayout,
     contract_id: &str,
 ) -> CoreResult<PromptContext> {
@@ -386,7 +386,7 @@ fn collect_prompt_context(
     })
 }
 
-fn render_prompt_body(ctx: &PromptContext, target: Option<&str>) -> String {
+pub(crate) fn render_prompt_body(ctx: &PromptContext, target: Option<&str>) -> String {
     let mut body = String::new();
     let c = &ctx.contract;
 
@@ -542,7 +542,7 @@ fn render_prompt_body(ctx: &PromptContext, target: Option<&str>) -> String {
     body
 }
 
-fn build_graph_updates(
+pub(crate) fn build_graph_updates(
     layout: &RepoLayout,
     ctx: &PromptContext,
     prompt_node_id: &str,
@@ -667,7 +667,7 @@ fn regenerate_from_file(
     })
 }
 
-fn next_prompt_number(prompts_dir: &Path) -> u32 {
+pub(crate) fn next_prompt_number(prompts_dir: &Path) -> u32 {
     let mut max = 0u32;
     if let Ok(entries) = std::fs::read_dir(prompts_dir) {
         for entry in entries.flatten() {
@@ -685,7 +685,7 @@ fn next_prompt_number(prompts_dir: &Path) -> u32 {
     max + 1
 }
 
-fn build_slug(contract_id: &str, target: Option<&str>) -> String {
+pub(crate) fn build_slug(contract_id: &str, target: Option<&str>) -> String {
     match target {
         Some(t) => format!("{contract_id}-{t}"),
         None => contract_id.to_string(),

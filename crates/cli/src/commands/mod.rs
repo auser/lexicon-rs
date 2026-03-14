@@ -1,6 +1,7 @@
 pub mod api;
 pub mod auth;
 pub mod behavior;
+pub mod chat;
 pub mod coach;
 pub mod conformance;
 pub mod contract;

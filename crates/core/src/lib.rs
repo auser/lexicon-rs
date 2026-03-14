@@ -2,6 +2,7 @@
 
 pub mod api;
 pub mod auth;
+pub mod chat;
 pub mod coach;
 pub mod contract;
 pub mod coverage;

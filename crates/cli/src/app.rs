@@ -55,6 +55,9 @@ pub enum Command {
         action: AuthAction,
     },
 
+    /// AI-powered architecture design session
+    Chat,
+
     /// Interactive AI-assisted artifact coaching
     Coach {
         #[command(subcommand)]
