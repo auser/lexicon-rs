@@ -431,7 +431,7 @@ Supported directives:\n\
 - PROMPT_LIST — list all generated implementation prompts\n\
 - PROMPT_STATUS — check which prompts are stale and need regeneration\n\
 - REGENERATE_PROMPTS — regenerate all stale implementation prompts\n\
-- GENERATE_PROMPT — compile the final implementation prompt from all session artifacts\n\
+- GENERATE_PROMPT — compile implementation prompts (uses session contracts, or all on-disk contracts in specs/contracts/)\n\
 - RUN_VERIFY — run verification to check current state\n\
 \n\
 ## Conversation Style\n\
@@ -443,7 +443,8 @@ suggested action AND proactively present the next recommendation\n\
 - Present suggestions as numbered options so the user can easily accept, reject, or modify\n\
 - Show actual invariant text, edge case scenarios — not just categories\n\
 - After each artifact creation, summarize what exists and what's still missing\n\
-- Only suggest GENERATE_PROMPT when the specification is comprehensive across all dimensions\n\
+- When the user asks for an implementation prompt, emit GENERATE_PROMPT immediately — do not gate it on completeness\n\
+- When proactively suggesting next steps, prefer GENERATE_PROMPT once specifications are reasonably complete\n\
 \n\
 ## Contract TOML Schema\n\
 Contracts use this structure:\n\
