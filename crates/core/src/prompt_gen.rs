@@ -73,10 +73,15 @@ pub fn generate_prompt(
         }
     }
 
-    let num = next_prompt_number(&layout.prompts_dir());
     let slug = build_slug(contract_id, target);
     let node_id = format!("prompt:{slug}");
-    let prompt_path = format!("specs/prompts/{num:03}-{slug}.md");
+    // Reuse existing prompt number if a prompt for this slug already exists,
+    // otherwise allocate the next sequential number.
+    let prompt_path = find_existing_prompt(&layout.prompts_dir(), &slug)
+        .unwrap_or_else(|| {
+            let num = next_prompt_number(&layout.prompts_dir());
+            format!("specs/prompts/{num:03}-{slug}.md")
+        });
 
     let (edges, meta, prompt_node) =
         build_graph_updates(layout, &ctx, &node_id, &prompt_path);
@@ -665,6 +670,22 @@ fn regenerate_from_file(
         },
         warnings: Vec::new(),
     })
+}
+
+/// Find an existing prompt file matching a slug (e.g., `001-kv-store.md`).
+/// Returns the relative path like `specs/prompts/001-kv-store.md` if found.
+fn find_existing_prompt(prompts_dir: &Path, slug: &str) -> Option<String> {
+    let suffix = format!("-{slug}.md");
+    if let Ok(entries) = std::fs::read_dir(prompts_dir) {
+        for entry in entries.flatten() {
+            let name = entry.file_name();
+            let name = name.to_string_lossy();
+            if name.ends_with(&suffix) {
+                return Some(format!("specs/prompts/{name}"));
+            }
+        }
+    }
+    None
 }
 
 pub(crate) fn next_prompt_number(prompts_dir: &Path) -> u32 {
