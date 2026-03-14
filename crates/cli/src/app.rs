@@ -7,6 +7,10 @@ use clap::{Parser, Subcommand};
     version
 )]
 pub struct Cli {
+    /// Override the AI model (e.g. claude-sonnet-4-20250514)
+    #[arg(long, global = true)]
+    pub model: Option<String>,
+
     #[command(subcommand)]
     pub command: Option<Command>,
 }

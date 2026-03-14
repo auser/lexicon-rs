@@ -164,7 +164,7 @@ impl Workflow for ContractNewWorkflow {
 fn generate_description_with_ai(layout: &RepoLayout, title: &str) -> String {
     let fallback = format!("Behavioral contract for {title}.");
 
-    let provider = match crate::generate::build_ai_provider(layout) {
+    let provider = match crate::generate::build_ai_provider(layout, None) {
         Ok(p) => p,
         Err(_) => return fallback,
     };
@@ -192,7 +192,7 @@ fn generate_description_with_ai(layout: &RepoLayout, title: &str) -> String {
 fn generate_scope_with_ai(layout: &RepoLayout, title: &str) -> String {
     let fallback = format!("Defines the behavioral contract for {title}");
 
-    let provider = match crate::generate::build_ai_provider(layout) {
+    let provider = match crate::generate::build_ai_provider(layout, None) {
         Ok(p) => p,
         Err(_) => return fallback,
     };

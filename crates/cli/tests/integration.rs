@@ -94,6 +94,9 @@ fn test_happy_path_end_to_end() {
 fn test_verify_without_scoring_model() {
     let (_dir, layout) = setup_repo();
 
+    // Remove the scoring model created by setup_repo so we can test without it.
+    let _ = std::fs::remove_file(layout.scoring_model_path());
+
     // Create a contract so the repo has something to work with.
     contract_new_noninteractive(
         &layout,

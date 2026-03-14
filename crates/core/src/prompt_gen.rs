@@ -600,7 +600,7 @@ pub(crate) fn build_graph_updates(
 }
 
 fn enhance_with_ai(layout: &RepoLayout, raw_body: &str) -> CoreResult<String> {
-    let provider = crate::generate::build_ai_provider(layout)?;
+    let provider = crate::generate::build_ai_provider(layout, None)?;
     let system = lexicon_ai::prompt::system_prompt(ArtifactKind::ImplementationPrompt);
     let result = provider
         .complete(system, raw_body)

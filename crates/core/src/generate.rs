@@ -34,7 +34,7 @@ pub fn generate_from_intent(
     kind: ArtifactKind,
     intent: &str,
 ) -> CoreResult<GenerateResult> {
-    let provider = build_ai_provider(layout)?;
+    let provider = build_ai_provider(layout, None)?;
     let result = generate_artifact(&*provider, layout, kind, intent)
         .map_err(|e| CoreError::Other(format!("AI generation failed: {e}")))?;
     Ok(result)
@@ -45,7 +45,7 @@ pub fn generate_tests_from_contract(
     layout: &RepoLayout,
     contract: &Contract,
 ) -> CoreResult<GenerateResult> {
-    let provider = build_ai_provider(layout)?;
+    let provider = build_ai_provider(layout, None)?;
     let result = generate_from_contract(&*provider, layout, contract)
         .map_err(|e| CoreError::Other(format!("AI generation failed: {e}")))?;
     Ok(result)
@@ -56,7 +56,7 @@ pub fn generate_contract_property_tests(
     layout: &RepoLayout,
     contract: &Contract,
 ) -> CoreResult<GenerateResult> {
-    let provider = build_ai_provider(layout)?;
+    let provider = build_ai_provider(layout, None)?;
     let result = generate_property_tests(&*provider, layout, contract)
         .map_err(|e| CoreError::Other(format!("AI generation failed: {e}")))?;
     Ok(result)
@@ -67,7 +67,7 @@ pub fn generate_contract_fuzz_target(
     layout: &RepoLayout,
     contract: &Contract,
 ) -> CoreResult<GenerateResult> {
-    let provider = build_ai_provider(layout)?;
+    let provider = build_ai_provider(layout, None)?;
     let result = generate_fuzz_target(&*provider, layout, contract)
         .map_err(|e| CoreError::Other(format!("AI generation failed: {e}")))?;
     Ok(result)
@@ -78,7 +78,7 @@ pub fn generate_contract_edge_case_tests(
     layout: &RepoLayout,
     contract: &Contract,
 ) -> CoreResult<GenerateResult> {
-    let provider = build_ai_provider(layout)?;
+    let provider = build_ai_provider(layout, None)?;
     let result = generate_edge_case_tests(&*provider, layout, contract)
         .map_err(|e| CoreError::Other(format!("AI generation failed: {e}")))?;
     Ok(result)
@@ -89,7 +89,7 @@ pub fn infer_contract_from_api(
     layout: &RepoLayout,
     source_dir: Option<&Path>,
 ) -> CoreResult<GenerateResult> {
-    let provider = build_ai_provider(layout)?;
+    let provider = build_ai_provider(layout, None)?;
 
     let default_dir = layout.root.join("src");
     let dir = source_dir.unwrap_or(&default_dir);
@@ -142,7 +142,7 @@ pub fn generate_coverage_improvement(
         ));
     }
 
-    let provider = build_ai_provider(layout)?;
+    let provider = build_ai_provider(layout, None)?;
     let result = generate_coverage_tests(&*provider, layout, &gaps)
         .map_err(|e| CoreError::Other(format!("AI generation failed: {e}")))?;
     Ok(vec![result])
@@ -156,7 +156,7 @@ pub fn refine_from_intent(
     previous_draft: &str,
     feedback: &str,
 ) -> CoreResult<GenerateResult> {
-    let provider = build_ai_provider(layout)?;
+    let provider = build_ai_provider(layout, None)?;
     let result = refine_artifact(&*provider, layout, kind, intent, previous_draft, feedback)
         .map_err(|e| CoreError::Other(format!("AI refinement failed: {e}")))?;
     Ok(result)
@@ -221,7 +221,17 @@ fn load_contracts(layout: &RepoLayout) -> CoreResult<Vec<Contract>> {
 }
 
 /// Build an AI provider from stored auth credentials.
-pub(crate) fn build_ai_provider(layout: &RepoLayout) -> CoreResult<Box<dyn AiProvider>> {
+///
+/// When `model` is `Some`, the given model ID overrides the default.
+pub(crate) fn build_ai_provider(
+    layout: &RepoLayout,
+    model: Option<&str>,
+) -> CoreResult<Box<dyn AiProvider>> {
     let creds = crate::auth::ensure_authenticated(layout, Provider::Claude)?;
-    Ok(Box::new(ClaudeClient::new(creds.access_token)))
+    let client = ClaudeClient::new(creds.access_token);
+    let client = match model {
+        Some(m) => client.with_model(m),
+        None => client,
+    };
+    Ok(Box::new(client))
 }

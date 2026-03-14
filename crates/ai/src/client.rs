@@ -13,7 +13,7 @@ impl ClaudeClient {
     pub fn new(access_token: String) -> Self {
         Self {
             access_token,
-            model: "claude-sonnet-4-20250514".to_string(),
+            model: "claude-haiku-4-5-20251001".to_string(),
         }
     }
 
@@ -118,7 +118,7 @@ mod tests {
     #[test]
     fn client_creation() {
         let client = ClaudeClient::new("test-token".into());
-        assert_eq!(client.model, "claude-sonnet-4-20250514");
+        assert_eq!(client.model, "claude-haiku-4-5-20251001");
     }
 
     #[test]

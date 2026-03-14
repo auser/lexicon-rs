@@ -956,8 +956,9 @@ fn parse_artifact_from_summary(summary: &str) -> Option<SessionArtifact> {
 pub fn run_chat(
     layout: &RepoLayout,
     driver: &dyn ConversationDriver,
+    model: Option<&str>,
 ) -> CoreResult<()> {
-    let ai_provider = build_ai_provider(layout)?;
+    let ai_provider = build_ai_provider(layout, model)?;
     let (repo_context, _warnings) = load_context(layout);
 
     let heading_style = Style::new().bold().cyan();

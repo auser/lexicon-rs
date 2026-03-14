@@ -9,8 +9,10 @@ use app::{Cli, Command};
 fn main() -> miette::Result<()> {
     let cli = Cli::parse();
 
+    let model = cli.model.as_deref();
+
     match cli.command {
-        None | Some(Command::Chat) => commands::chat::run(),
+        None | Some(Command::Chat) => commands::chat::run(model),
         Some(Command::Init) => commands::init::run(),
         Some(Command::Verify { health }) => commands::verify::run(health),
         Some(Command::Auth { action }) => commands::auth::run(action),
