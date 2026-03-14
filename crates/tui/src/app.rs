@@ -19,6 +19,7 @@ pub enum Tab {
     Api,
     Coverage,
     Architecture,
+    Prompts,
     Help,
 }
 
@@ -40,6 +41,7 @@ impl Tab {
             }
             OperatingMode::Repo => {}
         }
+        tabs.push(Tab::Prompts);
         tabs.push(Tab::Help);
         tabs
     }
@@ -53,6 +55,7 @@ impl Tab {
             Tab::Api => "API",
             Tab::Coverage => "Coverage",
             Tab::Architecture => "Architecture",
+            Tab::Prompts => "Prompts",
             Tab::Help => "Help",
         }
     }
@@ -80,6 +83,7 @@ pub struct AppState {
     pub api_snapshot: Option<lexicon_api::schema::ApiSnapshot>,
     pub api_diff: Option<lexicon_api::diff::ApiDiff>,
     pub coverage_report: Option<lexicon_coverage::report::CoverageReport>,
+    pub prompt_statuses: Vec<(String, bool, Vec<String>)>,
     pub should_quit: bool,
     pub status_message: String,
 }
@@ -101,6 +105,7 @@ impl AppState {
             api_snapshot,
             api_diff,
             coverage_report: None,
+            prompt_statuses: Vec::new(),
             should_quit: false,
             status_message: String::new(),
         }
@@ -151,6 +156,16 @@ impl AppState {
         let (snapshot, diff) = Self::load_api_data(&self.layout);
         self.api_snapshot = snapshot;
         self.api_diff = diff;
+
+        // Load prompt statuses
+        self.prompt_statuses = lexicon_core::prompt_gen::check_all_prompt_statuses(&self.layout)
+            .map(|statuses| {
+                statuses
+                    .into_iter()
+                    .map(|s| (s.filename, s.is_stale, s.reasons))
+                    .collect()
+            })
+            .unwrap_or_default();
     }
 }
 
@@ -183,7 +198,8 @@ pub fn run_tui(layout: RepoLayout) -> io::Result<()> {
                     KeyCode::Char('4') => state.tab = Tab::Score,
                     KeyCode::Char('5') => state.tab = Tab::Api,
                     KeyCode::Char('6') => state.tab = Tab::Coverage,
-                    KeyCode::Char('7') | KeyCode::Char('?') => state.tab = Tab::Help,
+                    KeyCode::Char('7') => state.tab = Tab::Prompts,
+                    KeyCode::Char('8') | KeyCode::Char('?') => state.tab = Tab::Help,
                     KeyCode::Char('r') => state.refresh(),
                     _ => {}
                 }

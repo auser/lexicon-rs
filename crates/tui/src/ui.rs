@@ -29,6 +29,7 @@ pub fn draw(f: &mut Frame, state: &AppState) {
         Tab::Api => draw_api_tab(f, state, chunks[1]),
         Tab::Coverage => draw_coverage_tab(f, state, chunks[1]),
         Tab::Architecture => draw_architecture_tab(f, state, chunks[1]),
+        Tab::Prompts => draw_prompts_tab(f, state, chunks[1]),
         Tab::Help => draw_help(f, chunks[1]),
     }
 
@@ -562,6 +563,50 @@ fn draw_architecture_tab(f: &mut Frame, state: &AppState, area: Rect) {
     f.render_widget(roles_para, chunks[1]);
 }
 
+fn draw_prompts_tab(f: &mut Frame, state: &AppState, area: Rect) {
+    if state.prompt_statuses.is_empty() {
+        let msg = Paragraph::new("No prompts found. Run `lexicon prompt generate <contract-id>` to create one.")
+            .block(Block::default().borders(Borders::ALL).title(" Prompts "));
+        f.render_widget(msg, area);
+        return;
+    }
+
+    let items: Vec<ListItem> = state
+        .prompt_statuses
+        .iter()
+        .map(|(filename, is_stale, reasons)| {
+            if *is_stale {
+                let reason_text = if reasons.is_empty() {
+                    String::new()
+                } else {
+                    format!(" — {}", reasons.join(", "))
+                };
+                ListItem::new(Line::from(vec![
+                    Span::styled("STALE ", Style::default().fg(Color::Red)),
+                    Span::raw(filename.as_str()),
+                    Span::styled(reason_text, Style::default().fg(Color::DarkGray)),
+                ]))
+            } else {
+                ListItem::new(Line::from(vec![
+                    Span::styled("  OK  ", Style::default().fg(Color::Green)),
+                    Span::raw(filename.as_str()),
+                ]))
+            }
+        })
+        .collect();
+
+    let stale_count = state.prompt_statuses.iter().filter(|(_, s, _)| *s).count();
+    let title = if stale_count > 0 {
+        format!(" Prompts — {} stale ", stale_count)
+    } else {
+        format!(" Prompts — {} total, all up to date ", state.prompt_statuses.len())
+    };
+
+    let list = List::new(items)
+        .block(Block::default().borders(Borders::ALL).title(title));
+    f.render_widget(list, area);
+}
+
 fn draw_help(f: &mut Frame, area: Rect) {
     let lines = vec![
         Line::from(Span::styled(
@@ -570,7 +615,7 @@ fn draw_help(f: &mut Frame, area: Rect) {
         )),
         Line::from(""),
         Line::from("  Tab / → / ←    Switch tabs"),
-        Line::from("  1-7            Jump to tab"),
+        Line::from("  1-8            Jump to tab"),
         Line::from("  r              Refresh data"),
         Line::from("  q / Esc        Quit"),
         Line::from("  Ctrl+C         Force quit"),
@@ -587,6 +632,15 @@ fn draw_help(f: &mut Frame, area: Rect) {
         Line::from("  lexicon verify            Run verification"),
         Line::from("  lexicon api scan          Scan public API"),
         Line::from("  lexicon coverage report   Generate coverage report"),
+        Line::from("  lexicon prompt generate   Generate implementation prompt"),
+        Line::from("  lexicon prompt status     Show prompt sync status"),
+        Line::from("  lexicon prompt regenerate Regenerate stale prompts"),
+        Line::from("  lexicon prompt explain    Explain prompt dependencies"),
+        Line::from("  lexicon coach             Interactive AI coaching (open-ended)"),
+        Line::from("  lexicon coach contract    Coach a new contract"),
+        Line::from("  lexicon coach conformance Coach conformance tests"),
+        Line::from("  lexicon coach prompt      Coach implementation prompts"),
+        Line::from("  lexicon coach improve     Coach improvements"),
         Line::from("  lexicon sync claude       Sync CLAUDE.md"),
         Line::from("  lexicon doctor            Check repo health"),
     ];

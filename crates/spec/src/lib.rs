@@ -16,6 +16,7 @@ pub mod error;
 pub mod gates;
 pub mod manifest;
 pub mod mode;
+pub mod prompt;
 pub mod scoring;
 pub mod session;
 pub mod validation;

@@ -20,6 +20,7 @@ pub struct VerifyResult {
     pub score_report: Option<ScoreReport>,
     pub coverage_report: Option<CoverageReport>,
     pub api_diff: Option<ApiDiff>,
+    pub prompt_warnings: Vec<String>,
 }
 
 /// Run all gates, compute score, check coverage, and check API drift.
@@ -62,6 +63,21 @@ pub fn verify(layout: &RepoLayout) -> CoreResult<VerifyResult> {
         None
     };
 
+    // Check prompt staleness
+    let prompt_warnings = match crate::prompt_graph::load_graph(layout) {
+        Ok(graph) => match crate::prompt_graph::find_dirty_sources(layout, &graph) {
+            Ok(dirty) if !dirty.is_empty() => {
+                let affected = crate::prompt_graph::find_affected_prompts(&graph, &dirty);
+                affected
+                    .iter()
+                    .map(|id| format!("Stale prompt: {id}"))
+                    .collect()
+            }
+            _ => Vec::new(),
+        },
+        Err(_) => Vec::new(),
+    };
+
     // Write audit record
     let gates_passed = gate_results
         .iter()
@@ -85,6 +101,7 @@ pub fn verify(layout: &RepoLayout) -> CoreResult<VerifyResult> {
         score_report,
         coverage_report,
         api_diff,
+        prompt_warnings,
     })
 }
 

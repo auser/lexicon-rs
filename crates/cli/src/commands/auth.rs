@@ -23,6 +23,7 @@ pub fn run(action: AuthAction) -> miette::Result<()> {
         AuthAction::Login { provider, port } => run_login(provider, port),
         AuthAction::Refresh { provider } => run_refresh(provider),
         AuthAction::Status => run_status(),
+        AuthAction::SetKey { provider, key } => run_set_key(provider, key),
         AuthAction::Logout { provider } => run_logout(provider),
     }
 }
@@ -102,6 +103,17 @@ fn run_refresh(provider: Option<Provider>) -> miette::Result<()> {
 
     pb.finish_with_message("✓ Token refreshed and saved.".to_string());
     println!();
+    Ok(())
+}
+
+fn run_set_key(provider: Provider, key: String) -> miette::Result<()> {
+    let layout = RepoLayout::discover()?;
+    lexicon_core::auth::set_key(&layout, provider, key)?;
+    output::success(&format!(
+        "API key saved for {} (.lexicon/auth/{}.json)",
+        provider.display_name(),
+        provider.as_str()
+    ));
     Ok(())
 }
 

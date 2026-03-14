@@ -16,6 +16,9 @@ pub struct Contract {
     /// Unique slug identifier, e.g. "key-value-store".
     pub id: String,
     pub title: String,
+    /// A longer description of the contract's purpose and context.
+    #[serde(default)]
+    pub description: String,
     pub status: ContractStatus,
     pub stability: Stability,
     /// High-level scope description.
@@ -115,6 +118,7 @@ impl Contract {
             schema_version: SchemaVersion::CURRENT,
             id,
             title,
+            description: String::new(),
             status: ContractStatus::Draft,
             stability: Stability::Experimental,
             scope,

@@ -9,12 +9,13 @@ use lexicon_repo::layout::RepoLayout;
 use lexicon_spec::audit::AuditRecord;
 use lexicon_spec::common::{Actor, AuditAction, Severity, WorkflowKind};
 use lexicon_spec::contract::{Contract, Invariant, Semantic};
+use lexicon_spec::validation::slugify;
 
 use crate::error::CoreResult;
 
 struct ContractNewContext {
-    id: String,
     title: String,
+    description: String,
     scope: String,
     invariants: Vec<String>,
     required: Vec<String>,
@@ -24,20 +25,22 @@ struct ContractNewContext {
 
 struct ContractNewWorkflow {
     steps: Vec<WorkflowStep>,
+    layout: RepoLayout,
 }
 
 impl ContractNewWorkflow {
-    fn new() -> Self {
+    fn new(layout: RepoLayout) -> Self {
         Self {
             steps: vec![
-                WorkflowStep::new("id", "Contract ID (kebab-case slug, e.g. key-value-store)?"),
-                WorkflowStep::new("title", "Contract title?"),
-                WorkflowStep::new("scope", "What scope does this contract cover?"),
+                WorkflowStep::new("title", "Contract title (e.g. Key-Value Store)?"),
+                WorkflowStep::new("description", "Describe the contract's purpose (leave empty for AI-assisted)").skippable(),
+                WorkflowStep::new("scope", "What scope does this contract cover? (leave empty for AI-assisted)").skippable(),
                 WorkflowStep::new("invariants", "Key invariants (comma-separated)?").skippable(),
                 WorkflowStep::new("required", "Required semantics (comma-separated)?").skippable(),
                 WorkflowStep::new("forbidden", "Forbidden behavior (comma-separated)?").skippable(),
                 WorkflowStep::new("review", "Review the draft contract"),
             ],
+            layout,
         }
     }
 }
@@ -56,8 +59,8 @@ impl Workflow for ContractNewWorkflow {
 
     fn initial_context(&self) -> ContractNewContext {
         ContractNewContext {
-            id: String::new(),
             title: String::new(),
+            description: String::new(),
             scope: String::new(),
             invariants: Vec::new(),
             required: Vec::new(),
@@ -74,16 +77,34 @@ impl Workflow for ContractNewWorkflow {
     ) -> StepOutput {
         match step_idx {
             0 => match input {
-                StepInput::UserResponse(s) => { ctx.id = s; StepOutput::Advance }
-                _ => StepOutput::Question(Question::simple("Contract ID (kebab-case slug)?")),
+                StepInput::UserResponse(s) => { ctx.title = s; StepOutput::Advance }
+                _ => StepOutput::Question(Question::simple("Contract title (e.g. Key-Value Store)?")),
             },
             1 => match input {
-                StepInput::UserResponse(s) => { ctx.title = s; StepOutput::Advance }
-                _ => StepOutput::Question(Question::simple("Contract title?")),
+                StepInput::UserResponse(s) if !s.trim().is_empty() => {
+                    ctx.description = s;
+                    StepOutput::Advance
+                }
+                StepInput::UserResponse(_) | StepInput::Skip => {
+                    ctx.description = generate_description_with_ai(&self.layout, &ctx.title);
+                    StepOutput::Advance
+                }
+                _ => StepOutput::Question(
+                    Question::simple("Describe the contract's purpose (leave empty for AI-assisted)")
+                ),
             },
             2 => match input {
-                StepInput::UserResponse(s) => { ctx.scope = s; StepOutput::Advance }
-                _ => StepOutput::Question(Question::simple("What scope does this contract cover?")),
+                StepInput::UserResponse(s) if !s.trim().is_empty() => {
+                    ctx.scope = s;
+                    StepOutput::Advance
+                }
+                StepInput::UserResponse(_) | StepInput::Skip => {
+                    ctx.scope = generate_scope_with_ai(&self.layout, &ctx.title);
+                    StepOutput::Advance
+                }
+                _ => StepOutput::Question(
+                    Question::simple("What scope does this contract cover? (leave empty for AI-assisted)")
+                ),
             },
             3 => match input {
                 StepInput::UserResponse(s) => {
@@ -116,7 +137,7 @@ impl Workflow for ContractNewWorkflow {
                 ),
             },
             6 => {
-                // Build the draft contract
+                // Build the draft contract (ID derived from title)
                 let draft = build_contract(ctx);
                 let preview = toml::to_string_pretty(&draft).unwrap_or_default();
                 ctx.draft = Some(draft);
@@ -139,6 +160,62 @@ impl Workflow for ContractNewWorkflow {
     }
 }
 
+/// Generate a contract description using AI, falling back to a default if AI is unavailable.
+fn generate_description_with_ai(layout: &RepoLayout, title: &str) -> String {
+    let fallback = format!("Behavioral contract for {title}.");
+
+    let provider = match crate::generate::build_ai_provider(layout) {
+        Ok(p) => p,
+        Err(_) => return fallback,
+    };
+
+    let system = "You are a software architect writing contract descriptions for a Rust project. \
+        A contract description is a concise paragraph (2-4 sentences) explaining the purpose, context, \
+        and importance of the contract. Be specific and technical. Do not include markdown formatting. \
+        Respond with only the description text, nothing else.";
+
+    let user_msg = format!(
+        "Write a description for a contract titled \"{title}\". \
+         Explain what this contract covers, why it exists, and what guarantees it provides."
+    );
+
+    match provider.complete(system, &user_msg) {
+        Ok(desc) => {
+            let trimmed = desc.trim().to_string();
+            if trimmed.is_empty() { fallback } else { trimmed }
+        }
+        Err(_) => fallback,
+    }
+}
+
+/// Generate a scope description using AI, falling back to a default if AI is unavailable.
+fn generate_scope_with_ai(layout: &RepoLayout, title: &str) -> String {
+    let fallback = format!("Defines the behavioral contract for {title}");
+
+    let provider = match crate::generate::build_ai_provider(layout) {
+        Ok(p) => p,
+        Err(_) => return fallback,
+    };
+
+    let system = "You are a software architect writing contract scope descriptions for a Rust project. \
+        A contract scope is a concise 1-2 sentence description of what the component does and \
+        what behavioral guarantees it provides. Be specific and technical. Do not include markdown formatting. \
+        Respond with only the scope text, nothing else.";
+
+    let user_msg = format!(
+        "Write a scope description for a contract titled \"{title}\". \
+         The scope should describe what this component is responsible for and what guarantees it provides."
+    );
+
+    match provider.complete(system, &user_msg) {
+        Ok(scope) => {
+            let trimmed = scope.trim().to_string();
+            if trimmed.is_empty() { fallback } else { trimmed }
+        }
+        Err(_) => fallback,
+    }
+}
+
 fn split_csv(s: &str) -> Vec<String> {
     s.split(',')
         .map(|part| part.trim().to_string())
@@ -147,7 +224,9 @@ fn split_csv(s: &str) -> Vec<String> {
 }
 
 fn build_contract(ctx: &ContractNewContext) -> Contract {
-    let mut contract = Contract::new_draft(ctx.id.clone(), ctx.title.clone(), ctx.scope.clone());
+    let id = slugify(&ctx.title);
+    let mut contract = Contract::new_draft(id, ctx.title.clone(), ctx.scope.clone());
+    contract.description = ctx.description.clone();
 
     for (i, inv) in ctx.invariants.iter().enumerate() {
         contract.invariants.push(Invariant {
@@ -182,7 +261,7 @@ pub fn contract_new(
     layout: &RepoLayout,
     driver: &dyn ConversationDriver,
 ) -> CoreResult<Option<Contract>> {
-    let workflow = ContractNewWorkflow::new();
+    let workflow = ContractNewWorkflow::new(layout.clone());
     let engine = ConversationEngine::new(WorkflowKind::ContractNew);
 
     let (output, session) = engine.run(&workflow, driver)?;
@@ -203,18 +282,31 @@ pub fn contract_new(
 }
 
 /// Non-interactive contract creation for testing and CI.
+///
+/// The contract ID is automatically derived from the title via slugification.
+/// If description or scope is empty, AI-assisted generation is attempted (falls back to a default).
 pub fn contract_new_noninteractive(
     layout: &RepoLayout,
-    id: String,
     title: String,
+    description: String,
     scope: String,
     invariants: Vec<String>,
     required: Vec<String>,
     forbidden: Vec<String>,
 ) -> CoreResult<Contract> {
+    let description = if description.trim().is_empty() {
+        generate_description_with_ai(layout, &title)
+    } else {
+        description
+    };
+    let scope = if scope.trim().is_empty() {
+        generate_scope_with_ai(layout, &title)
+    } else {
+        scope
+    };
     let ctx = ContractNewContext {
-        id,
         title,
+        description,
         scope,
         invariants,
         required,
@@ -265,8 +357,8 @@ mod tests {
 
         let contract = contract_new_noninteractive(
             &layout,
-            "kv-store".to_string(),
             "KV Store".to_string(),
+            String::new(),
             "Basic key-value operations".to_string(),
             vec!["get after set returns value".to_string()],
             vec!["get missing returns None".to_string()],
@@ -274,7 +366,9 @@ mod tests {
         )
         .unwrap();
 
+        // ID is auto-derived from title
         assert_eq!(contract.id, "kv-store");
+        assert_eq!(contract.title, "KV Store");
         assert_eq!(contract.invariants.len(), 1);
         assert_eq!(contract.required_semantics.len(), 1);
         assert_eq!(contract.forbidden_semantics.len(), 1);

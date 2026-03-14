@@ -4,6 +4,7 @@ expression: toml_str
 ---
 id = "key-value-store"
 title = "Key-Value Store Contract"
+description = ""
 status = "draft"
 stability = "experimental"
 scope = "Defines the behavior of a basic key-value store"

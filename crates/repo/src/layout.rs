@@ -135,6 +135,14 @@ impl RepoLayout {
         self.scoring_dir().join("model.toml")
     }
 
+    pub fn prompts_dir(&self) -> PathBuf {
+        self.specs_dir().join("prompts")
+    }
+
+    pub fn prompt_graph_path(&self) -> PathBuf {
+        self.lexicon_dir().join("prompt-graph.json")
+    }
+
     // --- test directories ---
 
     pub fn tests_dir(&self) -> PathBuf {
@@ -191,6 +199,7 @@ impl RepoLayout {
             self.scoring_dir(),
             self.non_goals_dir(),
             self.conformance_specs_dir(),
+            self.prompts_dir(),
         ];
 
         // Only create architecture/ and ecosystem/ dirs if .lexicon/ already exists.

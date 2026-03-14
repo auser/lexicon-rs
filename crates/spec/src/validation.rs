@@ -16,6 +16,37 @@ pub fn validate_version(version: &SchemaVersion) -> SpecResult<()> {
     Ok(())
 }
 
+/// Convert a human-readable title into a kebab-case slug suitable as a contract ID.
+///
+/// Examples: "Key-Value Store" -> "key-value-store", "Rate Limiter (v2)" -> "rate-limiter-v2"
+pub fn slugify(title: &str) -> String {
+    let slug: String = title
+        .trim()
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+        .collect();
+
+    // Collapse multiple hyphens and trim leading/trailing
+    let mut result = String::new();
+    let mut prev_hyphen = true;
+    for c in slug.chars() {
+        if c == '-' {
+            if !prev_hyphen {
+                result.push('-');
+            }
+            prev_hyphen = true;
+        } else {
+            result.push(c);
+            prev_hyphen = false;
+        }
+    }
+    if result.ends_with('-') {
+        result.pop();
+    }
+    result
+}
+
 /// Validate a contract id is a valid kebab-case slug.
 pub fn validate_contract_id(id: &str) -> SpecResult<()> {
     if id.is_empty() {
@@ -109,6 +140,19 @@ pub fn validate_manifest(manifest: &Manifest) -> SpecResult<()> {
 mod tests {
     use super::*;
     use crate::contract::Contract;
+
+    #[test]
+    fn test_slugify() {
+        assert_eq!(slugify("Key-Value Store"), "key-value-store");
+        assert_eq!(slugify("My Awesome  Library!"), "my-awesome-library");
+        assert_eq!(slugify("  Rate Limiter (v2) "), "rate-limiter-v2");
+        assert_eq!(slugify("simple"), "simple");
+        assert_eq!(slugify("UPPER CASE"), "upper-case");
+        assert_eq!(slugify("dots.and_underscores"), "dots-and-underscores");
+        // Slugified titles should pass contract ID validation
+        assert!(validate_contract_id(&slugify("Key-Value Store")).is_ok());
+        assert!(validate_contract_id(&slugify("Rate Limiter (v2)")).is_ok());
+    }
 
     #[test]
     fn test_valid_contract_ids() {

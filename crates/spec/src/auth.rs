@@ -47,6 +47,14 @@ impl Provider {
         }
     }
 
+    /// Environment variable name for the API key (e.g. `ANTHROPIC_API_KEY`).
+    pub fn env_var(self) -> &'static str {
+        match self {
+            Self::Claude => "ANTHROPIC_API_KEY",
+            Self::OpenAi => "OPENAI_API_KEY",
+        }
+    }
+
     pub const ALL: [Provider; 2] = [Provider::Claude, Provider::OpenAi];
 }
 

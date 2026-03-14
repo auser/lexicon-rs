@@ -150,6 +150,7 @@ pub enum WorkflowKind {
     ScoreInit,
     GateInit,
     Improve,
+    Coach,
 }
 
 /// Status of a conversation session.
@@ -202,6 +203,10 @@ pub enum AuditAction {
     FuzzCreate,
     EdgeCaseCreate,
     ContractInfer,
+    PromptGenerate,
+    PromptRegenerate,
+    CoachAccept,
+    CoachReject,
 }
 
 #[cfg(test)]

@@ -115,17 +115,46 @@ pub fn status(layout: &RepoLayout) -> CoreResult<Vec<(Provider, Option<Credentia
     Ok(results)
 }
 
+/// Save an API key as stored credentials (no OAuth, no expiry).
+pub fn set_key(layout: &RepoLayout, provider: Provider, api_key: String) -> CoreResult<()> {
+    let creds = Credentials {
+        provider,
+        access_token: api_key,
+        refresh_token: None,
+        expires_at: None,
+    };
+    save(layout, &creds)
+}
+
 /// Ensure the user is authenticated for the given provider.
 ///
-/// Loads stored credentials, auto-refreshes if expired (and a refresh token
-/// is available), and returns an error if not authenticated.
+/// Checks (in order): environment variable, stored credentials (with
+/// auto-refresh for expired OAuth tokens).
 pub fn ensure_authenticated(
     layout: &RepoLayout,
     provider: Provider,
 ) -> CoreResult<Credentials> {
+    // 1. Check environment variable first
+    let env_name = provider.env_var();
+    if let Ok(key) = std::env::var(env_name) {
+        if !key.is_empty() {
+            eprintln!("  [debug] using credential from env var {env_name}");
+            return Ok(Credentials {
+                provider,
+                access_token: key,
+                refresh_token: None,
+                expires_at: None,
+            });
+        }
+    }
+
+    // 2. Fall back to stored credentials
+    let cred_path = layout.auth_credential_path(provider.as_str());
+    eprintln!("  [debug] loading credentials from {}", cred_path.display());
     let creds = load(layout, provider)?.ok_or_else(|| CoreError::NotAuthenticated {
         provider: provider.as_str().to_owned(),
     })?;
+    eprintln!("  [debug] loaded: expires_at={:?}, has_refresh={}", creds.expires_at, creds.refresh_token.is_some());
 
     if creds.is_expired() {
         if creds.refresh_token.is_some() {
@@ -206,51 +235,66 @@ fn accept_callback(
     listener: &TcpListener,
     expected_state: &str,
 ) -> CoreResult<(String, String)> {
-    let (mut stream, _) = listener
-        .accept()
-        .map_err(|e| CoreError::OAuthCallback(format!("accepting callback: {e}")))?;
+    // Loop to skip non-callback requests (favicon, preflight, browser extensions).
+    loop {
+        let (mut stream, _) = listener
+            .accept()
+            .map_err(|e| CoreError::OAuthCallback(format!("accepting callback: {e}")))?;
 
-    let mut buf = vec![0u8; 4096];
-    let n = stream
-        .read(&mut buf)
-        .map_err(|e| CoreError::OAuthCallback(format!("reading callback: {e}")))?;
-    let request = String::from_utf8_lossy(&buf[..n]);
+        let mut buf = vec![0u8; 4096];
+        let n = stream
+            .read(&mut buf)
+            .map_err(|e| CoreError::OAuthCallback(format!("reading callback: {e}")))?;
+        let request = String::from_utf8_lossy(&buf[..n]);
 
-    let first_line = request.lines().next().unwrap_or("");
-    let query = first_line
-        .split_whitespace()
-        .nth(1)
-        .and_then(|path| path.split_once('?').map(|(_, q)| q))
-        .unwrap_or("");
+        let first_line = request.lines().next().unwrap_or("");
+        let path = first_line.split_whitespace().nth(1).unwrap_or("");
 
-    let code = query_param(query, "code");
-    let state = query_param(query, "state");
-    let ok = code.is_some() && state.as_deref() == Some(expected_state);
+        // Ignore requests that aren't to /callback (e.g. /favicon.ico)
+        if !path.starts_with("/callback") {
+            let response = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n";
+            stream.write_all(response.as_bytes()).ok();
+            continue;
+        }
 
-    let html = if ok {
-        "<html><body style='font-family:sans-serif;padding:2em'>\
-         <h2>✓ Authorization successful</h2>\
-         <p>You can close this tab and return to the terminal.</p>\
-         </body></html>"
-    } else {
-        "<html><body style='font-family:sans-serif;padding:2em'>\
-         <h2>Authorization failed</h2>\
-         <p>State mismatch or missing code. Please try again.</p>\
-         </body></html>"
-    };
+        let query = path.split_once('?').map(|(_, q)| q).unwrap_or("");
 
-    let status_line = if ok { "200 OK" } else { "400 Bad Request" };
-    let response = format!(
-        "HTTP/1.1 {status_line}\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n{html}"
-    );
-    stream.write_all(response.as_bytes()).ok();
+        let code = query_param(query, "code");
+        let state = query_param(query, "state");
+        let error = query_param(query, "error");
+        let error_desc = query_param(query, "error_description");
+        let ok = code.is_some() && state.as_deref() == Some(expected_state);
 
-    if ok {
-        Ok((code.unwrap(), state.unwrap()))
-    } else {
-        Err(CoreError::OAuthCallback(
-            "state mismatch or missing code".into(),
-        ))
+        let html = if ok {
+            "<html><body style='font-family:sans-serif;padding:2em'>\
+             <h2>Authorization successful</h2>\
+             <p>You can close this tab and return to the terminal.</p>\
+             </body></html>"
+        } else {
+            "<html><body style='font-family:sans-serif;padding:2em'>\
+             <h2>Authorization failed</h2>\
+             <p>State mismatch or missing code. Please try again.</p>\
+             </body></html>"
+        };
+
+        let status_line = if ok { "200 OK" } else { "400 Bad Request" };
+        let response = format!(
+            "HTTP/1.1 {status_line}\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n{html}"
+        );
+        stream.write_all(response.as_bytes()).ok();
+
+        if ok {
+            return Ok((code.unwrap(), state.unwrap()));
+        } else if let Some(err) = error {
+            let detail = error_desc.unwrap_or_default();
+            return Err(CoreError::OAuthCallback(format!(
+                "provider returned error: {err} — {detail}"
+            )));
+        } else {
+            return Err(CoreError::OAuthCallback(format!(
+                "state mismatch or missing code (got query: {query})"
+            )));
+        }
     }
 }
 

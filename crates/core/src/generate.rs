@@ -10,8 +10,9 @@ use lexicon_ai::boundary::AiProvider;
 use lexicon_ai::client::ClaudeClient;
 use lexicon_ai::generate::{
     GenerateResult, GeneratedArtifact, generate_artifact, generate_coverage_tests,
-    generate_edge_case_tests, generate_from_contract, generate_fuzz_target, generate_improvements,
-    generate_multi_artifact, generate_property_tests, infer_contract,
+    generate_edge_case_tests, generate_from_contract, generate_fuzz_target,
+    generate_property_tests, infer_contract,
+    refine_artifact,
 };
 use lexicon_ai::prompt::ArtifactKind;
 use lexicon_api::extract::extract_from_dir;
@@ -37,28 +38,6 @@ pub fn generate_from_intent(
     let result = generate_artifact(&*provider, layout, kind, intent)
         .map_err(|e| CoreError::Other(format!("AI generation failed: {e}")))?;
     Ok(result)
-}
-
-/// Generate multiple artifacts (contract + conformance + behavior) from a single intent.
-pub fn generate_multi(
-    layout: &RepoLayout,
-    intent: &str,
-) -> CoreResult<Vec<GenerateResult>> {
-    let provider = build_ai_provider(layout)?;
-    let results = generate_multi_artifact(&*provider, layout, intent)
-        .map_err(|e| CoreError::Other(format!("AI generation failed: {e}")))?;
-    Ok(results)
-}
-
-/// Generate improvement suggestions. Returns suggestions text and context warnings.
-pub fn generate_improve(
-    layout: &RepoLayout,
-    goal: Option<&str>,
-) -> CoreResult<(String, Vec<String>)> {
-    let provider = build_ai_provider(layout)?;
-    let (suggestions, warnings) = generate_improvements(&*provider, layout, goal)
-        .map_err(|e| CoreError::Other(format!("AI generation failed: {e}")))?;
-    Ok((suggestions, warnings))
 }
 
 /// Generate conformance tests from an existing contract.
@@ -169,6 +148,20 @@ pub fn generate_coverage_improvement(
     Ok(vec![result])
 }
 
+/// Refine an existing artifact draft based on user feedback.
+pub fn refine_from_intent(
+    layout: &RepoLayout,
+    kind: ArtifactKind,
+    intent: &str,
+    previous_draft: &str,
+    feedback: &str,
+) -> CoreResult<GenerateResult> {
+    let provider = build_ai_provider(layout)?;
+    let result = refine_artifact(&*provider, layout, kind, intent, previous_draft, feedback)
+        .map_err(|e| CoreError::Other(format!("AI refinement failed: {e}")))?;
+    Ok(result)
+}
+
 /// Write an accepted artifact to disk and record an audit entry.
 pub fn accept_artifact(layout: &RepoLayout, artifact: &GeneratedArtifact) -> CoreResult<()> {
     let full_path = layout.root.join(&artifact.path);
@@ -186,6 +179,7 @@ pub fn accept_artifact(layout: &RepoLayout, artifact: &GeneratedArtifact) -> Cor
         ArtifactKind::Fuzz => AuditAction::FuzzCreate,
         ArtifactKind::EdgeCase => AuditAction::EdgeCaseCreate,
         ArtifactKind::InferContract => AuditAction::ContractInfer,
+        ArtifactKind::ImplementationPrompt => AuditAction::PromptGenerate,
     };
 
     let record = AuditRecord::new(
@@ -227,7 +221,14 @@ fn load_contracts(layout: &RepoLayout) -> CoreResult<Vec<Contract>> {
 }
 
 /// Build an AI provider from stored auth credentials.
-fn build_ai_provider(layout: &RepoLayout) -> CoreResult<Box<dyn AiProvider>> {
+pub(crate) fn build_ai_provider(layout: &RepoLayout) -> CoreResult<Box<dyn AiProvider>> {
     let creds = crate::auth::ensure_authenticated(layout, Provider::Claude)?;
+    let token_preview = if creds.access_token.len() > 20 {
+        format!("{}...{}", &creds.access_token[..16], &creds.access_token[creds.access_token.len()-4..])
+    } else {
+        "(short token)".to_string()
+    };
+    let source = if creds.expires_at.is_some() { "OAuth" } else { "API key" };
+    eprintln!("  [debug] auth source: {source}, token: {token_preview}");
     Ok(Box::new(ClaudeClient::new(creds.access_token)))
 }

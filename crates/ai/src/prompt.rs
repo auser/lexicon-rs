@@ -13,6 +13,7 @@ pub fn system_prompt(artifact_kind: ArtifactKind) -> &'static str {
         ArtifactKind::Fuzz => FUZZ_SYSTEM,
         ArtifactKind::EdgeCase => EDGE_CASE_SYSTEM,
         ArtifactKind::InferContract => INFER_CONTRACT_SYSTEM,
+        ArtifactKind::ImplementationPrompt => IMPLEMENTATION_PROMPT_SYSTEM,
     }
 }
 
@@ -27,6 +28,7 @@ pub fn intent_prompt(artifact_kind: ArtifactKind, intent: &str, context: &str) -
         ArtifactKind::Fuzz => "fuzz test harness",
         ArtifactKind::EdgeCase => "edge case test suite",
         ArtifactKind::InferContract => "inferred contract",
+        ArtifactKind::ImplementationPrompt => "implementation prompt",
     };
 
     let template = match artifact_kind {
@@ -38,6 +40,7 @@ pub fn intent_prompt(artifact_kind: ArtifactKind, intent: &str, context: &str) -
         ArtifactKind::Fuzz => FUZZ_TEMPLATE,
         ArtifactKind::EdgeCase => EDGE_CASE_TEMPLATE,
         ArtifactKind::InferContract => CONTRACT_TEMPLATE,
+        ArtifactKind::ImplementationPrompt => "",
     };
 
     let mut msg = String::new();
@@ -178,6 +181,44 @@ pub fn coverage_improve_prompt(coverage_gaps: &str, context: &str) -> String {
     msg
 }
 
+/// Build a user message for refining an existing artifact draft based on user feedback.
+pub fn refine_prompt(
+    kind: ArtifactKind,
+    intent: &str,
+    context: &str,
+    previous_draft: &str,
+    feedback: &str,
+) -> String {
+    let kind_label = match kind {
+        ArtifactKind::Contract => "contract",
+        ArtifactKind::Conformance => "conformance test suite",
+        ArtifactKind::Behavior => "behavior scenario",
+        ArtifactKind::Improve => "improvement suggestions",
+        ArtifactKind::PropertyTest => "property test suite",
+        ArtifactKind::Fuzz => "fuzz test harness",
+        ArtifactKind::EdgeCase => "edge case test suite",
+        ArtifactKind::InferContract => "inferred contract",
+        ArtifactKind::ImplementationPrompt => "implementation prompt",
+    };
+
+    let mut msg = String::new();
+    msg.push_str("## Repository Context\n");
+    msg.push_str(context);
+    msg.push_str("\n\n## Original Intent\n");
+    msg.push_str(&format!("Generate a {kind_label} based on: {intent}\n\n"));
+    msg.push_str("## Current Draft\n");
+    msg.push_str(previous_draft);
+    msg.push_str("\n\n## Refinement Feedback\n");
+    msg.push_str(feedback);
+    msg.push_str("\n\n## Task\n");
+    msg.push_str(&format!(
+        "Revise the {kind_label} above based on the refinement feedback. \
+         Preserve the overall structure and format. Output ONLY the revised artifact, \
+         no explanations or commentary.\n"
+    ));
+    msg
+}
+
 /// Kind of artifact to generate or improve.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ArtifactKind {
@@ -189,7 +230,18 @@ pub enum ArtifactKind {
     Fuzz,
     EdgeCase,
     InferContract,
+    ImplementationPrompt,
 }
+
+pub(crate) const REFINE_SYSTEM: &str = "\
+You are an expert at refining software artifacts based on user feedback. \
+You will receive an artifact draft and specific feedback from a human coach. \
+Your job is to revise the artifact according to the feedback while:\n\
+- Preserving the artifact's format and structure (TOML, Rust, Markdown)\n\
+- Maintaining schema compatibility\n\
+- Only changing what the feedback requests\n\
+- Keeping all other content intact\n\
+Output ONLY the revised artifact. No explanations, no markdown fences around the content.";
 
 const CONTRACT_SYSTEM: &str = "\
 You are an expert at defining software contracts. Generate a TOML contract file \
@@ -280,6 +332,18 @@ generate a TOML contract that captures:\n\
 - Forbidden semantics from error types and safety constraints\n\
 - Edge cases from boundary conditions in method signatures\n\
 Output ONLY valid TOML following the lexicon contract schema. No markdown fences, no explanations.";
+
+const IMPLEMENTATION_PROMPT_SYSTEM: &str = "\
+You are an expert at refining AI implementation prompts for clarity and precision. \
+You will receive a deterministically generated implementation prompt derived from \
+repository artifacts (contracts, conformance tests, gates, etc.). Your job is to \
+improve readability and clarity WITHOUT changing any factual content. Specifically:\n\
+- Do not add, remove, or modify behavioral requirements\n\
+- Do not change contract references or test expectations\n\
+- Do not invent new constraints or acceptance criteria\n\
+- Improve sentence structure, organization, and flow\n\
+- Make instructions clearer and more actionable\n\
+Output ONLY the refined markdown prompt. No meta-commentary.";
 
 const CONTRACT_TEMPLATE: &str = r#"id = "example-contract"
 title = "Example Contract"
@@ -438,6 +502,7 @@ mod tests {
             ArtifactKind::Fuzz,
             ArtifactKind::EdgeCase,
             ArtifactKind::InferContract,
+            ArtifactKind::ImplementationPrompt,
         ] {
             assert!(!system_prompt(kind).is_empty());
         }

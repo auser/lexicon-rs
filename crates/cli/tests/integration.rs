@@ -29,11 +29,11 @@ fn test_happy_path_end_to_end() {
     // 1. Create a tempdir and init the repo.
     let (_dir, layout) = setup_repo();
 
-    // 2. Create a contract.
+    // 2. Create a contract (ID auto-derived from title).
     let contract = contract_new_noninteractive(
         &layout,
-        "kv-store".to_string(),
         "KV Store Contract".to_string(),
+        String::new(),
         "key-value operations".to_string(),
         vec![
             "get after set returns the stored value".to_string(),
@@ -44,7 +44,7 @@ fn test_happy_path_end_to_end() {
     )
     .expect("contract_new_noninteractive failed");
 
-    assert_eq!(contract.id, "kv-store");
+    assert_eq!(contract.id, "kv-store-contract");
     assert_eq!(contract.title, "KV Store Contract");
     assert_eq!(contract.invariants.len(), 2);
     assert_eq!(contract.required_semantics.len(), 1);
@@ -85,9 +85,9 @@ fn test_happy_path_end_to_end() {
         "CLAUDE.md missing end marker"
     );
 
-    // 8. contract_list should return ["kv-store"].
+    // 8. contract_list should return the slugified title.
     let ids = contract_list(&layout).expect("contract_list failed");
-    assert_eq!(ids, vec!["kv-store"]);
+    assert_eq!(ids, vec!["kv-store-contract"]);
 }
 
 #[test]
@@ -97,8 +97,8 @@ fn test_verify_without_scoring_model() {
     // Create a contract so the repo has something to work with.
     contract_new_noninteractive(
         &layout,
-        "basic".to_string(),
         "Basic Contract".to_string(),
+        String::new(),
         "basic operations".to_string(),
         vec!["must hold".to_string()],
         vec![],
@@ -222,8 +222,8 @@ fn test_coverage_analysis_flow() {
     // Create a contract with required_semantics that have test_tags.
     let mut contract = contract_new_noninteractive(
         &layout,
-        "cache-contract".to_string(),
         "Cache Contract".to_string(),
+        String::new(),
         "caching operations".to_string(),
         vec!["cache eviction respects capacity".to_string()],
         vec![
@@ -286,8 +286,8 @@ fn test_verify_with_coverage_and_api() {
     // Create a contract with tagged semantics.
     let _contract = contract_new_noninteractive(
         &layout,
-        "auth-contract".to_string(),
         "Auth Contract".to_string(),
+        String::new(),
         "authentication operations".to_string(),
         vec![],
         vec!["login returns token".to_string()],

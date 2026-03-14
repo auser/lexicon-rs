@@ -1,6 +1,7 @@
 pub mod api;
 pub mod auth;
 pub mod behavior;
+pub mod coach;
 pub mod conformance;
 pub mod contract;
 pub mod coverage;
@@ -8,6 +9,7 @@ pub mod doctor;
 pub mod ecosystem_cmd;
 pub mod generate;
 pub mod gate;
+pub mod prompt;
 pub mod init;
 pub(crate) mod review;
 pub mod score;

@@ -20,10 +20,10 @@ fn main() -> miette::Result<()> {
         Command::Coverage { action } => commands::coverage::run(action),
         Command::Verify => commands::verify::run(),
         Command::Auth { action } => commands::auth::run(action),
-        Command::Improve { goal } => commands::generate::run_improve(goal.as_deref()),
-        Command::Generate { intent } => commands::generate::run(&intent),
+        Command::Coach { action } => commands::coach::run(action),
         Command::Workspace { action } => commands::workspace_cmd::run(action),
         Command::Ecosystem { action } => commands::ecosystem_cmd::run(action),
+        Command::Prompt { action } => commands::prompt::run(action),
         Command::Doctor => commands::doctor::run(),
         Command::Sync { action } => commands::sync::run(action),
         Command::Tui => {

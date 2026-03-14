@@ -87,6 +87,16 @@ pub fn run() -> miette::Result<()> {
         }
     }
 
+    // Display prompt staleness warnings
+    if !result.prompt_warnings.is_empty() {
+        println!();
+        output::heading("Prompt Synchronization");
+        for w in &result.prompt_warnings {
+            output::warning(w);
+        }
+        output::info("Run `lexicon prompt regenerate` to update stale prompts.");
+    }
+
     output::divider();
 
     let all_passed = result

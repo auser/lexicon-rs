@@ -10,8 +10,8 @@ use crate::boundary::AiProvider;
 use crate::context::assemble_context;
 use crate::error::AiResult;
 use crate::prompt::{
-    ArtifactKind, contract_based_prompt, coverage_improve_prompt, infer_contract_prompt,
-    intent_prompt, system_prompt,
+    ArtifactKind, REFINE_SYSTEM, contract_based_prompt, coverage_improve_prompt,
+    infer_contract_prompt, intent_prompt, refine_prompt, system_prompt,
 };
 
 /// A generated artifact ready for preview and approval.
@@ -49,7 +49,11 @@ pub fn generate_artifact(
 
     let content = provider.complete(system, &user_msg)?;
 
-    let slug = slugify(intent);
+    let slug = if matches!(kind, ArtifactKind::Contract | ArtifactKind::InferContract) {
+        extract_toml_id(&content).unwrap_or_else(|| slugify(intent))
+    } else {
+        slugify(intent)
+    };
     let (path, format) = artifact_path_and_format(kind, &slug);
 
     Ok(GenerateResult {
@@ -61,40 +65,6 @@ pub fn generate_artifact(
         },
         warnings,
     })
-}
-
-/// Generate multiple artifacts (contract + conformance + behavior) from a single intent.
-pub fn generate_multi_artifact(
-    provider: &dyn AiProvider,
-    layout: &RepoLayout,
-    intent: &str,
-) -> AiResult<Vec<GenerateResult>> {
-    let kinds = [
-        ArtifactKind::Contract,
-        ArtifactKind::Conformance,
-        ArtifactKind::Behavior,
-    ];
-
-    let mut results = Vec::new();
-    for kind in kinds {
-        results.push(generate_artifact(provider, layout, kind, intent)?);
-    }
-    Ok(results)
-}
-
-/// Generate improvement suggestions for the repository.
-pub fn generate_improvements(
-    provider: &dyn AiProvider,
-    layout: &RepoLayout,
-    goal: Option<&str>,
-) -> AiResult<(String, Vec<String>)> {
-    let (context, warnings) = load_context(layout);
-    let artifact_summary = "";
-    let user_msg = crate::prompt::improve_prompt(&context, artifact_summary, goal);
-    let system = system_prompt(ArtifactKind::Improve);
-
-    let result = provider.complete(system, &user_msg)?;
-    Ok((result, warnings))
 }
 
 /// Generate conformance tests from a parsed contract.
@@ -204,7 +174,7 @@ pub fn infer_contract(
     let user_msg = infer_contract_prompt(api_summary, &context);
 
     let content = provider.complete(system, &user_msg)?;
-    let slug = slugify("inferred-contract");
+    let slug = extract_toml_id(&content).unwrap_or_else(|| slugify("inferred-contract"));
 
     Ok(GenerateResult {
         artifact: GeneratedArtifact {
@@ -240,6 +210,38 @@ pub fn generate_coverage_tests(
     })
 }
 
+/// Refine an existing artifact draft based on user feedback.
+pub fn refine_artifact(
+    provider: &dyn AiProvider,
+    layout: &RepoLayout,
+    kind: ArtifactKind,
+    original_intent: &str,
+    previous_draft: &str,
+    feedback: &str,
+) -> AiResult<GenerateResult> {
+    let (context, warnings) = load_context(layout);
+    let user_msg = refine_prompt(kind, original_intent, &context, previous_draft, feedback);
+
+    let content = provider.complete(REFINE_SYSTEM, &user_msg)?;
+
+    let slug = if matches!(kind, ArtifactKind::Contract | ArtifactKind::InferContract) {
+        extract_toml_id(&content).unwrap_or_else(|| slugify(original_intent))
+    } else {
+        slugify(original_intent)
+    };
+    let (path, format) = artifact_path_and_format(kind, &slug);
+
+    Ok(GenerateResult {
+        artifact: GeneratedArtifact {
+            kind,
+            path,
+            content,
+            format,
+        },
+        warnings,
+    })
+}
+
 /// Map an artifact kind to its output path and format.
 fn artifact_path_and_format(kind: ArtifactKind, slug: &str) -> (String, String) {
     match kind {
@@ -252,6 +254,9 @@ fn artifact_path_and_format(kind: ArtifactKind, slug: &str) -> (String, String) 
         ArtifactKind::EdgeCase => (format!("tests/edge_cases/{slug}.rs"), "rust".to_string()),
         ArtifactKind::InferContract => {
             (format!("specs/contracts/{slug}.toml"), "toml".to_string())
+        }
+        ArtifactKind::ImplementationPrompt => {
+            (format!("specs/prompts/{slug}.md"), "markdown".to_string())
         }
     }
 }
@@ -311,6 +316,15 @@ fn load_contracts(dir: &std::path::Path) -> Vec<Contract> {
     contracts
 }
 
+/// Extract the `id` field from generated TOML content.
+/// Returns a slugified version of the id, or None if parsing fails.
+fn extract_toml_id(content: &str) -> Option<String> {
+    let table: toml::Table = toml::from_str(content).ok()?;
+    let id = table.get("id")?.as_str()?;
+    let slug = slugify(id);
+    if slug.is_empty() { None } else { Some(slug) }
+}
+
 /// Convert intent text to a filesystem-safe slug.
 fn slugify(s: &str) -> String {
     s.chars()
@@ -356,5 +370,31 @@ mod tests {
         let (path, fmt) = artifact_path_and_format(ArtifactKind::InferContract, "inferred");
         assert_eq!(path, "specs/contracts/inferred.toml");
         assert_eq!(fmt, "toml");
+    }
+
+    #[test]
+    fn test_extract_toml_id() {
+        let toml = r#"id = "my-kv-store"
+title = "My KV Store"
+"#;
+        assert_eq!(extract_toml_id(toml), Some("my-kv-store".to_string()));
+    }
+
+    #[test]
+    fn test_extract_toml_id_with_spaces() {
+        let toml = r#"id = "Async Key Value Store"
+title = "test"
+"#;
+        assert_eq!(extract_toml_id(toml), Some("async-key-value-store".to_string()));
+    }
+
+    #[test]
+    fn test_extract_toml_id_missing() {
+        assert_eq!(extract_toml_id("title = \"no id here\""), None);
+    }
+
+    #[test]
+    fn test_extract_toml_id_invalid_toml() {
+        assert_eq!(extract_toml_id("not valid toml {{{}"), None);
     }
 }

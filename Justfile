@@ -8,7 +8,7 @@ default:
     
 # Run all tests
 test:
-    cargo test --workspace
+    cargo nextest run --workspace
 
 # Run tests for a specific crate
 test-crate crate:
