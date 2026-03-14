@@ -1176,10 +1176,33 @@ pub fn run_chat(
         // If actions failed, suppress the AI's text (it may falsely claim success)
         // and inject error context so the AI can suggest fixes on the next turn.
         if !action_errors.is_empty() {
+            // If errors mention specific contracts, include their raw content
+            // so the AI can emit corrected UPDATE_CONTRACT directives.
+            let mut contract_contents = String::new();
+            for err in &action_errors {
+                // Extract contract IDs from error messages like "...for contract_id: ..."
+                for word in err.split_whitespace() {
+                    let candidate = word.trim_matches(|c: char| c == ':' || c == ',' || c == '.');
+                    let contract_path = layout.contracts_dir().join(format!("{candidate}.toml"));
+                    if contract_path.is_file() {
+                        if let Ok(content) = std::fs::read_to_string(&contract_path) {
+                            contract_contents.push_str(&format!(
+                                "\n--- Content of {candidate}.toml ---\n{content}\n"
+                            ));
+                        }
+                    }
+                }
+            }
+
             let error_feedback = format!(
-                "[SYSTEM: The following actions failed. The AI's response text was suppressed \
-                because it may contain false claims about files being created. Diagnose the \
-                errors and suggest concrete corrections. Do NOT claim any files were created.]\n{}",
+                "[SYSTEM: The following actions failed. Your previous response text was \
+                suppressed because it contained false claims about files being created.\n\
+                \n\
+                INSTRUCTIONS: You MUST fix the errors by emitting :::ACTION directives \
+                (e.g., UPDATE_CONTRACT <id> with corrected TOML to fix malformed contracts). \
+                Do NOT just describe what you would do — actually emit the directives. \
+                Do NOT claim any files were created unless you emit the directive in this \
+                response.]\n\n{}\n{contract_contents}",
                 action_errors.join("\n")
             );
             ctx.history.push(ChatMessage {
