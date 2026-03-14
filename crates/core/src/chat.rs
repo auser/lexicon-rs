@@ -8,7 +8,7 @@ use lexicon_ai::boundary::AiProvider;
 use lexicon_ai::generate::load_context;
 use lexicon_ai::prompt::{build_chat_user_message, CHAT_SYSTEM};
 use lexicon_conversation::driver::ConversationDriver;
-use lexicon_conversation::session::save_session;
+use lexicon_conversation::session::{list_sessions, save_session};
 use lexicon_conversation::workflow::Question;
 use lexicon_repo::layout::RepoLayout;
 use lexicon_spec::common::{StepType, WorkflowKind};
@@ -808,6 +808,89 @@ pub fn is_exit(input: &str) -> bool {
     )
 }
 
+/// Find the most recent chat session that can be resumed.
+fn find_resumable_session(layout: &RepoLayout) -> Option<ConversationSession> {
+    let sessions = list_sessions(&layout.conversations_dir()).ok()?;
+    sessions
+        .into_iter()
+        .rev() // most recent first (list_sessions sorts by started_at)
+        .find(|s| s.workflow == WorkflowKind::Chat)
+}
+
+/// Reconstruct ChatContext from a saved session's steps.
+fn restore_context_from_session(session: &ConversationSession) -> ChatContext {
+    let mut ctx = ChatContext::new();
+
+    for step in &session.steps {
+        match step.step_type {
+            StepType::UserInput => {
+                ctx.history.push(ChatMessage {
+                    role: MessageRole::User,
+                    content: step.content.clone(),
+                });
+            }
+            StepType::Info => {
+                ctx.history.push(ChatMessage {
+                    role: MessageRole::Assistant,
+                    content: step.content.clone(),
+                });
+            }
+            StepType::Write => {
+                // Write steps are action summaries like "Created contract: kv-store (...)"
+                // Parse them back into SessionArtifacts for the session summary
+                if let Some(artifact) = parse_artifact_from_summary(&step.content) {
+                    ctx.artifacts.push(artifact);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    ctx
+}
+
+/// Try to parse a SessionArtifact from a saved action summary string.
+fn parse_artifact_from_summary(summary: &str) -> Option<SessionArtifact> {
+    // Summaries look like "Created contract: kv-store (specs/contracts/kv-store.toml)"
+    let lower = summary.to_lowercase();
+    let (kind, prefix) = if lower.starts_with("created contract") || lower.starts_with("updated contract") {
+        (ArtifactCategory::Contract, "contract")
+    } else if lower.starts_with("created conformance") || lower.starts_with("generated conformance") {
+        (ArtifactCategory::Conformance, "conformance")
+    } else if lower.starts_with("created behavior") || lower.starts_with("generated behavior") {
+        (ArtifactCategory::Behavior, "behavior")
+    } else if lower.starts_with("created gate") {
+        (ArtifactCategory::Gate, "gate")
+    } else if lower.contains("prompt") {
+        (ArtifactCategory::Prompt, "prompt")
+    } else {
+        return None;
+    };
+
+    // Extract ID: text after ": " and before " ("
+    let id = summary
+        .split(": ")
+        .nth(1)
+        .and_then(|s| s.split(" (").next())
+        .unwrap_or(prefix)
+        .to_string();
+
+    // Extract path: text inside parentheses
+    let path = summary
+        .split('(')
+        .nth(1)
+        .and_then(|s| s.strip_suffix(')'))
+        .unwrap_or("")
+        .to_string();
+
+    Some(SessionArtifact {
+        kind,
+        id,
+        path,
+        summary: summary.to_string(),
+    })
+}
+
 /// Run the interactive chat design session.
 pub fn run_chat(
     layout: &RepoLayout,
@@ -815,20 +898,74 @@ pub fn run_chat(
 ) -> CoreResult<()> {
     let ai_provider = build_ai_provider(layout)?;
     let (repo_context, _warnings) = load_context(layout);
-    let mut ctx = ChatContext::new();
-    let mut session = ConversationSession::new(WorkflowKind::Chat);
 
     let heading_style = Style::new().bold().cyan();
     let dim_style = Style::new().dim();
     let success_style = Style::new().green().bold();
     let action_style = Style::new().yellow();
 
-    println!("\n{}", heading_style.apply_to("  Lexicon Design Session"));
-    println!("{}", dim_style.apply_to("  ─".to_string() + &"─".repeat(58)));
-    println!("  Describe what you want to build. I'll help you design the");
-    println!("  contracts, gates, and constraints, then generate an");
-    println!("  implementation prompt.");
-    println!("  Type {} to end the session.\n", dim_style.apply_to("'exit'"));
+    // Check for a resumable session
+    let (mut ctx, mut session) = if let Some(prev) = find_resumable_session(layout) {
+        let age = chrono::Utc::now() - prev.started_at;
+        let age_str = if age.num_days() > 0 {
+            format!("{}d ago", age.num_days())
+        } else if age.num_hours() > 0 {
+            format!("{}h ago", age.num_hours())
+        } else {
+            format!("{}m ago", age.num_minutes())
+        };
+
+        let step_count = prev.steps.iter().filter(|s| s.step_type == StepType::UserInput).count();
+        let prompt = format!(
+            "  Resume previous session ({step_count} turns, {age_str})? [Y/n] "
+        );
+
+        let answer = driver
+            .present_question(&Question::simple(&prompt))
+            .unwrap_or_default();
+
+        if answer.trim().is_empty() || answer.trim().to_lowercase().starts_with('y') {
+            let ctx = restore_context_from_session(&prev);
+
+            // Reopen the session (create a continuation)
+            let mut session = ConversationSession::new(WorkflowKind::Chat);
+            // Copy over previous steps so the full history is preserved on next save
+            session.steps = prev.steps;
+
+            println!("\n{}", heading_style.apply_to("  Lexicon Design Session (resumed)"));
+            println!("{}", dim_style.apply_to("  ─".to_string() + &"─".repeat(58)));
+
+            // Show a brief recap of what was discussed
+            let user_turns: Vec<_> = ctx.history.iter().filter(|m| m.role == MessageRole::User).collect();
+            if !user_turns.is_empty() {
+                println!("  {} previous turns restored. Last topic:", dim_style.apply_to(format!("{}", user_turns.len())));
+                if let Some(last) = user_turns.last() {
+                    let preview: String = last.content.chars().take(80).collect();
+                    println!("  {}", dim_style.apply_to(format!("  \"{preview}...\"")));
+                }
+            }
+            if !ctx.artifacts.is_empty() {
+                println!("  {} artifact(s) in session.", dim_style.apply_to(format!("{}", ctx.artifacts.len())));
+            }
+            println!("  Type {} to end the session.\n", dim_style.apply_to("'exit'"));
+
+            (ctx, session)
+        } else {
+            (ChatContext::new(), ConversationSession::new(WorkflowKind::Chat))
+        }
+    } else {
+        (ChatContext::new(), ConversationSession::new(WorkflowKind::Chat))
+    };
+
+    // Show header for new sessions
+    if session.steps.is_empty() {
+        println!("\n{}", heading_style.apply_to("  Lexicon Design Session"));
+        println!("{}", dim_style.apply_to("  ─".to_string() + &"─".repeat(58)));
+        println!("  Describe what you want to build. I'll help you design the");
+        println!("  contracts, gates, and constraints, then generate an");
+        println!("  implementation prompt.");
+        println!("  Type {} to end the session.\n", dim_style.apply_to("'exit'"));
+    }
 
     loop {
         let input = match driver.present_question(&Question::simple("you> ")) {
@@ -922,6 +1059,9 @@ pub fn run_chat(
             println!("{}", parsed.display_text);
             println!();
         }
+
+        // Auto-save after each turn so interrupted sessions can be resumed
+        let _ = save_session(&layout.conversations_dir(), &session);
     }
 
     session.complete(None);

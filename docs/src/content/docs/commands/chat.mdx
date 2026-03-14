@@ -13,7 +13,7 @@ lexicon chat
 
 Starts an interactive design session where an AI agent guides you through building a complete set of architecture artifacts — contracts, gates, conformance tests, behavior scenarios — then compiles everything into a constraint-aware implementation prompt.
 
-Unlike `lexicon generate`, which produces a single artifact from a one-shot intent, `chat` is a **multi-turn conversation** where the AI proactively:
+`chat` is the **primary interface** for lexicon. Running `lexicon` with no subcommand also starts a chat session. It is a **multi-turn conversation** where the AI proactively:
 
 - Decomposes your idea into concrete artifacts
 - Suggests missing constraints, edge cases, and forbidden behaviors
@@ -23,14 +23,26 @@ Unlike `lexicon generate`, which produces a single artifact from a one-shot inte
 
 Requires authentication with an AI provider. Run `lexicon auth login` first.
 
+## Session continuity
+
+Sessions are automatically saved after every turn. When you start a new chat, lexicon checks for a previous session and offers to resume it:
+
+```
+  Resume previous session (5 turns, 2h ago)? [Y/n]
+```
+
+Pressing Enter (or `y`) restores the full conversation history — the AI remembers what you were working on and picks up where you left off. Type `n` to start fresh.
+
+Sessions are stored in `.lexicon/conversations/` as JSON files.
+
 ## How it works
 
-1. **Start** — describe what you want to build in plain language
+1. **Start** — describe what you want to build in plain language (or resume a previous session)
 2. **Design loop** — the AI suggests artifacts and extensions; you confirm, adjust, or redirect
 3. **Artifact creation** — the AI creates contracts, gates, and tests automatically as you refine
 4. **Prompt compilation** — when the specification is comprehensive, the AI compiles an implementation prompt from all accumulated artifacts
 
-All artifacts are written to disk as they're created. The session is saved to `specs/conversations/` for future reference.
+All artifacts are written to disk as they're created.
 
 ## Example
 
