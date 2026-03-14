@@ -5,7 +5,7 @@ description: Multi-dimensional health scoring with weighted dimensions and verdi
 
 The scoring model defines how repository health is measured. Each dimension contributes a weighted score, and the overall result is a verdict of Pass, Warn, or Fail.
 
-The core idea: **make scoring functions concrete**. The score system is deterministic and explainable -- you should always be able to understand exactly why the score is what it is. There is no hidden heuristic. Run `lexicon score explain` and the system tells you precisely which dimensions contributed what.
+The core idea: **make scoring functions concrete**. The score system is deterministic and explainable -- you should always be able to understand exactly why the score is what it is. There is no hidden heuristic. `lexicon verify` shows you precisely which dimensions contributed what.
 
 Scoring supports weighted dimensions across areas like:
 
@@ -82,7 +82,7 @@ Score changes are tracked in audit records with before and after values, so any 
 
 ## Default Model
 
-The default model created by `lexicon score init` includes six dimensions:
+The default model created by `lexicon init` includes six dimensions:
 
 ```toml
 schema_version = "1.0"
@@ -136,7 +136,6 @@ warn = 0.6
 
 Weights sum to 100 across all dimensions, but only non-advisory weights (90) are used in the denominator.
 
-## Commands
+## Usage
 
-- `lexicon score init` -- Create the scoring model through a conversational workflow
-- `lexicon score explain` -- Display the current model with a full breakdown of why the score is what it is
+The scoring model is created automatically by `lexicon init`. Score results are displayed as part of `lexicon verify` output. For a detailed breakdown, run `lexicon verify` and review the score section.

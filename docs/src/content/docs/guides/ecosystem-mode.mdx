@@ -16,17 +16,13 @@ Use Ecosystem Mode when your platform spans multiple repositories and you want t
 
 ## Activating Ecosystem Mode
 
-```bash
-lexicon ecosystem init
-```
+Ecosystem Mode is activated by having a `.lexicon/ecosystem.toml` file. This can be configured during setup.
 
-This command:
+The ecosystem manifest:
 
 1. Preserves existing repo-local and workspace state
-2. Adds an ecosystem manifest at `.lexicon/ecosystem.toml`
-3. Proposes repository roles and shared contracts
-4. Creates ecosystem governance structures
-5. Supports guided refinement through conversational workflow
+2. Defines repository roles and shared contracts
+3. Creates ecosystem governance structures
 
 ## Repository Roles
 
@@ -53,38 +49,9 @@ Shared contracts are referenced by multiple repositories:
 
 These are stored under `.lexicon/ecosystem/contracts/` and can be validated across the ecosystem.
 
-## Ecosystem Verification
-
-```bash
-lexicon ecosystem verify
-```
-
-Validates:
-
-- repo role constraints
-- cross-repo shared contract conformance
-- interface compatibility assumptions
-- dependency law across repositories
-- ecosystem-level drift
-
-## Ecosystem Doctor
-
-```bash
-lexicon ecosystem doctor
-```
-
-Detects:
-
-- forbidden dependency edges
-- role violations
-- cross-repo contract drift
-- interface compatibility breaks
-- orphan shared contracts
-- inconsistent scoring/gate policies across related repos
-
 ## Impact Analysis
 
-When a contract or API changes, ecosystem commands can estimate:
+When a contract or API changes, the ecosystem model can estimate:
 
 - downstream repo impact
 - shared contract consumers affected
@@ -99,4 +66,4 @@ Migration from Workspace Mode is additive:
 - ecosystem governance is added alongside existing configuration
 - no existing state is modified
 
-Standard commands (`lexicon verify`, `lexicon workspace verify`) continue to work at their respective scopes. Ecosystem commands provide the broader cross-repo view.
+`lexicon verify` continues to work at all scopes.

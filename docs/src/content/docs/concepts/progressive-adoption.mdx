@@ -36,7 +36,7 @@ Extends Repo Mode with architecture governance across a Cargo workspace. All Rep
 - Shared contracts across workspace members
 - Architecture drift detection
 
-**Triggered by:** Running `lexicon workspace init` in a Cargo workspace, or having a `.lexicon/workspace.toml` file.
+**Triggered by:** Having a `.lexicon/workspace.toml` file, or a Cargo workspace detected by `lexicon init`.
 
 ### Ecosystem Mode
 
@@ -48,7 +48,7 @@ Extends Workspace Mode with governance across multiple repositories. All Workspa
 - Ecosystem-wide governance rules
 - Cross-repository verification
 
-**Triggered by:** Running `lexicon ecosystem init`, or having a `.lexicon/ecosystem.toml` file.
+**Triggered by:** Having a `.lexicon/ecosystem.toml` file.
 
 ## Mode Detection
 
@@ -58,24 +58,23 @@ Lexicon auto-detects the operating mode from your repository structure:
 2. If `.lexicon/workspace.toml` exists or `Cargo.toml` has a `[workspace]` section → **Workspace Mode**
 3. Otherwise → **Repo Mode**
 
-You can always check your current mode by running `lexicon doctor`, which shows the detected mode and any mode-specific health checks.
+You can check your current mode by running `lexicon verify --health`, which shows the detected mode and any mode-specific health checks.
 
 ## Migration Path
 
 Each mode upgrade is **additive** — nothing is removed or broken:
 
-- **Repo → Workspace:** Run `lexicon workspace init`. This detects your workspace members, auto-assigns crate roles based on naming conventions, and creates default dependency rules. All existing contracts, scoring, and gates continue working.
+- **Repo → Workspace:** Use the `DOCTOR` action in `lexicon chat` to detect workspace structure. Workspace configuration is stored in `.lexicon/workspace.toml`. All existing contracts, scoring, and gates continue working.
 
-- **Workspace → Ecosystem:** Run `lexicon ecosystem init`. This creates an ecosystem manifest and directory structure. All existing workspace governance continues working.
+- **Workspace → Ecosystem:** Ecosystem configuration is stored in `.lexicon/ecosystem.toml`. All existing workspace governance continues working.
 
 ## Mode-Aware Commands
 
 Commands adapt their output based on the current mode:
 
-- `lexicon verify` shows mode-appropriate suggestions (e.g., "Run `lexicon workspace verify` for workspace-level checks")
-- `lexicon doctor` includes mode-specific health checks
+- `lexicon verify --health` includes mode-specific health checks
 - `lexicon init` detects workspace structure and suggests upgrading
-- Contract creation conversations ask mode-appropriate questions
+- Chat sessions ask mode-appropriate questions
 
 ## Mode-Aware TUI
 

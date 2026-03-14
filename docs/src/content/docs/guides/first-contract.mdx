@@ -9,96 +9,69 @@ This tutorial walks through creating a contract for a simple key-value store com
 
 - Lexicon installed (`cargo install --path crates/cli`)
 - A Rust project initialized with `lexicon init`
+- Authenticated with an AI provider (`lexicon auth login`)
 
-## Step 1: Start the Contract Workflow
-
-```bash
-lexicon contract new
-```
-
-This launches an interactive workflow. You will be guided through each section of the contract.
-
-## Step 2: Define Identity
-
-When prompted, provide:
-
-- **Contract ID**: `key-value-store` (kebab-case slug, used as the filename)
-- **Title**: `Key-Value Store Contract`
-- **Scope**: `Defines the behavior of a basic key-value store with get, set, and delete operations`
-
-## Step 3: Define Invariants
-
-Invariants are conditions that must always hold. For a key-value store:
-
-- `inv-001`: "A key set with a value must return that value on get" (severity: required)
-- `inv-002`: "After deleting a key, get returns None" (severity: required)
-
-Each invariant has an ID, description, and severity. Required invariants block verification if violated. Advisory invariants contribute to the score but do not block.
-
-## Step 4: Define Required Semantics
-
-These are behaviors the implementation must provide:
-
-- `req-001`: "get(key) returns None for missing keys"
-- `req-002`: "set(key, value) overwrites existing values"
-- `req-003`: "delete(key) is a no-op for missing keys"
-
-You can add test tags to link these to specific conformance tests (e.g., `["conformance", "basic"]`).
-
-## Step 5: Define Forbidden Semantics
-
-These are behaviors that must never occur:
-
-- `forbid-001`: "Must not panic on missing key lookup"
-- `forbid-002`: "Must not leak memory on repeated set/delete cycles"
-
-## Step 6: Define Edge Cases
-
-Describe specific scenarios with expected behavior:
-
-- `edge-001`: Scenario: "Setting the same key twice" / Expected: "The second value overwrites the first"
-- `edge-002`: Scenario: "Deleting a key that was never set" / Expected: "No error, no-op"
-
-## Step 7: Review and Accept
-
-The workflow presents the complete contract as TOML for review. You can:
-
-- **Accept** -- Save the contract as-is
-- **Refine** -- Provide feedback to adjust
-- **Abort** -- Cancel without saving
-
-## Result
-
-The contract is saved to `specs/contracts/key-value-store.toml` with `draft` status and `experimental` stability.
-
-## Step 8: Verify the Contract Exists
+## Step 1: Start a Chat Session
 
 ```bash
-lexicon contract list
+lexicon
 ```
 
-Output:
+This starts an interactive design session. Describe what you want to build:
 
 ```
-Contracts
-  key-value-store
+you> I need a contract for a basic key-value store with get, set, and delete operations
 ```
 
-## Step 9: Generate Conformance Tests
+The AI will create a contract with the appropriate invariants, required semantics, forbidden behaviors, and edge cases.
 
-```bash
-lexicon conformance add key-value-store
+## Step 2: Review the Generated Contract
+
+The AI creates a contract and explains what it contains:
+
+- **Invariants** — conditions that must always hold (e.g., "a key set with a value must return that value on get")
+- **Required semantics** — behaviors the implementation must provide (e.g., "get(key) returns None for missing keys")
+- **Forbidden semantics** — behaviors that must never occur (e.g., "must not panic on missing key lookup")
+- **Edge cases** — specific scenarios with expected behavior (e.g., "setting the same key twice overwrites the first value")
+
+The contract is saved to `specs/contracts/key-value-store.toml`.
+
+## Step 3: Refine the Contract
+
+The AI will proactively suggest gaps in your specification. You can also ask for changes:
+
+```
+you> Add a forbidden behavior: must not leak memory on repeated set/delete cycles
+you> Change inv-001 severity to required
+```
+
+The AI updates the contract file using the `UPDATE_CONTRACT` directive.
+
+## Step 4: Generate Conformance Tests
+
+Ask the AI to generate conformance tests:
+
+```
+you> Generate conformance tests for key-value-store
 ```
 
 This generates a test harness at `tests/conformance/key_value_store.rs` with stub test functions for each invariant, required semantic, and forbidden semantic.
 
-## Step 10: Sync to CLAUDE.md
+## Step 5: Sync to CLAUDE.md
 
-```bash
-lexicon sync claude
+```
+you> Sync CLAUDE.md
 ```
 
-Your contract's invariants, required semantics, and forbidden semantics are now included in the AI context.
+Your contract's invariants, required semantics, and forbidden semantics are now included in the AI context via the `SYNC_CLAUDE` directive.
+
+## Step 6: Verify
+
+Exit the chat session and run verification:
+
+```bash
+lexicon verify
+```
 
 ## Next Steps
 

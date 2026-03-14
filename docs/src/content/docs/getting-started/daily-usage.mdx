@@ -7,44 +7,30 @@ Once you've initialized lexicon ([Quickstart](/getting-started/quickstart/)), he
 
 ## The essentials
 
-Most days you only need three commands:
+Most days you only need two commands:
 
 ```bash
 lexicon verify              # run gates + compute score
-lexicon doctor              # check for drift and issues
-lexicon contract list       # see what contracts exist
+lexicon                     # start a chat session (or resume the last one)
 ```
 
-## Writing new contracts
+## Starting a design session
 
-**Interactive** — answer prompts to define invariants, semantics, and edge cases:
+`lexicon` (or `lexicon chat`) is the primary interface. It starts an interactive session where the AI guides you through designing contracts, gates, tests, and implementation prompts.
 
 ```bash
-lexicon contract new
+lexicon auth login           # one-time setup
+lexicon                      # start or resume a chat session
 ```
 
-**AI-assisted** — describe what you want and review the generated contract:
+Within the chat session, the AI can:
+- Create and update contracts, gates, conformance tests, behavior scenarios
+- Infer contracts from existing code
+- Check coverage gaps and API drift
+- Sync CLAUDE.md, check repo health, manage prompts
+- Generate implementation prompts from accumulated artifacts
 
-```bash
-lexicon auth login                                    # one-time setup
-lexicon contract generate "async key-value store"     # generates + previews
-```
-
-Both approaches produce the same TOML file in `specs/contracts/`. The AI path is faster for getting a first draft; the interactive path gives you more control.
-
-## Adding tests
-
-Generate conformance tests or behavior scenarios the same way:
-
-```bash
-# Interactive
-lexicon conformance add kv-store
-lexicon behavior add kv-store
-
-# AI-assisted
-lexicon conformance generate "cache trait with get/set/delete"
-lexicon behavior generate "session timeout after inactivity"
-```
+Sessions are automatically saved and can be resumed when you restart.
 
 ## Checking your work
 
@@ -56,63 +42,38 @@ lexicon verify
 
 This runs your gates (formatting, linting, tests), computes the quality score, checks coverage, and detects API drift — all in one command.
 
-For a deeper check:
+For a deeper check including repo health:
 
 ```bash
-lexicon doctor         # structural health, missing coverage, API mismatches
-lexicon coverage report   # which contract clauses have tests
-lexicon api diff       # what changed in the public API
+lexicon verify --health
 ```
 
-## Tracking API changes
-
-When your public API changes intentionally:
-
-```bash
-lexicon api scan       # extract current API
-lexicon api diff       # review what changed
-lexicon api baseline   # accept the new API as the baseline
-```
-
-## Getting AI suggestions
-
-Ask the AI to analyze your repo and suggest improvements:
-
-```bash
-lexicon improve                    # general suggestions
-lexicon improve --goal coverage    # focus on test coverage
-lexicon improve --goal contracts   # focus on contract quality
-```
-
-## Keeping CLAUDE.md current
-
-If you use Claude Code or similar AI tools:
-
-```bash
-lexicon sync claude
-```
-
-This updates the managed block in `CLAUDE.md` with your current contracts, gates, and scoring model so the AI has accurate context.
+This adds health checks for manifest, gates, scoring model, CLAUDE.md, and API baseline.
 
 ## Common patterns
 
 ### Before a PR
 
 ```bash
-lexicon verify && lexicon doctor
+lexicon verify --health
 ```
 
 ### After adding a new module
 
+Start a chat session and ask the AI to scan your API and suggest a contract:
+
 ```bash
-lexicon api scan && lexicon api diff    # check for new public API
-lexicon contract new                    # consider adding a contract
+lexicon
 ```
+
+Then tell it: "Scan the public API and suggest a contract for the new module."
 
 ### Weekly review
 
+Start a chat session and ask for a coverage report and improvement suggestions:
+
 ```bash
-lexicon coverage report    # find gaps in test coverage
-lexicon improve            # get AI suggestions for improvements
-lexicon score explain      # understand how the score breaks down
+lexicon
 ```
+
+Then use directives like `COVERAGE_REPORT`, `API_SCAN`, or ask for general advice.

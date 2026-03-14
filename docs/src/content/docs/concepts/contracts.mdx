@@ -138,27 +138,12 @@ author = "team"
 
 ## Creating Contracts
 
-Use the interactive workflow:
-
-```bash
-lexicon contract new
-```
-
-This does not just dump a static file. Instead, it opens an interactive, guided workflow that:
+Start a `lexicon chat` session and describe what you want to build. The AI will create contracts using the `CREATE_CONTRACT` directive:
 
 1. Inspects the repo and infers likely public API shape
 2. Asks structured questions about scope, capabilities, and invariants
 3. Proposes an initial contract draft
-4. Shows the draft for review
-5. Opens an AI-assisted refinement conversation
-6. Lets you iterate on the artifact conversationally
-7. Preserves explicit boundaries between stable contract and speculative ideas
-8. Validates the result and writes the final contract
+4. Lets you refine it conversationally
+5. Validates the result and writes the final contract
 
-The tool treats artifact creation as an evolving conversation, not a one-shot form.
-
-Or list existing contracts:
-
-```bash
-lexicon contract list
-```
+You can also infer contracts from existing code using the `INFER_CONTRACT` directive, which scans your public API source code and generates contracts automatically.

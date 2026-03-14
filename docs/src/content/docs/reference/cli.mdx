@@ -3,93 +3,50 @@ title: CLI Reference
 description: Complete reference for all lexicon commands.
 ---
 
-## Core Commands
+## Commands
 
 | Command | Description |
 |---------|-------------|
+| `lexicon` | Start or resume a chat session (same as `lexicon chat`) |
+| `lexicon chat` | AI-guided architecture design session |
 | `lexicon init` | Initialize lexicon in a repository |
 | `lexicon verify` | Run full verification pipeline |
-| `lexicon doctor` | Check repository health |
+| `lexicon verify --health` | Run verification with repo health checks |
+| `lexicon auth` | Manage AI provider authentication |
 | `lexicon tui` | Launch the terminal UI dashboard |
-| `lexicon improve` | AI-guided improvement loop |
-
-## Contracts
-
-| Command | Description |
-|---------|-------------|
-| `lexicon contract new` | Create a new contract through interactive workflow |
-| `lexicon contract edit` | Edit an existing contract |
-| `lexicon contract list` | List all contracts in the repository |
-| `lexicon contract lint` | Check contracts for structural issues |
-
-## Conformance
-
-| Command | Description |
-|---------|-------------|
-| `lexicon conformance add <id>` | Generate conformance harness from a contract |
-| `lexicon conformance sync` | Regenerate harnesses after contract changes |
-
-## Scoring
-
-| Command | Description |
-|---------|-------------|
-| `lexicon score init` | Create the scoring model |
-| `lexicon score explain` | Display score breakdown with explanations |
-
-## Gates
-
-| Command | Description |
-|---------|-------------|
-| `lexicon gate init` | Create the default gates configuration |
-
-## Coverage
-
-| Command | Description |
-|---------|-------------|
-| `lexicon coverage report` | Show contract coverage report |
-
-## API
-
-| Command | Description |
-|---------|-------------|
-| `lexicon api scan` | Extract public API surface |
-| `lexicon api diff` | Compare current API against baseline |
-| `lexicon api report` | Produce API stability report |
-
-## Sync
-
-| Command | Description |
-|---------|-------------|
-| `lexicon sync claude` | Generate/update CLAUDE.md with managed blocks |
 
 ## Authentication
 
 | Command | Description |
 |---------|-------------|
-| `lexicon auth login` | Authenticate with an AI provider |
+| `lexicon auth login [provider]` | Authenticate with an AI provider |
 | `lexicon auth status` | Show current authentication status |
-| `lexicon auth refresh` | Refresh authentication tokens |
-| `lexicon auth logout` | Clear stored credentials |
+| `lexicon auth refresh [provider]` | Refresh authentication tokens |
+| `lexicon auth set-key <provider> <key>` | Store an API key directly |
+| `lexicon auth logout [provider]` | Clear stored credentials |
 
-## Workspace
+## Chat Action Directives
 
-| Command | Description |
-|---------|-------------|
-| `lexicon workspace init` | Initialize workspace mode |
-| `lexicon workspace verify` | Validate workspace architecture |
-| `lexicon workspace doctor` | Check workspace health |
+All other capabilities are available through chat action directives within `lexicon chat`. The AI uses these automatically, or you can request them directly:
 
-## Ecosystem
-
-| Command | Description |
-|---------|-------------|
-| `lexicon ecosystem init` | Initialize ecosystem governance |
-| `lexicon ecosystem verify` | Validate cross-repo governance |
-| `lexicon ecosystem doctor` | Check ecosystem health |
-
-## Architecture
-
-| Command | Description |
-|---------|-------------|
-| `lexicon architecture graph` | Generate architecture dependency graph |
-| `lexicon architecture lint` | Check architecture rule violations |
+| Directive | Effect |
+|-----------|--------|
+| `CREATE_CONTRACT` | Create a new contract TOML file |
+| `UPDATE_CONTRACT` | Update an existing contract |
+| `CREATE_GATE` | Add a verification gate |
+| `CREATE_CONFORMANCE` | Generate conformance tests for a contract |
+| `CREATE_BEHAVIOR` | Generate behavior scenarios for a contract |
+| `CREATE_PROPERTY_TESTS` | Generate property-based tests (proptest) |
+| `CREATE_FUZZ_TARGET` | Generate a fuzz test harness (libfuzzer) |
+| `CREATE_EDGE_CASES` | Generate targeted edge case tests |
+| `INFER_CONTRACT` | Infer a contract from public API source code |
+| `COVERAGE_REPORT` | Show contract test coverage gaps |
+| `API_SCAN` | Scan public API and show drift from baseline |
+| `API_BASELINE` | Save current API as baseline for drift detection |
+| `GENERATE_PROMPT` | Compile an implementation prompt from all session artifacts |
+| `PROMPT_LIST` | List all generated implementation prompts |
+| `PROMPT_STATUS` | Check which prompts are stale |
+| `REGENERATE_PROMPTS` | Regenerate all stale implementation prompts |
+| `SYNC_CLAUDE` | Sync CLAUDE.md with current repo state |
+| `DOCTOR` | Check repo health |
+| `RUN_VERIFY` | Run verification to check current state |

@@ -11,13 +11,7 @@ You need an initialized lexicon repository with at least one contract. If you ha
 
 ## Generate the Harness
 
-Run:
-
-```bash
-lexicon conformance add key-value-store
-```
-
-This opens a conversational workflow that:
+In a `lexicon chat` session, ask the AI to create conformance tests for your contract. The AI uses the `CREATE_CONFORMANCE` directive, which:
 
 1. Reads the contract from `specs/contracts/key-value-store.toml`
 2. Infers trait or factory structure from your code
@@ -78,14 +72,8 @@ fn inv_get_after_set() {
 
 ## Sync After Contract Changes
 
-When a contract is updated (new invariants, changed semantics), regenerate the harness:
-
-```bash
-lexicon conformance sync
-```
-
-This adds test stubs for new clauses without overwriting your existing test implementations.
+When a contract is updated (new invariants, changed semantics), ask the AI in a chat session to regenerate conformance tests. It will add test stubs for new clauses without overwriting your existing test implementations.
 
 ## Check Coverage
 
-Run `lexicon verify` to see how many contract clauses are covered by your conformance tests. Missing coverage is surfaced in the score breakdown and in `lexicon doctor` reports.
+Run `lexicon verify` to see how many contract clauses are covered by your conformance tests. Missing coverage is surfaced in the score breakdown. Use the `COVERAGE_REPORT` action in `lexicon chat` for a detailed view.

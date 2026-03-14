@@ -53,16 +53,16 @@ User-facing specification files. These define what your project should do.
 
 | Path | Purpose |
 |------|---------|
-| `contracts/<id>.toml` | Behavioral contracts. One file per component. Created by `lexicon contract new`. |
+| `contracts/<id>.toml` | Behavioral contracts. One file per component. Created via `lexicon chat`. |
 | `behavior/` | Behavior scenario definitions linked to contracts. |
-| `scoring/model.toml` | Scoring model with dimensions and thresholds. Created by `lexicon score init`. |
+| `scoring/model.toml` | Scoring model with dimensions and thresholds. Created by `lexicon init`. |
 | `conformance/` | Conformance specifications that link contracts to test harnesses. |
 | `non_goals/` | Explicit non-goals for the project. |
-| `gates.toml` | Verification gate definitions. Created by `lexicon gate init`. |
+| `gates.toml` | Verification gate definitions. Created by `lexicon init`. |
 
 ## `CLAUDE.md`
 
-The AI context file in the repository root. Contains managed blocks (delimited by `lexicon:begin:*` and `lexicon:end:*` markers) that are updated by `lexicon sync claude`. User content outside managed blocks is preserved.
+The AI context file in the repository root. Contains managed blocks (delimited by `lexicon:begin:*` and `lexicon:end:*` markers) that are updated via the `SYNC_CLAUDE` action in `lexicon chat`. User content outside managed blocks is preserved.
 
 ## Discovery
 

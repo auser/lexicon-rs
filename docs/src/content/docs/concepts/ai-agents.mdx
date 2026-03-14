@@ -25,7 +25,7 @@ Lexicon generates context so that an AI agent can immediately understand:
 - what changes require spec updates
 - how to work safely in the repo
 
-This context is assembled from contracts, scoring models, gates, and policy into a structured summary. The `lexicon sync claude` command writes this into `CLAUDE.md` as managed blocks that stay current with the repo state.
+This context is assembled from contracts, scoring models, gates, and policy into a structured summary. The `SYNC_CLAUDE` action in `lexicon chat` writes this into `CLAUDE.md` as managed blocks that stay current with the repo state.
 
 ## What AI Agents Must Not Do
 
@@ -110,13 +110,12 @@ Credentials are stored per-provider in `.lexicon/auth/` with restrictive file pe
 
 ## Intent-Driven Generation
 
-Lexicon supports generating artifacts from natural language descriptions:
+Within a `lexicon chat` session, describe what you want to build in natural language. The AI generates artifacts using action directives:
 
-```bash
-lexicon contract generate "async key-value store with TTL"
-lexicon conformance generate "cache trait with async get/set/delete"
-lexicon behavior generate "user session expiration after inactivity"
-lexicon generate "rate limiter with burst capacity"
+```
+you> I need an async key-value store with TTL
+▸ Creating contract...
+✓ Created contract: kv-store (specs/contracts/kv-store.toml)
 ```
 
 The generation pipeline:
@@ -124,27 +123,10 @@ The generation pipeline:
 1. Assembles repo context (contracts, scoring, gates, manifest)
 2. Builds a specialized prompt with artifact templates
 3. Calls the AI provider
-4. Presents a patch preview
-5. Writes to disk only after explicit user approval
+4. Writes artifacts to disk as they're created
+5. Records every action in the audit trail
 
-All generated artifacts follow the same schemas as manually-created ones. Every acceptance or rejection is recorded in the audit trail.
-
-## The Improvement Loop
-
-The `lexicon improve` command runs a safe, AI-guided improvement cycle:
-
-1. Read contracts, scoring, gates, and repo context
-2. Identify failures, weaknesses, or improvement opportunities
-3. Propose a narrow patch
-4. Explain why the patch should help
-5. Apply the patch in a controlled way
-6. Run verification
-7. Compare score delta
-8. Reject patches that violate required gates
-9. Generate an audit record
-10. Produce a human-readable summary
-
-This is not an uncontrolled auto-rewrite feature. It is bounded and auditable. The AI can propose improvements -- adding missing tests, strengthening conformance harnesses, updating contracts, documenting new API behavior -- but it must not silently weaken contracts or remove tests.
+All generated artifacts follow the same schemas as manually-created ones. The AI can create contracts, conformance tests, behavior scenarios, property tests, fuzz targets, edge case tests, and implementation prompts.
 
 ## Context Assembly
 
@@ -173,7 +155,7 @@ At ecosystem scale, context also includes repo role, architecture layer, allowed
 
 ## Claude Code Sync
 
-The `lexicon sync claude` command generates and maintains a `CLAUDE.md` file with explicit managed blocks containing:
+The `SYNC_CLAUDE` action in `lexicon chat` generates and maintains a `CLAUDE.md` file with explicit managed blocks containing:
 
 - active contracts and their invariants
 - scoring dimensions and thresholds

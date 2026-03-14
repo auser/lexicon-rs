@@ -143,18 +143,12 @@ Policy defaults protect `.lexicon/` and spec files while allowing source edits.
 Creates the `.lexicon/` directory structure and writes `manifest.toml` with
 project metadata, default policy, and version info.
 
-### `lexicon contract new`
+### `lexicon chat` (contract creation)
 
-1. `ConversationEngine` runs a contract-creation `Workflow`
-2. Steps collect: contract ID, title, description, obligations, guarantees
-3. `Workflow::finalize` produces a `ContractSpec`
-4. `scaffold::contract` writes the TOML file to `specs/contracts/<id>.toml`
-5. Session is recorded as JSON in `.lexicon/sessions/`
-
-### `lexicon score init` / `lexicon gate init`
-
-`scaffold::scoring` and `scaffold::gates` emit default model TOML files.
-These are user-editable starting points.
+1. AI-guided conversation collects: contract ID, title, description, obligations, guarantees
+2. `CREATE_CONTRACT` action directive produces a `ContractSpec`
+3. `scaffold::contract` writes the TOML file to `specs/contracts/<id>.toml`
+4. Session is recorded as JSON in `.lexicon/conversations/`
 
 ### `lexicon verify`
 
@@ -166,7 +160,7 @@ These are user-editable starting points.
 6. Writes an audit record to `.lexicon/audit/`
 7. Returns `VerifyResult` with gate results and score report
 
-### `lexicon sync claude`
+### `SYNC_CLAUDE` (via `lexicon chat`)
 
 1. Loads manifest, contracts, scoring model, and gate definitions
 2. Assembles a context document with project structure and rules

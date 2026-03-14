@@ -13,7 +13,7 @@ From your project root:
 lexicon init
 ```
 
-This launches an interactive workflow that asks for your project name, description, type (library/binary/workspace), and domain. It creates the `.lexicon/` and `specs/` directory structure with a `manifest.toml`.
+This launches an interactive workflow that asks for your project name, description, type (library/binary/workspace), and domain. It creates the `.lexicon/` and `specs/` directory structure with a `manifest.toml`, default gates, and a default scoring model.
 
 Expected output:
 
@@ -23,59 +23,45 @@ Initializing lexicon
 Lexicon initialized successfully
 ```
 
-## 2. Create a Contract
+## 2. Start a Design Session
 
 ```bash
-lexicon contract new
+lexicon auth login    # one-time: authenticate with an AI provider
+lexicon               # start a chat session
 ```
 
-An interactive workflow guides you through defining:
-- Contract ID (e.g., `key-value-store`)
-- Title and scope description
-- Invariants, required semantics, forbidden behaviors
-- Edge cases and examples
+The chat session is the primary interface for building architecture artifacts. The AI guides you through:
 
-The contract is saved to `specs/contracts/<id>.toml`.
+- Creating contracts (behavioral specifications for your components)
+- Defining gates (verification checks like fmt, clippy, tests)
+- Generating conformance tests, behavior scenarios, and edge cases
+- Scanning and baselining your public API
+- Compiling implementation prompts
 
-## 3. Initialize the Scoring Model
+Example interaction:
 
-```bash
-lexicon score init
+```
+  Lexicon Design Session
+  ────────────────────────────────────────────────────────────
+
+you> I need an async key-value store with TTL
+
+⠋ Thinking...
+▸ Creating contract...
+✓ Created contract: kv-store (specs/contracts/kv-store.toml)
+
+Let me break down the key-value store requirements...
 ```
 
-Creates the default scoring model at `specs/scoring/model.toml` with six dimensions:
+All artifacts are written to disk as they're created. Sessions are saved automatically and can be resumed later.
 
-| Dimension              | Weight | Category |
-|------------------------|--------|----------|
-| Correctness            | 30     | Required |
-| Conformance Coverage   | 25     | Scored   |
-| Behavior Pass Rate     | 15     | Scored   |
-| Lint Quality           | 10     | Scored   |
-| Documentation Complete | 10     | Advisory |
-| Panic Safety           | 10     | Scored   |
-
-## 4. Initialize Gates
-
-```bash
-lexicon gate init
-```
-
-Creates default gates at `specs/gates.toml`:
-
-| Gate       | Command                      | Category |
-|------------|------------------------------|----------|
-| fmt        | `cargo fmt -- --check`       | Required |
-| clippy     | `cargo clippy -- -D warnings`| Required |
-| unit-tests | `cargo test`                 | Required |
-| doc-tests  | `cargo test --doc`           | Scored   |
-
-## 5. Run Verification
+## 3. Run Verification
 
 ```bash
 lexicon verify
 ```
 
-This runs all gates as subprocesses, computes the weighted score, and writes an audit record. Example output:
+This runs all gates as subprocesses, computes the weighted score, checks coverage, detects API drift, and writes an audit record. Example output:
 
 ```
 Running verification
@@ -95,36 +81,13 @@ Score
 All gates passed
 ```
 
-## 6. Extract and Baseline the Public API
+Add `--health` for repo health checks:
 
 ```bash
-lexicon api scan
-lexicon api baseline
+lexicon verify --health
 ```
 
-Scans all Rust source files and extracts the public API surface (structs, enums, traits, functions, constants, type aliases, modules). The baseline command saves the current snapshot so that future scans can detect drift.
-
-After making changes, run `lexicon api diff` to see what changed and whether any changes are breaking.
-
-## 7. Check Contract Coverage
-
-```bash
-lexicon coverage report
-```
-
-Scans test files for lexicon tags (`#[lexicon_tag("...")]`, `lexicon::tags("...")`, `// lexicon-tag: ...`) and matches them against contract clauses. Produces a coverage report showing which clauses are tested and which are missing coverage.
-
-Use `--json` for machine-readable output suitable for CI.
-
-## 8. Sync to CLAUDE.md
-
-```bash
-lexicon sync claude
-```
-
-Generates a `CLAUDE.md` file (or updates existing) with a managed block containing your contracts, scoring model, and gates. The managed block is delimited by `lexicon:begin:lexicon-context` and `lexicon:end:lexicon-context` markers. Existing content outside the managed block is preserved.
-
-## 9. Launch the TUI
+## 4. Launch the TUI
 
 ```bash
 lexicon tui

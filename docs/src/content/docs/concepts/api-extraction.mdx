@@ -84,6 +84,4 @@ The JSON report contains the full structured diff, suitable for programmatic con
 
 ## Integration with Verify
 
-API extraction fits into the broader lexicon verification pipeline. You can use `lexicon api diff` in CI to gate merges on API stability -- for example, failing the build if breaking changes are detected without a corresponding version bump or contract update.
-
-See [api command reference](/commands/api/) for usage details.
+API extraction fits into the broader lexicon verification pipeline. API drift is automatically checked during `lexicon verify`. Use the `API_SCAN` and `API_BASELINE` actions in `lexicon chat` to scan your API and save baselines interactively.

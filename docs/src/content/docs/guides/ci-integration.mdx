@@ -43,11 +43,8 @@ jobs:
       - name: Install Lexicon
         run: cargo install --path crates/cli
 
-      - name: Run Doctor
-        run: lexicon doctor
-
       - name: Run Verify
-        run: lexicon verify
+        run: lexicon verify --health
 ```
 
 ## What Runs
@@ -74,15 +71,15 @@ Currently `lexicon verify` exits with status 0 regardless of gate outcomes. To f
           fi
 ```
 
-## Running Doctor First
+## Health Checks
 
-The `lexicon doctor` step is optional but recommended. It checks that all lexicon components are configured:
+The `--health` flag on `lexicon verify` is optional but recommended. It adds checks for:
 
 - Manifest exists
-- Contracts are present
-- Scoring model is configured
 - Gates are configured
+- Scoring model is configured
 - CLAUDE.md is present
+- API baseline is present
 
 This catches configuration drift early.
 
@@ -117,10 +114,10 @@ For local verification before pushing, add a git pre-commit hook:
 lexicon verify
 ```
 
-Or use a lightweight check:
+Or with health checks:
 
 ```bash
 #!/bin/sh
 # .git/hooks/pre-commit
-lexicon doctor
+lexicon verify --health
 ```

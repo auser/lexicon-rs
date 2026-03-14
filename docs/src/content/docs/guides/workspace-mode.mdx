@@ -16,18 +16,13 @@ Use Workspace Mode when your repository is a Cargo workspace with multiple crate
 
 ## Activating Workspace Mode
 
-```bash
-lexicon workspace init
-```
+Workspace Mode is activated by having a `.lexicon/workspace.toml` file. This can be created during `lexicon init` if a Cargo workspace is detected, or manually.
 
-This command:
+The workspace manifest:
 
-1. Inspects the current repo-local state
-2. Preserves existing contracts, scoring, and gates
-3. Adds a workspace manifest at `.lexicon/workspace.toml`
-4. Proposes architecture rules at `.lexicon/architecture/rules.toml`
-5. Proposes crate roles based on the workspace structure
-6. Lets you refine these through a conversational workflow
+1. Preserves existing contracts, scoring, and gates
+2. Defines crate roles based on the workspace structure
+3. Proposes architecture rules at `.lexicon/architecture/rules.toml`
 
 ## Crate Roles
 
@@ -52,32 +47,7 @@ Architecture rules define allowed dependency directions:
 - interface crates may not import adapter internals
 - experimental crates cannot publish stable contracts
 
-Violations are detected during `lexicon workspace verify` and reported in `lexicon workspace doctor`.
-
-## Workspace Verification
-
-```bash
-lexicon workspace verify
-```
-
-This runs:
-
-- standard repo-local verification (gates, scoring, coverage)
-- workspace architecture validation (dependency rules, role constraints)
-- shared contract compliance within the workspace
-
-## Workspace Doctor
-
-```bash
-lexicon workspace doctor
-```
-
-Detects workspace-level issues:
-
-- forbidden dependency edges between crates
-- crate role violations
-- architecture drift
-- shared contract inconsistencies
+Violations are detected during `lexicon verify`.
 
 ## Upgrading from Repo Mode
 
@@ -87,4 +57,4 @@ Migration from Repo Mode is additive and safe:
 - workspace configuration is added alongside existing files
 - no existing state is modified or deleted
 
-You can continue using all Repo Mode commands (`lexicon verify`, `lexicon doctor`, etc.) -- they remain focused on local repo health while workspace commands provide the broader architectural view.
+`lexicon verify` continues to work, now including workspace-level architecture checks.
