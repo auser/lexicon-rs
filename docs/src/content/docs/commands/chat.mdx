@@ -91,7 +91,13 @@ During the session, the AI uses structured directives to create artifacts:
 | `INFER_CONTRACT` | Infers a contract from the public API source code |
 | `COVERAGE_REPORT` | Shows contract test coverage gaps |
 | `API_SCAN` | Scans public API and shows drift from baseline |
+| `API_BASELINE` | Saves current API as the baseline for drift detection |
 | `GENERATE_PROMPT` | Compiles an implementation prompt from all session artifacts |
+| `PROMPT_LIST` | Lists all generated implementation prompts |
+| `PROMPT_STATUS` | Checks which prompts are stale and need regeneration |
+| `REGENERATE_PROMPTS` | Regenerates all stale implementation prompts |
+| `SYNC_CLAUDE` | Syncs CLAUDE.md with the current repo state |
+| `DOCTOR` | Checks repo health (manifest, gates, scoring, CLAUDE.md, API baseline) |
 | `RUN_VERIFY` | Runs verification to check current state |
 
 ## Completeness tracking
@@ -110,6 +116,5 @@ Every artifact created during the session is recorded in the audit log with the 
 
 ## See also
 
-- [`lexicon generate`](/commands/generate) — one-shot AI artifact generation
-- [`lexicon improve`](/commands/improve) — AI-guided improvement suggestions
+- [`lexicon verify`](/commands/verify) — run verification gates and scoring
 - [`lexicon auth`](/commands/auth) — manage AI provider authentication

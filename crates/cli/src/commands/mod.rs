@@ -1,12 +1,4 @@
-pub mod api;
 pub mod auth;
 pub mod chat;
-pub mod coverage;
-pub mod doctor;
-pub mod ecosystem_cmd;
-pub mod prompt;
 pub mod init;
-pub(crate) mod review;
-pub mod sync;
 pub mod verify;
-pub mod workspace_cmd;

@@ -117,6 +117,12 @@ pub enum ChatAction {
     InferContract,
     CoverageReport,
     ApiScan,
+    ApiBaseline,
+    SyncClaude,
+    Doctor,
+    PromptList,
+    PromptStatus,
+    RegeneratePrompts,
     GeneratePrompt,
     RunVerify,
 }
@@ -136,6 +142,12 @@ impl ChatAction {
             Self::InferContract => "Inferring contract from API...",
             Self::CoverageReport => "Analyzing coverage...",
             Self::ApiScan => "Scanning public API...",
+            Self::ApiBaseline => "Saving API baseline...",
+            Self::SyncClaude => "Syncing CLAUDE.md...",
+            Self::Doctor => "Checking repo health...",
+            Self::PromptList => "Listing prompts...",
+            Self::PromptStatus => "Checking prompt status...",
+            Self::RegeneratePrompts => "Regenerating prompts...",
             Self::GeneratePrompt => "Compiling implementation prompt...",
             Self::RunVerify => "Running verification...",
         }
@@ -223,6 +235,12 @@ fn parse_directive(directive: &str, content: &str) -> Option<ChatAction> {
         "INFER_CONTRACT" => Some(ChatAction::InferContract),
         "COVERAGE_REPORT" => Some(ChatAction::CoverageReport),
         "API_SCAN" => Some(ChatAction::ApiScan),
+        "API_BASELINE" => Some(ChatAction::ApiBaseline),
+        "SYNC_CLAUDE" => Some(ChatAction::SyncClaude),
+        "DOCTOR" => Some(ChatAction::Doctor),
+        "PROMPT_LIST" => Some(ChatAction::PromptList),
+        "PROMPT_STATUS" => Some(ChatAction::PromptStatus),
+        "REGENERATE_PROMPTS" => Some(ChatAction::RegeneratePrompts),
         "GENERATE_PROMPT" => Some(ChatAction::GeneratePrompt),
         "RUN_VERIFY" => Some(ChatAction::RunVerify),
         _ => None,
@@ -268,6 +286,12 @@ fn execute_action(
         ChatAction::InferContract => execute_infer_contract(layout, ctx),
         ChatAction::CoverageReport => execute_coverage_report(layout),
         ChatAction::ApiScan => execute_api_scan(layout),
+        ChatAction::ApiBaseline => execute_api_baseline(layout),
+        ChatAction::SyncClaude => execute_sync_claude(layout),
+        ChatAction::Doctor => execute_doctor(layout),
+        ChatAction::PromptList => execute_prompt_list(layout),
+        ChatAction::PromptStatus => execute_prompt_status(layout),
+        ChatAction::RegeneratePrompts => execute_regenerate_prompts(layout),
         ChatAction::GeneratePrompt => execute_generate_prompt(layout, ctx),
         ChatAction::RunVerify => execute_verify(layout),
     }
@@ -656,6 +680,100 @@ fn load_all_contracts(layout: &RepoLayout) -> CoreResult<Vec<Contract>> {
         }
     }
     Ok(contracts)
+}
+
+fn execute_api_baseline(layout: &RepoLayout) -> CoreResult<String> {
+    // Ensure a current scan exists first
+    if !layout.api_dir().join("current.json").exists() {
+        crate::api::api_scan(layout)?;
+    }
+    crate::api::api_baseline(layout)?;
+    Ok("API baseline saved".to_string())
+}
+
+fn execute_sync_claude(layout: &RepoLayout) -> CoreResult<String> {
+    crate::sync_claude::sync_claude(layout)?;
+    Ok("CLAUDE.md synced with current repo state".to_string())
+}
+
+fn execute_doctor(layout: &RepoLayout) -> CoreResult<String> {
+    let mut output = String::new();
+
+    if layout.manifest_path().exists() {
+        output.push_str("✓ Manifest found\n");
+    } else {
+        output.push_str("✗ No manifest — run `lexicon init`\n");
+    }
+
+    let contracts = crate::contract::contract_list(layout)?;
+    output.push_str(&format!("  {} contract(s)\n", contracts.len()));
+
+    if layout.scoring_model_path().exists() {
+        output.push_str("✓ Scoring model configured\n");
+    } else {
+        output.push_str("⚠ No scoring model\n");
+    }
+
+    if layout.gates_path().exists() {
+        output.push_str("✓ Gates configured\n");
+    } else {
+        output.push_str("⚠ No gates\n");
+    }
+
+    if layout.claude_md_path().exists() {
+        output.push_str("✓ CLAUDE.md present\n");
+    } else {
+        output.push_str("⚠ No CLAUDE.md\n");
+    }
+
+    if layout.api_dir().join("baseline.json").exists() {
+        output.push_str("✓ API baseline configured\n");
+    } else {
+        output.push_str("  No API baseline\n");
+    }
+
+    Ok(output)
+}
+
+fn execute_prompt_list(layout: &RepoLayout) -> CoreResult<String> {
+    let prompts = crate::prompt_gen::list_prompts(layout)?;
+    if prompts.is_empty() {
+        return Ok("No prompts generated yet.".to_string());
+    }
+    let mut output = format!("{} prompt(s):\n", prompts.len());
+    for p in &prompts {
+        output.push_str(&format!("  - {p}\n"));
+    }
+    Ok(output)
+}
+
+fn execute_prompt_status(layout: &RepoLayout) -> CoreResult<String> {
+    let statuses = crate::prompt_gen::check_all_prompt_statuses(layout)?;
+    if statuses.is_empty() {
+        return Ok("No prompts to check.".to_string());
+    }
+    let mut output = String::new();
+    for s in &statuses {
+        let icon = if s.is_stale { "⚠" } else { "✓" };
+        let status = if s.is_stale { "stale" } else { "up-to-date" };
+        output.push_str(&format!("{icon} {}: {status}\n", s.filename));
+        for r in &s.reasons {
+            output.push_str(&format!("    {r}\n"));
+        }
+    }
+    Ok(output)
+}
+
+fn execute_regenerate_prompts(layout: &RepoLayout) -> CoreResult<String> {
+    let results = crate::prompt_gen::regenerate_stale(layout, false)?;
+    if results.is_empty() {
+        return Ok("All prompts are up-to-date.".to_string());
+    }
+    let mut output = format!("Regenerated {} prompt(s):\n", results.len());
+    for r in &results {
+        output.push_str(&format!("  - {}\n", r.artifact.path));
+    }
+    Ok(output)
 }
 
 // ---------------------------------------------------------------------------

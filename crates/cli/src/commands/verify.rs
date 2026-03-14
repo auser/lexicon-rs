@@ -1,13 +1,11 @@
 use lexicon_core::verify::verify;
 use lexicon_gates::result::GateOutcome;
-use lexicon_repo::detect::detect_mode;
 use lexicon_repo::layout::RepoLayout;
 use lexicon_scoring::engine::Verdict;
-use lexicon_spec::mode::OperatingMode;
 
 use crate::output;
 
-pub fn run() -> miette::Result<()> {
+pub fn run(health: bool) -> miette::Result<()> {
     let layout = RepoLayout::discover()?;
 
     output::heading("Running verification");
@@ -94,7 +92,7 @@ pub fn run() -> miette::Result<()> {
         for w in &result.prompt_warnings {
             output::warning(w);
         }
-        output::info("Run `lexicon prompt regenerate` to update stale prompts.");
+        output::info("Use REGENERATE_PROMPTS in `lexicon chat` to update stale prompts.");
     }
 
     output::divider();
@@ -110,18 +108,40 @@ pub fn run() -> miette::Result<()> {
         output::error("Some gates failed");
     }
 
-    // Mode-aware suggestion
-    let mode = detect_mode(&layout);
-    match mode {
-        OperatingMode::Workspace => {
-            println!();
-            output::info("Run `lexicon workspace verify` for workspace-level checks.");
+    // Health checks (manifest, gates, scoring, CLAUDE.md, API baseline)
+    if health {
+        println!();
+        output::heading("Health Checks");
+
+        if layout.manifest_path().exists() {
+            output::success("✓ Manifest found");
+        } else {
+            output::error("✗ No manifest — run `lexicon init`");
         }
-        OperatingMode::Ecosystem => {
-            println!();
-            output::info("Run `lexicon ecosystem verify` for ecosystem-level checks.");
+
+        if layout.gates_path().exists() {
+            output::success("✓ Gates configured");
+        } else {
+            output::warning("⚠ No gates configured");
         }
-        OperatingMode::Repo => {}
+
+        if layout.scoring_model_path().exists() {
+            output::success("✓ Scoring model configured");
+        } else {
+            output::warning("⚠ No scoring model");
+        }
+
+        if layout.claude_md_path().exists() {
+            output::success("✓ CLAUDE.md present");
+        } else {
+            output::warning("⚠ No CLAUDE.md");
+        }
+
+        if layout.api_dir().join("baseline.json").exists() {
+            output::success("✓ API baseline present");
+        } else {
+            output::warning("⚠ No API baseline — use DOCTOR in chat to create one");
+        }
     }
 
     Ok(())

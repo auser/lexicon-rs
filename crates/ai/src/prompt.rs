@@ -425,6 +425,12 @@ Supported directives:\n\
 - INFER_CONTRACT — infer a contract from the public API source code\n\
 - COVERAGE_REPORT — show contract test coverage gaps\n\
 - API_SCAN — scan public API and show drift from baseline\n\
+- API_BASELINE — save current API as the baseline for drift detection\n\
+- SYNC_CLAUDE — sync CLAUDE.md with the current repo state\n\
+- DOCTOR — check repo health (manifest, gates, scoring, CLAUDE.md, API baseline)\n\
+- PROMPT_LIST — list all generated implementation prompts\n\
+- PROMPT_STATUS — check which prompts are stale and need regeneration\n\
+- REGENERATE_PROMPTS — regenerate all stale implementation prompts\n\
 - GENERATE_PROMPT — compile the final implementation prompt from all session artifacts\n\
 - RUN_VERIFY — run verification to check current state\n\
 \n\

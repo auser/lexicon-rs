@@ -21,38 +21,11 @@ export default defineConfig({
 				{
 					label: 'Commands',
 					items: [
-						{
-							label: 'AI',
-							items: [
-								{ label: 'chat', slug: 'commands/chat' },
-								{ label: 'auth', slug: 'commands/auth' },
-							],
-						},
-						{
-							label: 'Verification',
-							items: [
-								{ label: 'verify', slug: 'commands/verify' },
-								{ label: 'coverage', slug: 'commands/coverage' },
-								{ label: 'api', slug: 'commands/api' },
-								{ label: 'doctor', slug: 'commands/doctor' },
-							],
-						},
-						{
-							label: 'Governance',
-							items: [
-								{ label: 'workspace', slug: 'commands/workspace' },
-								{ label: 'ecosystem', slug: 'commands/ecosystem' },
-							],
-						},
-						{
-							label: 'Utilities',
-							items: [
-								{ label: 'init', slug: 'commands/init' },
-								{ label: 'prompt', slug: 'commands/prompt' },
-								{ label: 'sync', slug: 'commands/sync' },
-								{ label: 'tui', slug: 'commands/tui' },
-							],
-						},
+						{ label: 'chat', slug: 'commands/chat' },
+						{ label: 'init', slug: 'commands/init' },
+						{ label: 'verify', slug: 'commands/verify' },
+						{ label: 'auth', slug: 'commands/auth' },
+						{ label: 'tui', slug: 'commands/tui' },
 					],
 				},
 				{
