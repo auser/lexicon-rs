@@ -1032,7 +1032,7 @@ pub fn run_chat(
         println!("  Type {} to end the session.\n", dim_style.apply_to("'exit'"));
     }
 
-    loop {
+    'chat: loop {
         let input = match driver.present_question(&Question::simple("you> ")) {
             Ok(input) => input,
             Err(_) => break,
@@ -1068,27 +1068,58 @@ pub fn run_chat(
         let user_msg =
             build_chat_user_message(&repo_context, &session_summary, &history_pairs, &input);
 
-        // Get AI response with spinner
-        let spinner = ProgressBar::new_spinner();
-        spinner.set_style(
-            ProgressStyle::with_template("{spinner:.cyan} {msg}")
-                .unwrap()
-                .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"),
-        );
-        spinner.set_message("Thinking...");
-        spinner.enable_steady_tick(std::time::Duration::from_millis(80));
+        // Get AI response with spinner and retry on transient failures
+        const MAX_RETRIES: u32 = 3;
+        let raw_response = 'retry: {
+            let mut last_err = String::new();
+            for attempt in 0..=MAX_RETRIES {
+                let spinner = ProgressBar::new_spinner();
+                spinner.set_style(
+                    ProgressStyle::with_template("{spinner:.cyan} {msg}")
+                        .unwrap()
+                        .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"),
+                );
+                if attempt == 0 {
+                    spinner.set_message("Thinking...");
+                } else {
+                    spinner.set_message(format!("Retrying ({attempt}/{MAX_RETRIES})..."));
+                }
+                spinner.enable_steady_tick(std::time::Duration::from_millis(80));
 
-        let raw_response = match ai_provider.complete(CHAT_SYSTEM, &user_msg) {
-            Ok(r) => {
-                spinner.finish_and_clear();
-                r
+                match ai_provider.complete(CHAT_SYSTEM, &user_msg) {
+                    Ok(r) => {
+                        spinner.finish_and_clear();
+                        break 'retry r;
+                    }
+                    Err(e) => {
+                        spinner.finish_and_clear();
+                        last_err = format!("{e}");
+                        if attempt < MAX_RETRIES {
+                            let delay = std::time::Duration::from_secs(2u64.pow(attempt));
+                            let warn_style = Style::new().yellow();
+                            println!(
+                                "  {} Network error, retrying in {}s...",
+                                warn_style.apply_to("⚠"),
+                                delay.as_secs()
+                            );
+                            std::thread::sleep(delay);
+                        }
+                    }
+                }
             }
-            Err(e) => {
-                spinner.finish_and_clear();
-                let error_style = Style::new().red().bold();
-                println!("  {} AI error: {e}", error_style.apply_to("✗"));
-                continue;
+            // All retries exhausted
+            let error_style = Style::new().red().bold();
+            println!(
+                "  {} AI error after {} retries: {last_err}",
+                error_style.apply_to("✗"),
+                MAX_RETRIES
+            );
+            // Remove the user message from history since we got no response
+            if ctx.history.last().is_some_and(|m| m.role == MessageRole::User) {
+                ctx.history.pop();
             }
+            session.steps.pop(); // remove the UserInput step
+            continue 'chat;
         };
 
         // Parse response for action directives
