@@ -982,7 +982,7 @@ pub fn run_chat(
         );
 
         let answer = driver
-            .present_question(&Question::simple(&prompt))
+            .present_question(&Question::simple(&prompt).with_default("y"))
             .unwrap_or_default();
 
         if answer.trim().is_empty() || answer.trim().to_lowercase().starts_with('y') {
@@ -1046,11 +1046,25 @@ pub fn run_chat(
 
     let mut auto_followup = false;
 
+    // Set up rustyline editor with history for the chat REPL
+    let rl_config = rustyline::Config::builder()
+        .max_history_size(500)
+        .expect("valid history size")
+        .auto_add_history(true)
+        .build();
+    let mut rl = rustyline::DefaultEditor::with_config(rl_config)
+        .unwrap_or_else(|_| rustyline::DefaultEditor::new().expect("rustyline editor"));
+
+    // Load history from a file in the .lexicon directory if it exists
+    let history_path = layout.root.join(".lexicon").join("chat_history");
+    let _ = rl.load_history(&history_path);
+
     'chat: loop {
         // If auto-following up after errors, skip user input
         if !auto_followup {
-            let input = match driver.present_question(&Question::simple("you> ")) {
-                Ok(input) => input,
+            let input = match rl.readline("you> ") {
+                Ok(line) => line,
+                Err(rustyline::error::ReadlineError::Interrupted | rustyline::error::ReadlineError::Eof) => break,
                 Err(_) => break,
             };
 
@@ -1234,6 +1248,9 @@ pub fn run_chat(
         // Auto-save after each turn so interrupted sessions can be resumed
         let _ = save_session(&layout.conversations_dir(), &session);
     }
+
+    // Save readline history
+    let _ = rl.save_history(&history_path);
 
     session.complete(None);
     let _ = save_session(&layout.conversations_dir(), &session);

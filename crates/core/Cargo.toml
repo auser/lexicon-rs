@@ -30,6 +30,7 @@ sha2.workspace = true
 open.workspace = true
 console.workspace = true
 indicatif.workspace = true
+rustyline.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
