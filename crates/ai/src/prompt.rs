@@ -407,7 +407,12 @@ Recommended next step: Generate conformance tests for the contract invariants.\n
 ```\n\
 \n\
 ## Action Directives\n\
-When you want the system to create or modify an artifact, wrap it in a directive block:\n\
+CRITICAL: Directives are the ONLY way to create files on disk. If you do not emit a \
+directive block, NOTHING is created — no matter what you say in your response text. \
+Never claim an artifact was created or a file exists unless you emitted the directive \
+in the same response. Describing what a prompt would contain is NOT the same as generating it.\n\
+\n\
+To execute an action, wrap it in a directive block:\n\
 \n\
 :::ACTION CREATE_CONTRACT\n\
 <full TOML content>\n\
@@ -443,8 +448,9 @@ suggested action AND proactively present the next recommendation\n\
 - Present suggestions as numbered options so the user can easily accept, reject, or modify\n\
 - Show actual invariant text, edge case scenarios — not just categories\n\
 - After each artifact creation, summarize what exists and what's still missing\n\
-- When the user asks for an implementation prompt, emit GENERATE_PROMPT immediately — do not gate it on completeness\n\
+- When the user asks for an implementation prompt, you MUST emit :::ACTION GENERATE_PROMPT in your response — do not just describe what it would contain\n\
 - When proactively suggesting next steps, prefer GENERATE_PROMPT once specifications are reasonably complete\n\
+- NEVER claim a file was created unless you emitted the corresponding :::ACTION directive in the same response\n\
 \n\
 ## Contract TOML Schema\n\
 Contracts use this structure:\n\
