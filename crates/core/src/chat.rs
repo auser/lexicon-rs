@@ -12,6 +12,7 @@ use lexicon_conversation::session::save_session;
 use lexicon_conversation::workflow::Question;
 use lexicon_repo::layout::RepoLayout;
 use lexicon_spec::common::{StepType, WorkflowKind};
+use lexicon_spec::contract::Contract;
 use lexicon_spec::session::ConversationSession;
 
 use console::Style;
@@ -110,6 +111,12 @@ pub enum ChatAction {
     CreateGate { toml_content: String },
     CreateConformance { contract_id: String },
     CreateBehavior { contract_id: String },
+    CreatePropertyTests { contract_id: String },
+    CreateFuzzTarget { contract_id: String },
+    CreateEdgeCases { contract_id: String },
+    InferContract,
+    CoverageReport,
+    ApiScan,
     GeneratePrompt,
     RunVerify,
 }
@@ -123,6 +130,12 @@ impl ChatAction {
             Self::CreateGate { .. } => "Creating gate...",
             Self::CreateConformance { .. } => "Generating conformance tests...",
             Self::CreateBehavior { .. } => "Generating behavior scenarios...",
+            Self::CreatePropertyTests { .. } => "Generating property tests...",
+            Self::CreateFuzzTarget { .. } => "Generating fuzz target...",
+            Self::CreateEdgeCases { .. } => "Generating edge case tests...",
+            Self::InferContract => "Inferring contract from API...",
+            Self::CoverageReport => "Analyzing coverage...",
+            Self::ApiScan => "Scanning public API...",
             Self::GeneratePrompt => "Compiling implementation prompt...",
             Self::RunVerify => "Running verification...",
         }
@@ -198,6 +211,18 @@ fn parse_directive(directive: &str, content: &str) -> Option<ChatAction> {
         "CREATE_BEHAVIOR" => Some(ChatAction::CreateBehavior {
             contract_id: arg.unwrap_or_default(),
         }),
+        "CREATE_PROPERTY_TESTS" => Some(ChatAction::CreatePropertyTests {
+            contract_id: arg.unwrap_or_default(),
+        }),
+        "CREATE_FUZZ_TARGET" => Some(ChatAction::CreateFuzzTarget {
+            contract_id: arg.unwrap_or_default(),
+        }),
+        "CREATE_EDGE_CASES" => Some(ChatAction::CreateEdgeCases {
+            contract_id: arg.unwrap_or_default(),
+        }),
+        "INFER_CONTRACT" => Some(ChatAction::InferContract),
+        "COVERAGE_REPORT" => Some(ChatAction::CoverageReport),
+        "API_SCAN" => Some(ChatAction::ApiScan),
         "GENERATE_PROMPT" => Some(ChatAction::GeneratePrompt),
         "RUN_VERIFY" => Some(ChatAction::RunVerify),
         _ => None,
@@ -231,6 +256,18 @@ fn execute_action(
         ChatAction::CreateBehavior { contract_id } => {
             execute_create_behavior(layout, contract_id, ctx, ai_provider)
         }
+        ChatAction::CreatePropertyTests { contract_id } => {
+            execute_create_property_tests(layout, contract_id, ctx)
+        }
+        ChatAction::CreateFuzzTarget { contract_id } => {
+            execute_create_fuzz_target(layout, contract_id, ctx)
+        }
+        ChatAction::CreateEdgeCases { contract_id } => {
+            execute_create_edge_cases(layout, contract_id, ctx)
+        }
+        ChatAction::InferContract => execute_infer_contract(layout, ctx),
+        ChatAction::CoverageReport => execute_coverage_report(layout),
+        ChatAction::ApiScan => execute_api_scan(layout),
         ChatAction::GeneratePrompt => execute_generate_prompt(layout, ctx),
         ChatAction::RunVerify => execute_verify(layout),
     }
@@ -462,6 +499,163 @@ fn execute_verify(layout: &RepoLayout) -> CoreResult<String> {
         }
         Err(e) => Ok(format!("Verification failed: {e}")),
     }
+}
+
+fn execute_create_property_tests(
+    layout: &RepoLayout,
+    contract_id: &str,
+    ctx: &mut ChatContext,
+) -> CoreResult<String> {
+    let contract = load_contract_by_id(layout, contract_id)?;
+    let result = crate::generate::generate_contract_property_tests(layout, &contract)?;
+    crate::generate::accept_artifact(layout, &result.artifact)?;
+
+    let path = result.artifact.path.clone();
+    ctx.artifacts.push(SessionArtifact {
+        kind: ArtifactCategory::Conformance,
+        id: format!("{contract_id}-property"),
+        path: path.clone(),
+        summary: format!("property tests for {contract_id}"),
+    });
+
+    Ok(format!("Generated property tests at {path}"))
+}
+
+fn execute_create_fuzz_target(
+    layout: &RepoLayout,
+    contract_id: &str,
+    ctx: &mut ChatContext,
+) -> CoreResult<String> {
+    let contract = load_contract_by_id(layout, contract_id)?;
+    let result = crate::generate::generate_contract_fuzz_target(layout, &contract)?;
+    crate::generate::accept_artifact(layout, &result.artifact)?;
+
+    let path = result.artifact.path.clone();
+    ctx.artifacts.push(SessionArtifact {
+        kind: ArtifactCategory::Conformance,
+        id: format!("{contract_id}-fuzz"),
+        path: path.clone(),
+        summary: format!("fuzz target for {contract_id}"),
+    });
+
+    Ok(format!("Generated fuzz target at {path}"))
+}
+
+fn execute_create_edge_cases(
+    layout: &RepoLayout,
+    contract_id: &str,
+    ctx: &mut ChatContext,
+) -> CoreResult<String> {
+    let contract = load_contract_by_id(layout, contract_id)?;
+    let result = crate::generate::generate_contract_edge_case_tests(layout, &contract)?;
+    crate::generate::accept_artifact(layout, &result.artifact)?;
+
+    let path = result.artifact.path.clone();
+    ctx.artifacts.push(SessionArtifact {
+        kind: ArtifactCategory::Conformance,
+        id: format!("{contract_id}-edge"),
+        path: path.clone(),
+        summary: format!("edge case tests for {contract_id}"),
+    });
+
+    Ok(format!("Generated edge case tests at {path}"))
+}
+
+fn execute_infer_contract(
+    layout: &RepoLayout,
+    ctx: &mut ChatContext,
+) -> CoreResult<String> {
+    let result = crate::generate::infer_contract_from_api(layout, None)?;
+    crate::generate::accept_artifact(layout, &result.artifact)?;
+
+    let path = result.artifact.path.clone();
+    // Try to extract ID from the generated artifact content
+    let id = if let Ok(contract) = toml::from_str::<lexicon_spec::contract::Contract>(&result.artifact.content) {
+        let cid = contract.id.clone();
+        let summary = format!(
+            "{}: {} invariants, {} required, {} forbidden",
+            contract.title,
+            contract.invariants.len(),
+            contract.required_semantics.len(),
+            contract.forbidden_semantics.len(),
+        );
+        ctx.artifacts.push(SessionArtifact {
+            kind: ArtifactCategory::Contract,
+            id: cid.clone(),
+            path: path.clone(),
+            summary,
+        });
+        cid
+    } else {
+        ctx.artifacts.push(SessionArtifact {
+            kind: ArtifactCategory::Contract,
+            id: "inferred".to_string(),
+            path: path.clone(),
+            summary: "inferred from public API".to_string(),
+        });
+        "inferred".to_string()
+    };
+
+    Ok(format!("Inferred contract \"{id}\" at {path}"))
+}
+
+fn execute_coverage_report(layout: &RepoLayout) -> CoreResult<String> {
+    let contracts = load_all_contracts(layout)?;
+    if contracts.is_empty() {
+        return Ok("No contracts found. Create a contract first.".to_string());
+    }
+
+    let report = crate::coverage::coverage_report(layout, &contracts)?;
+    let text = crate::coverage::coverage_report_text(&report);
+    Ok(text)
+}
+
+fn execute_api_scan(layout: &RepoLayout) -> CoreResult<String> {
+    let snapshot = crate::api::api_scan(layout)?;
+    let mut output = format!("API scan: {} items extracted\n", snapshot.items.len());
+
+    // Try to show drift if baseline exists
+    match crate::api::api_diff(layout) {
+        Ok(diff) => {
+            output.push_str(&diff.summary());
+        }
+        Err(_) => {
+            output.push_str("No baseline found — run `lexicon api baseline` to set one.");
+        }
+    }
+
+    Ok(output)
+}
+
+/// Load a single contract by ID from the contracts directory.
+fn load_contract_by_id(layout: &RepoLayout, contract_id: &str) -> CoreResult<Contract> {
+    let path = layout.contracts_dir().join(format!("{contract_id}.toml"));
+    if !path.exists() {
+        return Err(CoreError::Other(format!(
+            "Contract not found: {contract_id}"
+        )));
+    }
+    let text = std::fs::read_to_string(&path)?;
+    let contract: Contract = toml::from_str(&text)
+        .map_err(|e| CoreError::Other(format!("Failed to parse contract {contract_id}: {e}")))?;
+    Ok(contract)
+}
+
+/// Load all contracts from the contracts directory.
+fn load_all_contracts(layout: &RepoLayout) -> CoreResult<Vec<Contract>> {
+    let dir = layout.contracts_dir();
+    let mut contracts = Vec::new();
+    if dir.is_dir() {
+        for entry in std::fs::read_dir(&dir)?.flatten() {
+            if entry.path().extension().is_some_and(|e| e == "toml") {
+                let text = std::fs::read_to_string(entry.path())?;
+                let contract: Contract = toml::from_str(&text)
+                    .map_err(|e| CoreError::Other(format!("Failed to parse contract: {e}")))?;
+                contracts.push(contract);
+            }
+        }
+    }
+    Ok(contracts)
 }
 
 // ---------------------------------------------------------------------------
@@ -800,5 +994,50 @@ version = "0.1.0"
             }
             _ => panic!("Expected CreateConformance"),
         }
+    }
+
+    #[test]
+    fn test_parse_new_directives() {
+        let cases = vec![
+            (":::ACTION CREATE_PROPERTY_TESTS kv-store\n:::", "kv-store", "CreatePropertyTests"),
+            (":::ACTION CREATE_FUZZ_TARGET cache\n:::", "cache", "CreateFuzzTarget"),
+            (":::ACTION CREATE_EDGE_CASES auth\n:::", "auth", "CreateEdgeCases"),
+        ];
+
+        for (input, expected_id, label) in cases {
+            let parsed = parse_ai_response(input);
+            assert_eq!(parsed.actions.len(), 1, "Failed for {label}");
+            let contract_id = match &parsed.actions[0] {
+                ChatAction::CreatePropertyTests { contract_id } => contract_id,
+                ChatAction::CreateFuzzTarget { contract_id } => contract_id,
+                ChatAction::CreateEdgeCases { contract_id } => contract_id,
+                other => panic!("Expected {label}, got {other:?}"),
+            };
+            assert_eq!(contract_id, expected_id, "Wrong ID for {label}");
+        }
+    }
+
+    #[test]
+    fn test_parse_infer_contract() {
+        let response = ":::ACTION INFER_CONTRACT\n:::";
+        let parsed = parse_ai_response(response);
+        assert_eq!(parsed.actions.len(), 1);
+        assert!(matches!(&parsed.actions[0], ChatAction::InferContract));
+    }
+
+    #[test]
+    fn test_parse_coverage_report() {
+        let response = ":::ACTION COVERAGE_REPORT\n:::";
+        let parsed = parse_ai_response(response);
+        assert_eq!(parsed.actions.len(), 1);
+        assert!(matches!(&parsed.actions[0], ChatAction::CoverageReport));
+    }
+
+    #[test]
+    fn test_parse_api_scan() {
+        let response = ":::ACTION API_SCAN\n:::";
+        let parsed = parse_ai_response(response);
+        assert_eq!(parsed.actions.len(), 1);
+        assert!(matches!(&parsed.actions[0], ChatAction::ApiScan));
     }
 }

@@ -419,6 +419,12 @@ Supported directives:\n\
 - CREATE_GATE — add verification gates (include TOML gate definitions)\n\
 - CREATE_CONFORMANCE <contract_id> — generate conformance tests\n\
 - CREATE_BEHAVIOR <contract_id> — generate behavior scenarios\n\
+- CREATE_PROPERTY_TESTS <contract_id> — generate property-based tests (proptest)\n\
+- CREATE_FUZZ_TARGET <contract_id> — generate a fuzz test harness (libfuzzer)\n\
+- CREATE_EDGE_CASES <contract_id> — generate targeted edge case tests\n\
+- INFER_CONTRACT — infer a contract from the public API source code\n\
+- COVERAGE_REPORT — show contract test coverage gaps\n\
+- API_SCAN — scan public API and show drift from baseline\n\
 - GENERATE_PROMPT — compile the final implementation prompt from all session artifacts\n\
 - RUN_VERIFY — run verification to check current state\n\
 \n\

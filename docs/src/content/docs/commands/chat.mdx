@@ -85,6 +85,12 @@ During the session, the AI uses structured directives to create artifacts:
 | `CREATE_GATE` | Adds a verification gate |
 | `CREATE_CONFORMANCE` | Generates conformance tests for a contract |
 | `CREATE_BEHAVIOR` | Generates behavior scenarios for a contract |
+| `CREATE_PROPERTY_TESTS` | Generates property-based tests (proptest) for a contract |
+| `CREATE_FUZZ_TARGET` | Generates a fuzz test harness (libfuzzer) for a contract |
+| `CREATE_EDGE_CASES` | Generates targeted edge case tests for a contract |
+| `INFER_CONTRACT` | Infers a contract from the public API source code |
+| `COVERAGE_REPORT` | Shows contract test coverage gaps |
+| `API_SCAN` | Scans public API and shows drift from baseline |
 | `GENERATE_PROMPT` | Compiles an implementation prompt from all session artifacts |
 | `RUN_VERIFY` | Runs verification to check current state |
 

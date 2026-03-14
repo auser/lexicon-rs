@@ -22,13 +22,10 @@ export default defineConfig({
 					label: 'Commands',
 					items: [
 						{
-							label: 'Artifacts',
+							label: 'AI',
 							items: [
-								{ label: 'contract', slug: 'commands/contract' },
-								{ label: 'conformance', slug: 'commands/conformance' },
-								{ label: 'behavior', slug: 'commands/behavior' },
-								{ label: 'score', slug: 'commands/score' },
-								{ label: 'gate', slug: 'commands/gate' },
+								{ label: 'chat', slug: 'commands/chat' },
+								{ label: 'auth', slug: 'commands/auth' },
 							],
 						},
 						{
@@ -38,15 +35,6 @@ export default defineConfig({
 								{ label: 'coverage', slug: 'commands/coverage' },
 								{ label: 'api', slug: 'commands/api' },
 								{ label: 'doctor', slug: 'commands/doctor' },
-							],
-						},
-						{
-							label: 'AI',
-							items: [
-								{ label: 'generate', slug: 'commands/generate' },
-								{ label: 'improve', slug: 'commands/improve' },
-								{ label: 'chat', slug: 'commands/chat' },
-								{ label: 'auth', slug: 'commands/auth' },
 							],
 						},
 						{
@@ -60,6 +48,7 @@ export default defineConfig({
 							label: 'Utilities',
 							items: [
 								{ label: 'init', slug: 'commands/init' },
+								{ label: 'prompt', slug: 'commands/prompt' },
 								{ label: 'sync', slug: 'commands/sync' },
 								{ label: 'tui', slug: 'commands/tui' },
 							],

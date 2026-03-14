@@ -16,35 +16,8 @@ pub enum Command {
     /// Initialize lexicon in the current repository
     Init,
 
-    /// Manage contracts
-    Contract {
-        #[command(subcommand)]
-        action: ContractAction,
-    },
-
-    /// Manage conformance suites
-    Conformance {
-        #[command(subcommand)]
-        action: ConformanceAction,
-    },
-
-    /// Manage behavior scenarios
-    Behavior {
-        #[command(subcommand)]
-        action: BehaviorAction,
-    },
-
-    /// Manage the scoring model
-    Score {
-        #[command(subcommand)]
-        action: ScoreAction,
-    },
-
-    /// Manage gates
-    Gate {
-        #[command(subcommand)]
-        action: GateAction,
-    },
+    /// AI-powered architecture design session
+    Chat,
 
     /// Run verification (gates + scoring)
     Verify,
@@ -53,15 +26,6 @@ pub enum Command {
     Auth {
         #[command(subcommand)]
         action: AuthAction,
-    },
-
-    /// AI-powered architecture design session
-    Chat,
-
-    /// Interactive AI-assisted artifact coaching
-    Coach {
-        #[command(subcommand)]
-        action: Option<CoachAction>,
     },
 
     /// Manage public API extraction and drift
@@ -125,112 +89,6 @@ pub enum EcosystemAction {
     Verify,
     /// Check ecosystem health
     Doctor,
-}
-
-#[derive(Subcommand)]
-pub enum ContractAction {
-    /// Create a new contract (interactive unless --title is provided)
-    New {
-        /// Contract title (e.g. "Key-Value Store"). Enables non-interactive mode.
-        #[arg(long)]
-        title: Option<String>,
-        /// Contract description. AI-generated from title if omitted.
-        #[arg(long)]
-        description: Option<String>,
-        /// Comma-separated scope descriptions. AI-generated from title if omitted.
-        #[arg(long)]
-        scope: Option<String>,
-        /// Comma-separated invariants
-        #[arg(long)]
-        invariants: Option<String>,
-        /// Comma-separated required semantics
-        #[arg(long)]
-        required: Option<String>,
-        /// Comma-separated forbidden behaviors
-        #[arg(long)]
-        forbidden: Option<String>,
-    },
-    /// List all contracts
-    List,
-    /// Lint contracts for issues
-    Lint,
-    /// AI-generate a contract from a description
-    Generate {
-        /// Natural language description (e.g. "async key-value store with TTL")
-        intent: String,
-    },
-    /// Infer a contract from the public API surface
-    Infer {
-        /// Path to source directory (defaults to src/)
-        #[arg(long)]
-        path: Option<String>,
-    },
-}
-
-#[derive(Subcommand)]
-pub enum ConformanceAction {
-    /// Add a conformance suite to a contract
-    Add {
-        /// Contract ID
-        contract_id: String,
-    },
-    /// Sync conformance harness code
-    Sync,
-    /// AI-generate conformance tests from a description
-    Generate {
-        /// Natural language description (e.g. "cache trait with async get/set/delete")
-        intent: String,
-    },
-    /// Generate conformance tests from an existing contract
-    FromContract {
-        /// Contract ID (e.g. "key-value-store")
-        contract_id: String,
-    },
-    /// Generate property-based tests from a contract's invariants
-    Property {
-        /// Contract ID
-        contract_id: String,
-    },
-    /// Generate a fuzz test harness from a contract
-    Fuzz {
-        /// Contract ID
-        contract_id: String,
-    },
-    /// Generate edge case tests from a contract
-    EdgeCases {
-        /// Contract ID
-        contract_id: String,
-    },
-}
-
-#[derive(Subcommand)]
-pub enum BehaviorAction {
-    /// Add a behavior scenario
-    Add {
-        /// Contract ID
-        contract_id: String,
-    },
-    /// Sync behavior scenarios
-    Sync,
-    /// AI-generate behavior scenarios from a description
-    Generate {
-        /// Natural language description (e.g. "user session expiration after inactivity")
-        intent: String,
-    },
-}
-
-#[derive(Subcommand)]
-pub enum ScoreAction {
-    /// Initialize the default scoring model
-    Init,
-    /// Explain the current scoring model
-    Explain,
-}
-
-#[derive(Subcommand)]
-pub enum GateAction {
-    /// Initialize the default gates
-    Init,
 }
 
 #[derive(Subcommand)]
@@ -304,30 +162,6 @@ pub enum PromptAction {
         /// Prompt name (e.g., "001-memory-blob-store")
         prompt: String,
     },
-}
-
-#[derive(Subcommand)]
-pub enum CoachAction {
-    /// Coach a new contract from a description
-    Contract {
-        /// Natural language description (e.g. "async blob store with metadata")
-        description: String,
-    },
-    /// Coach conformance tests for a contract
-    Conformance {
-        /// Contract ID (e.g. "blob-store")
-        contract_id: String,
-    },
-    /// Coach implementation prompts for a contract
-    Prompt {
-        /// Contract ID
-        contract_id: String,
-        /// Comma-separated targets (e.g. "memory,file")
-        #[arg(long)]
-        targets: Option<String>,
-    },
-    /// Coach general improvements
-    Improve,
 }
 
 #[derive(Subcommand)]
