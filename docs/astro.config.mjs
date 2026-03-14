@@ -45,6 +45,7 @@ export default defineConfig({
 							items: [
 								{ label: 'generate', slug: 'commands/generate' },
 								{ label: 'improve', slug: 'commands/improve' },
+								{ label: 'chat', slug: 'commands/chat' },
 								{ label: 'auth', slug: 'commands/auth' },
 							],
 						},

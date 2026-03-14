@@ -14,6 +14,9 @@ use lexicon_repo::layout::RepoLayout;
 use lexicon_spec::common::{StepType, WorkflowKind};
 use lexicon_spec::session::ConversationSession;
 
+use console::Style;
+use indicatif::{ProgressBar, ProgressStyle};
+
 use crate::error::{CoreError, CoreResult};
 use crate::generate::build_ai_provider;
 
@@ -109,6 +112,21 @@ pub enum ChatAction {
     CreateBehavior { contract_id: String },
     GeneratePrompt,
     RunVerify,
+}
+
+impl ChatAction {
+    /// Human-readable label for progress display.
+    fn label(&self) -> &'static str {
+        match self {
+            Self::CreateContract { .. } => "Creating contract...",
+            Self::UpdateContract { .. } => "Updating contract...",
+            Self::CreateGate { .. } => "Creating gate...",
+            Self::CreateConformance { .. } => "Generating conformance tests...",
+            Self::CreateBehavior { .. } => "Generating behavior scenarios...",
+            Self::GeneratePrompt => "Compiling implementation prompt...",
+            Self::RunVerify => "Running verification...",
+        }
+    }
 }
 
 /// Parsed AI response with conversational text and any action directives.
@@ -488,10 +506,17 @@ pub fn run_chat(
     let mut ctx = ChatContext::new();
     let mut session = ConversationSession::new(WorkflowKind::Chat);
 
-    driver.present_info("Lexicon Design Session");
-    driver.present_info("Describe what you want to build. I'll help you design the contracts,");
-    driver.present_info("gates, and constraints, then generate an implementation prompt.");
-    driver.present_info("Type 'exit' to end the session.\n");
+    let heading_style = Style::new().bold().cyan();
+    let dim_style = Style::new().dim();
+    let success_style = Style::new().green().bold();
+    let action_style = Style::new().yellow();
+
+    println!("\n{}", heading_style.apply_to("  Lexicon Design Session"));
+    println!("{}", dim_style.apply_to("  ─".to_string() + &"─".repeat(58)));
+    println!("  Describe what you want to build. I'll help you design the");
+    println!("  contracts, gates, and constraints, then generate an");
+    println!("  implementation prompt.");
+    println!("  Type {} to end the session.\n", dim_style.apply_to("'exit'"));
 
     loop {
         let input = match driver.present_question(&Question::simple("you> ")) {
@@ -529,11 +554,25 @@ pub fn run_chat(
         let user_msg =
             build_chat_user_message(&repo_context, &session_summary, &history_pairs, &input);
 
-        // Get AI response
+        // Get AI response with spinner
+        let spinner = ProgressBar::new_spinner();
+        spinner.set_style(
+            ProgressStyle::with_template("{spinner:.cyan} {msg}")
+                .unwrap()
+                .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"),
+        );
+        spinner.set_message("Thinking...");
+        spinner.enable_steady_tick(std::time::Duration::from_millis(80));
+
         let raw_response = match ai_provider.complete(CHAT_SYSTEM, &user_msg) {
-            Ok(r) => r,
+            Ok(r) => {
+                spinner.finish_and_clear();
+                r
+            }
             Err(e) => {
-                driver.present_info(&format!("AI error: {e}"));
+                spinner.finish_and_clear();
+                let error_style = Style::new().red().bold();
+                println!("  {} AI error: {e}", error_style.apply_to("✗"));
                 continue;
             }
         };
@@ -543,13 +582,19 @@ pub fn run_chat(
 
         // Execute any actions
         for action in &parsed.actions {
+            println!(
+                "  {} {}",
+                action_style.apply_to("▸"),
+                action_style.apply_to(action.label())
+            );
             match execute_action(layout, action, &mut ctx, ai_provider.as_ref()) {
                 Ok(summary) => {
-                    driver.present_info(&summary);
+                    println!("  {} {}", success_style.apply_to("✓"), summary);
                     session.add_step(StepType::Write, summary);
                 }
                 Err(e) => {
-                    driver.present_info(&format!("Action failed: {e}"));
+                    let error_style = Style::new().red().bold();
+                    println!("  {} Action failed: {e}", error_style.apply_to("✗"));
                 }
             }
         }
@@ -561,7 +606,9 @@ pub fn run_chat(
                 content: parsed.display_text.clone(),
             });
             session.add_step(StepType::Info, parsed.display_text.clone());
-            driver.present_info(&parsed.display_text);
+            println!();
+            println!("{}", parsed.display_text);
+            println!();
         }
     }
 

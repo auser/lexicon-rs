@@ -28,6 +28,8 @@ miette.workspace = true
 reqwest.workspace = true
 sha2.workspace = true
 open.workspace = true
+console.workspace = true
+indicatif.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

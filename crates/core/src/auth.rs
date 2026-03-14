@@ -138,7 +138,6 @@ pub fn ensure_authenticated(
     let env_name = provider.env_var();
     if let Ok(key) = std::env::var(env_name) {
         if !key.is_empty() {
-            eprintln!("  [debug] using credential from env var {env_name}");
             return Ok(Credentials {
                 provider,
                 access_token: key,
@@ -149,12 +148,9 @@ pub fn ensure_authenticated(
     }
 
     // 2. Fall back to stored credentials
-    let cred_path = layout.auth_credential_path(provider.as_str());
-    eprintln!("  [debug] loading credentials from {}", cred_path.display());
     let creds = load(layout, provider)?.ok_or_else(|| CoreError::NotAuthenticated {
         provider: provider.as_str().to_owned(),
     })?;
-    eprintln!("  [debug] loaded: expires_at={:?}, has_refresh={}", creds.expires_at, creds.refresh_token.is_some());
 
     if creds.is_expired() {
         if creds.refresh_token.is_some() {

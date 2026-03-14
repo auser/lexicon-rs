@@ -42,16 +42,6 @@ impl ClaudeClient {
         });
 
         let is_oauth = self.access_token.starts_with("sk-ant-oat");
-        let auth_method = if is_oauth { "Bearer" } else { "x-api-key" };
-        let token_preview = if self.access_token.len() > 20 {
-            format!("{}...{}", &self.access_token[..16], &self.access_token[self.access_token.len()-4..])
-        } else {
-            self.access_token.clone()
-        };
-        eprintln!("  [debug] POST https://api.anthropic.com/v1/messages");
-        eprintln!("  [debug] auth: {auth_method} {token_preview}");
-        eprintln!("  [debug] anthropic-version: 2023-06-01");
-        eprintln!("  [debug] model: {}", self.model);
 
         let mut req = client
             .post("https://api.anthropic.com/v1/messages");
@@ -71,12 +61,9 @@ impl ClaudeClient {
                 reason: format!("sending request: {e}"),
             })?;
 
-        eprintln!("  [debug] response status: {}", resp.status());
-
         if !resp.status().is_success() {
             let status = resp.status();
             let text = resp.text().unwrap_or_default();
-            eprintln!("  [debug] response body: {text}");
             return Err(AiError::RequestFailed {
                 reason: format!("API returned {status}: {text}"),
             });

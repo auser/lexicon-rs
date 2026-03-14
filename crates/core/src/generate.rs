@@ -223,12 +223,5 @@ fn load_contracts(layout: &RepoLayout) -> CoreResult<Vec<Contract>> {
 /// Build an AI provider from stored auth credentials.
 pub(crate) fn build_ai_provider(layout: &RepoLayout) -> CoreResult<Box<dyn AiProvider>> {
     let creds = crate::auth::ensure_authenticated(layout, Provider::Claude)?;
-    let token_preview = if creds.access_token.len() > 20 {
-        format!("{}...{}", &creds.access_token[..16], &creds.access_token[creds.access_token.len()-4..])
-    } else {
-        "(short token)".to_string()
-    };
-    let source = if creds.expires_at.is_some() { "OAuth" } else { "API key" };
-    eprintln!("  [debug] auth source: {source}, token: {token_preview}");
     Ok(Box::new(ClaudeClient::new(creds.access_token)))
 }

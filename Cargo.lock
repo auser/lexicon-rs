@@ -1108,6 +1108,8 @@ name = "lexicon-core"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "console",
+ "indicatif",
  "lexicon-ai",
  "lexicon-api",
  "lexicon-audit",

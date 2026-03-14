@@ -1,0 +1,109 @@
+---
+title: lexicon chat
+description: AI-guided architecture design session for iteratively building contracts, gates, and implementation prompts.
+---
+
+## Usage
+
+```bash
+lexicon chat
+```
+
+## Description
+
+Starts an interactive design session where an AI agent guides you through building a complete set of architecture artifacts — contracts, gates, conformance tests, behavior scenarios — then compiles everything into a constraint-aware implementation prompt.
+
+Unlike `lexicon generate`, which produces a single artifact from a one-shot intent, `chat` is a **multi-turn conversation** where the AI proactively:
+
+- Decomposes your idea into concrete artifacts
+- Suggests missing constraints, edge cases, and forbidden behaviors
+- Challenges vague specifications and pushes for precision
+- Tracks completeness across contracts, gates, conformance, and scoring
+- Only suggests generating the final implementation prompt when specs are comprehensive
+
+Requires authentication with an AI provider. Run `lexicon auth login` first.
+
+## How it works
+
+1. **Start** — describe what you want to build in plain language
+2. **Design loop** — the AI suggests artifacts and extensions; you confirm, adjust, or redirect
+3. **Artifact creation** — the AI creates contracts, gates, and tests automatically as you refine
+4. **Prompt compilation** — when the specification is comprehensive, the AI compiles an implementation prompt from all accumulated artifacts
+
+All artifacts are written to disk as they're created. The session is saved to `specs/conversations/` for future reference.
+
+## Example
+
+```bash
+lexicon chat
+```
+
+```
+  Lexicon Design Session
+  ────────────────────────────────────────────────────────────
+
+  Describe what you want to build. I'll help you design the
+  contracts, gates, and constraints, then generate an
+  implementation prompt.
+  Type 'exit' to end the session.
+
+you> I need an async key-value store with TTL
+
+⠋ Thinking...
+▸ Creating contract...
+✓ Created contract: kv-store (specs/contracts/kv-store.toml)
+
+Let me break down the key-value store requirements. I've created
+an initial contract with the core invariants. Here's what we have
+so far:
+
+**Contract: kv-store**
+- 3 invariants: get-after-set, TTL expiry, absent-key-returns-none
+- 2 required semantics: set must be durable, get must be consistent
+
+I notice a few gaps we should address:
+
+1. **No forbidden behaviors defined.** Should stale data ever be
+   returned after TTL expiry? Should silent write failures be
+   allowed?
+2. **No edge cases.** What about: cache full + new write? TTL=0?
+   Concurrent reads during eviction?
+3. **No gates defined.** I'd recommend fmt, clippy, and unit test
+   gates at minimum.
+
+Which would you like to tackle first?
+```
+
+## AI action directives
+
+During the session, the AI uses structured directives to create artifacts:
+
+| Directive | Effect |
+|-----------|--------|
+| `CREATE_CONTRACT` | Creates a new contract TOML file |
+| `UPDATE_CONTRACT` | Updates an existing contract |
+| `CREATE_GATE` | Adds a verification gate |
+| `CREATE_CONFORMANCE` | Generates conformance tests for a contract |
+| `CREATE_BEHAVIOR` | Generates behavior scenarios for a contract |
+| `GENERATE_PROMPT` | Compiles an implementation prompt from all session artifacts |
+| `RUN_VERIFY` | Runs verification to check current state |
+
+## Completeness tracking
+
+The AI tracks completeness across these dimensions:
+
+- **Contract** — invariants, required semantics, forbidden semantics, edge cases, examples
+- **Gates** — verification gates defined and passing
+- **Conformance** — tests for each invariant
+- **Scoring** — quality model defined
+- **Architecture** — dependency and layering constraints captured
+
+## Audit trail
+
+Every artifact created during the session is recorded in the audit log with the appropriate action type (e.g., `ContractCreate`, `GateCreate`) and actor `Ai`.
+
+## See also
+
+- [`lexicon generate`](/commands/generate) — one-shot AI artifact generation
+- [`lexicon improve`](/commands/improve) — AI-guided improvement suggestions
+- [`lexicon auth`](/commands/auth) — manage AI provider authentication
