@@ -31,9 +31,22 @@ Sessions are automatically saved after every turn. When you start a new chat, le
   Resume previous session (5 turns, 2h ago)? [Y/n]
 ```
 
-Pressing Enter (or `y`) restores the full conversation history — the AI remembers what you were working on and picks up where you left off. Type `n` to start fresh.
+Pressing Enter (or `y`) restores the full conversation history with a context-rich recap:
 
-Sessions are stored in `.lexicon/conversations/` as JSON files.
+```
+  Lexicon Design Session (resumed)
+  ───────────────────────────────────────────────────────────
+  5 previous turns restored.
+  Topic: "I need an async key-value store with TTL"
+  Last:  "Here's the updated contract with TTL fields added..."
+  1 artifact(s) in session.
+  Type 'exit' to end the session.
+```
+
+- **Topic** shows the first substantive message that started the session (not short replies like "yes").
+- **Last** shows the most recent AI response so you know where you left off.
+
+Type `n` to start fresh. Sessions are stored in `.lexicon/conversations/` as JSON files.
 
 ## How it works
 
@@ -111,6 +124,24 @@ During the session, the AI uses structured directives to create artifacts:
 | `SYNC_CLAUDE` | Syncs CLAUDE.md with the current repo state |
 | `DOCTOR` | Checks repo health (manifest, gates, scoring, CLAUDE.md, API baseline) |
 | `RUN_VERIFY` | Runs verification to check current state |
+
+## Error recovery
+
+When an action fails (e.g., generating tests for a contract that doesn't exist), the error is fed back to the AI automatically. Instead of silently failing, the AI will:
+
+- Diagnose what went wrong (e.g., "Contract not found: `content-addressing`. Available contracts: `kv-store`, `auth-service`.")
+- Suggest corrections (e.g., the right contract name, or creating the missing contract first)
+
+This means you don't need to manually debug action failures — the AI sees the errors and adjusts.
+
+## Implementation prompts
+
+The `GENERATE_PROMPT` action compiles an implementation prompt from your contracts. It works with:
+
+- Contracts created during the current session, **or**
+- All contracts already on disk in `specs/contracts/`
+
+Prompts are written to `specs/prompts/<number>-<slug>.md`. You don't need to create contracts in the same session — if you have existing contracts, just ask the AI to generate implementation prompts and it will find them.
 
 ## Completeness tracking
 

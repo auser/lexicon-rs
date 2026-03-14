@@ -469,8 +469,8 @@ fn execute_generate_prompt(
     layout: &RepoLayout,
     ctx: &mut ChatContext,
 ) -> CoreResult<String> {
-    // Find all contracts created during this session
-    let contract_ids: Vec<String> = ctx
+    // Prefer contracts created during this session, but fall back to all on-disk contracts
+    let mut contract_ids: Vec<String> = ctx
         .artifacts
         .iter()
         .filter(|a| a.kind == ArtifactCategory::Contract)
@@ -478,7 +478,11 @@ fn execute_generate_prompt(
         .collect();
 
     if contract_ids.is_empty() {
-        return Ok("No contracts found in this session. Create a contract first.".to_string());
+        contract_ids = list_contract_ids(layout);
+    }
+
+    if contract_ids.is_empty() {
+        return Ok("No contracts found. Create a contract first.".to_string());
     }
 
     let mut results = Vec::new();
@@ -651,12 +655,35 @@ fn execute_api_scan(layout: &RepoLayout) -> CoreResult<String> {
     Ok(output)
 }
 
+/// List contract IDs available on disk.
+fn list_contract_ids(layout: &RepoLayout) -> Vec<String> {
+    let dir = layout.contracts_dir();
+    let mut ids = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(&dir) {
+        for entry in entries.flatten() {
+            if entry.path().extension().is_some_and(|e| e == "toml") {
+                if let Some(stem) = entry.path().file_stem() {
+                    ids.push(stem.to_string_lossy().to_string());
+                }
+            }
+        }
+    }
+    ids.sort();
+    ids
+}
+
 /// Load a single contract by ID from the contracts directory.
 fn load_contract_by_id(layout: &RepoLayout, contract_id: &str) -> CoreResult<Contract> {
     let path = layout.contracts_dir().join(format!("{contract_id}.toml"));
     if !path.exists() {
+        let available = list_contract_ids(layout);
+        let hint = if available.is_empty() {
+            "No contracts exist yet — create one first.".to_string()
+        } else {
+            format!("Available contracts: {}", available.join(", "))
+        };
         return Err(CoreError::Other(format!(
-            "Contract not found: {contract_id}"
+            "Contract not found: {contract_id}. {hint}"
         )));
     }
     let text = std::fs::read_to_string(&path)?;
@@ -1067,7 +1094,8 @@ pub fn run_chat(
         // Parse response for action directives
         let parsed = parse_ai_response(&raw_response);
 
-        // Execute any actions
+        // Execute any actions, collecting errors to feed back to the AI
+        let mut action_errors: Vec<String> = Vec::new();
         for action in &parsed.actions {
             println!(
                 "  {} {}",
@@ -1081,9 +1109,23 @@ pub fn run_chat(
                 }
                 Err(e) => {
                     let error_style = Style::new().red().bold();
-                    println!("  {} Action failed: {e}", error_style.apply_to("✗"));
+                    let error_msg = format!("{} failed: {e}", action.label());
+                    println!("  {} {error_msg}", error_style.apply_to("✗"));
+                    action_errors.push(error_msg);
                 }
             }
+        }
+
+        // If actions failed, inject error context so the AI can suggest fixes
+        if !action_errors.is_empty() {
+            let error_feedback = format!(
+                "[SYSTEM: The following actions failed. Diagnose the errors and suggest corrections.]\n{}",
+                action_errors.join("\n")
+            );
+            ctx.history.push(ChatMessage {
+                role: MessageRole::User,
+                content: error_feedback,
+            });
         }
 
         // Display the conversational part

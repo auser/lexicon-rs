@@ -132,6 +132,10 @@ Every conversation is recorded as a `ConversationSession` stored in `.lexicon/co
 - Each step with its type and content
 - Decisions made at each step
 
+Chat sessions are auto-saved after every turn. On resume, lexicon displays the session topic (the first substantive user message) and the last AI response, so you immediately have context about what you were working on.
+
+Action errors during a session are fed back to the AI as context, enabling it to diagnose failures and suggest corrections rather than repeating the same mistakes.
+
 Conversation memory is not hidden magic -- it is inspectable. Sessions are local to the repo and can be reviewed at any time.
 
 ## Workflow Kinds
