@@ -1044,25 +1044,31 @@ pub fn run_chat(
         println!("  Type {} to end the session.\n", dim_style.apply_to("'exit'"));
     }
 
+    let mut auto_followup = false;
+
     'chat: loop {
-        let input = match driver.present_question(&Question::simple("you> ")) {
-            Ok(input) => input,
-            Err(_) => break,
-        };
+        // If auto-following up after errors, skip user input
+        if !auto_followup {
+            let input = match driver.present_question(&Question::simple("you> ")) {
+                Ok(input) => input,
+                Err(_) => break,
+            };
 
-        if is_exit(&input) {
-            break;
+            if is_exit(&input) {
+                break;
+            }
+
+            if input.trim().is_empty() {
+                continue;
+            }
+
+            session.add_step(StepType::UserInput, input.clone());
+            ctx.history.push(ChatMessage {
+                role: MessageRole::User,
+                content: input.clone(),
+            });
         }
-
-        if input.trim().is_empty() {
-            continue;
-        }
-
-        session.add_step(StepType::UserInput, input.clone());
-        ctx.history.push(ChatMessage {
-            role: MessageRole::User,
-            content: input.clone(),
-        });
+        auto_followup = false;
 
         // Build AI message with full context
         let session_summary = build_session_summary(&ctx);
@@ -1077,8 +1083,16 @@ pub fn run_chat(
             .map(|m| (m.role.to_string(), m.content.clone()))
             .collect();
 
+        // Use the most recent user message (either typed input or injected error feedback)
+        let current_input = ctx
+            .history
+            .iter()
+            .rev()
+            .find(|m| m.role == MessageRole::User)
+            .map(|m| m.content.clone())
+            .unwrap_or_default();
         let user_msg =
-            build_chat_user_message(&repo_context, &session_summary, &history_pairs, &input);
+            build_chat_user_message(&repo_context, &session_summary, &history_pairs, &current_input);
 
         // Get AI response with spinner and retry on transient failures
         const MAX_RETRIES: u32 = 3;
@@ -1159,28 +1173,39 @@ pub fn run_chat(
             }
         }
 
-        // If actions failed, inject error context so the AI can suggest fixes
+        // If actions failed, suppress the AI's text (it may falsely claim success)
+        // and inject error context so the AI can suggest fixes on the next turn.
         if !action_errors.is_empty() {
             let error_feedback = format!(
-                "[SYSTEM: The following actions failed. Diagnose the errors and suggest corrections.]\n{}",
+                "[SYSTEM: The following actions failed. The AI's response text was suppressed \
+                because it may contain false claims about files being created. Diagnose the \
+                errors and suggest concrete corrections. Do NOT claim any files were created.]\n{}",
                 action_errors.join("\n")
             );
             ctx.history.push(ChatMessage {
                 role: MessageRole::User,
                 content: error_feedback,
             });
-        }
-
-        // Display the conversational part
-        if !parsed.display_text.is_empty() {
-            ctx.history.push(ChatMessage {
-                role: MessageRole::Assistant,
-                content: parsed.display_text.clone(),
-            });
-            session.add_step(StepType::Info, parsed.display_text.clone());
             println!();
-            println!("{}", parsed.display_text);
+            let warn_style = Style::new().yellow();
+            println!(
+                "  {} Errors occurred — asking AI to diagnose and suggest fixes...",
+                warn_style.apply_to("⚠")
+            );
             println!();
+            auto_followup = true;
+        } else {
+            // Display the conversational part only when no actions failed
+            if !parsed.display_text.is_empty() {
+                ctx.history.push(ChatMessage {
+                    role: MessageRole::Assistant,
+                    content: parsed.display_text.clone(),
+                });
+                session.add_step(StepType::Info, parsed.display_text.clone());
+                println!();
+                println!("{}", parsed.display_text);
+                println!();
+            }
         }
 
         // Auto-save after each turn so interrupted sessions can be resumed
