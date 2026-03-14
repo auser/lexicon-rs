@@ -808,6 +808,28 @@ pub fn is_exit(input: &str) -> bool {
     )
 }
 
+/// Returns true if a message is substantive (not just a short affirmative reply).
+fn is_substantive(msg: &str) -> bool {
+    let trimmed = msg.trim().to_lowercase();
+    if trimmed.len() <= 5 {
+        return false;
+    }
+    let trivial = ["yes", "no", "ok", "okay", "sure", "thanks", "thank you", "yep", "nope", "y", "n"];
+    !trivial.contains(&trimmed.as_str())
+}
+
+/// Truncate a string to `max` characters, appending "..." if truncated.
+fn truncate_with_ellipsis(s: &str, max: usize) -> String {
+    // Take just the first line for display
+    let first_line = s.lines().next().unwrap_or(s);
+    if first_line.chars().count() <= max {
+        first_line.to_string()
+    } else {
+        let truncated: String = first_line.chars().take(max).collect();
+        format!("{truncated}...")
+    }
+}
+
 /// Find the most recent chat session that can be resumed.
 fn find_resumable_session(layout: &RepoLayout) -> Option<ConversationSession> {
     let sessions = list_sessions(&layout.conversations_dir()).ok()?;
@@ -937,13 +959,29 @@ pub fn run_chat(
 
             // Show a brief recap of what was discussed
             let user_turns: Vec<_> = ctx.history.iter().filter(|m| m.role == MessageRole::User).collect();
-            if !user_turns.is_empty() {
-                println!("  {} previous turns restored. Last topic:", dim_style.apply_to(format!("{}", user_turns.len())));
-                if let Some(last) = user_turns.last() {
-                    let preview: String = last.content.chars().take(80).collect();
-                    println!("  {}", dim_style.apply_to(format!("  \"{preview}...\"")));
-                }
+            let turn_count = user_turns.len();
+            if turn_count > 0 {
+                println!("  {} previous turns restored.", dim_style.apply_to(format!("{turn_count}")));
             }
+
+            // Topic: first substantive user message (the opening request)
+            if let Some(topic_msg) = ctx.history.iter()
+                .filter(|m| m.role == MessageRole::User && is_substantive(&m.content))
+                .next()
+            {
+                let preview = truncate_with_ellipsis(&topic_msg.content, 72);
+                println!("  Topic: {}", dim_style.apply_to(format!("\"{preview}\"")));
+            }
+
+            // Last: most recent assistant message (where we left off)
+            if let Some(last_asst) = ctx.history.iter()
+                .rev()
+                .find(|m| m.role == MessageRole::Assistant)
+            {
+                let preview = truncate_with_ellipsis(&last_asst.content, 72);
+                println!("  Last:  {}", dim_style.apply_to(format!("\"{preview}\"")));
+            }
+
             if !ctx.artifacts.is_empty() {
                 println!("  {} artifact(s) in session.", dim_style.apply_to(format!("{}", ctx.artifacts.len())));
             }
