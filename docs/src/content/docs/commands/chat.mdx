@@ -19,7 +19,7 @@ Starts an interactive design session where an AI agent guides you through buildi
 - Suggests missing constraints, edge cases, and forbidden behaviors
 - Challenges vague specifications and pushes for precision
 - Tracks completeness across contracts, gates, conformance, and scoring
-- Only suggests generating the final implementation prompt when specs are comprehensive
+- Generates implementation prompts on request, or proactively when specs are reasonably complete
 
 Requires authentication with an AI provider. Run `lexicon auth login` first.
 
@@ -53,7 +53,7 @@ Type `n` to start fresh. Sessions are stored in `.lexicon/conversations/` as JSO
 1. **Start** — describe what you want to build in plain language (or resume a previous session)
 2. **Design loop** — the AI suggests artifacts and extensions; you confirm, adjust, or redirect
 3. **Artifact creation** — the AI creates contracts, gates, and tests automatically as you refine
-4. **Prompt compilation** — when the specification is comprehensive, the AI compiles an implementation prompt from all accumulated artifacts
+4. **Prompt compilation** — ask the AI to generate an implementation prompt, or it will suggest one when specs are reasonably complete
 
 All artifacts are written to disk as they're created.
 
