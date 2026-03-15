@@ -1363,6 +1363,8 @@ pub fn run_chat(
     }
 
     let mut auto_followup = false;
+    let mut auto_followup_count: u32 = 0;
+    const MAX_AUTO_FOLLOWUPS: u32 = 2;
     let mut message_queue: VecDeque<String> = VecDeque::new();
 
     // Set up rustyline editor with history and slash-command completion
@@ -1664,7 +1666,8 @@ pub fn run_chat(
 
         // If actions failed, suppress the AI's text (it may falsely claim success)
         // and inject error context so the AI can suggest fixes on the next turn.
-        if !action_errors.is_empty() {
+        // Limit auto-followups to prevent infinite error loops.
+        if !action_errors.is_empty() && auto_followup_count < MAX_AUTO_FOLLOWUPS {
             // If errors mention specific contracts, include their raw content
             // so the AI can emit corrected UPDATE_CONTRACT directives.
             let mut contract_contents = String::new();
@@ -1727,7 +1730,24 @@ pub fn run_chat(
             );
             println!();
             auto_followup = true;
+            auto_followup_count += 1;
+        } else if !action_errors.is_empty() {
+            // Auto-followup limit reached — show errors and hand back to user
+            let error_style = Style::new().red().bold();
+            println!();
+            println!(
+                "  {} Could not auto-fix after {MAX_AUTO_FOLLOWUPS} attempts. Errors:",
+                error_style.apply_to("✗")
+            );
+            for err in &action_errors {
+                println!("    - {err}");
+            }
+            println!();
+            println!("  You can try rephrasing your request or fixing the TOML manually.");
+            println!();
+            auto_followup_count = 0;
         } else {
+            auto_followup_count = 0;
             // Display the conversational part only when no actions failed
             if !parsed.display_text.is_empty() {
                 ctx.history.push(ChatMessage {

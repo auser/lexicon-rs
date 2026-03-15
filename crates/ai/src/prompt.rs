@@ -387,12 +387,14 @@ PROMPT_LIST, PROMPT_STATUS, REGENERATE_PROMPTS, GENERATE_PROMPT, RUN_VERIFY\n\
 /// TOML schemas for contracts and gates — injected into the user message
 /// only on the first turn, when creating/updating artifacts, or on error feedback.
 pub const CHAT_SCHEMAS: &str = "\
-## Contract TOML Schema (all top-level fields are REQUIRED)\n\
+## Contract TOML Schema\n\
 \n\
-[schema_version]\n\
-major = 1\n\
-minor = 0\n\
+IMPORTANT: In TOML, all bare key = value pairs MUST come BEFORE any [table] or\n\
+[[array]] headers. Once a [table] header appears, subsequent keys belong to that\n\
+table. The order below is the ONLY valid order.\n\
 \n\
+```toml\n\
+# 1. Top-level fields FIRST (before any [table] headers)\n\
 id = \"kebab-case-id\"\n\
 title = \"Human Title\"\n\
 description = \"Longer description\"\n\
@@ -400,7 +402,19 @@ scope = \"What this contract covers\"\n\
 status = \"draft\"\n\
 stability = \"experimental\"\n\
 capabilities = []\n\
+non_goals = []\n\
+implementation_notes = []\n\
+test_expectations = []\n\
+expected_api = []\n\
+created_at = \"2025-01-01T00:00:00Z\"\n\
+updated_at = \"2025-01-01T00:00:00Z\"\n\
 \n\
+# 2. Table sections AFTER all top-level fields\n\
+[schema_version]\n\
+major = 1\n\
+minor = 0\n\
+\n\
+# 3. Array-of-tables sections last\n\
 [[invariants]]\n\
 id = \"inv-001\"\n\
 description = \"...\"\n\
@@ -426,13 +440,16 @@ expected_behavior = \"...\"\n\
 title = \"...\"\n\
 description = \"...\"\n\
 code = \"...\"\n\
+```\n\
 \n\
 ## Gates TOML Schema\n\
+```toml\n\
 [[gates]]\n\
 id = \"fmt\"\n\
 label = \"Formatting\"\n\
 command = \"cargo fmt --check\"\n\
 category = \"required\"\n\
+```\n\
 ";
 
 /// Build the user message for a chat turn, including repo context, session state, and history.
