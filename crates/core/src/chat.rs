@@ -16,11 +16,69 @@ use lexicon_spec::common::{StepType, WorkflowKind};
 use lexicon_spec::contract::Contract;
 use lexicon_spec::session::ConversationSession;
 
+use std::collections::VecDeque;
+use std::sync::Arc;
+
 use console::Style;
+#[cfg(unix)]
+use libc;
 use indicatif::{ProgressBar, ProgressStyle};
+use rustyline::completion::{Completer, Pair};
 
 use crate::error::{CoreError, CoreResult};
 use crate::generate::build_ai_provider;
+
+// ---------------------------------------------------------------------------
+// Slash command autocomplete
+// ---------------------------------------------------------------------------
+
+/// Slash commands available in the chat REPL (used for autocomplete and /help).
+const SLASH_COMMANDS: &[&str] = &[
+    "/help", "/h",
+    "/status", "/s",
+    "/artifacts", "/a",
+    "/models", "/model",
+    "/verify", "/v",
+    "/exit", "/quit",
+];
+
+/// Rustyline helper that provides tab-completion for slash commands.
+struct SlashCompleter;
+
+impl Completer for SlashCompleter {
+    type Candidate = Pair;
+
+    fn complete(
+        &self,
+        line: &str,
+        pos: usize,
+        _ctx: &rustyline::Context<'_>,
+    ) -> rustyline::Result<(usize, Vec<Pair>)> {
+        let prefix = &line[..pos];
+        if !prefix.starts_with('/') {
+            return Ok((0, Vec::new()));
+        }
+
+        let matches: Vec<Pair> = SLASH_COMMANDS
+            .iter()
+            .filter(|cmd| cmd.starts_with(prefix) && **cmd != prefix)
+            .map(|cmd| Pair {
+                display: cmd.to_string(),
+                replacement: cmd.to_string(),
+            })
+            .collect();
+
+        Ok((0, matches))
+    }
+}
+
+impl rustyline::hint::Hinter for SlashCompleter {
+    type Hint = String;
+}
+
+impl rustyline::highlight::Highlighter for SlashCompleter {}
+impl rustyline::validate::Validator for SlashCompleter {}
+impl rustyline::Helper for SlashCompleter {}
 
 /// Maximum conversation turns in history sent to the AI (to manage context window).
 const MAX_HISTORY_TURNS: usize = 3;
@@ -900,7 +958,7 @@ const AVAILABLE_MODELS: &[(&str, &str)] = &[
 fn handle_slash_command(
     cmd: &str,
     layout: &RepoLayout,
-    ai_provider: &mut Box<dyn AiProvider>,
+    ai_provider: &mut Arc<dyn AiProvider>,
     ctx: &ChatContext,
     dim_style: &Style,
 ) -> CoreResult<()> {
@@ -934,7 +992,7 @@ fn show_help(dim_style: &Style) {
 
 /// Show current session status.
 fn show_status(
-    ai_provider: &Box<dyn AiProvider>,
+    ai_provider: &Arc<dyn AiProvider>,
     ctx: &ChatContext,
     dim_style: &Style,
 ) {
@@ -1045,7 +1103,7 @@ fn run_verify_inline(layout: &RepoLayout, dim_style: &Style) -> CoreResult<()> {
 /// Present a model selection menu and swap the AI provider if the user picks one.
 fn select_model(
     layout: &RepoLayout,
-    ai_provider: &mut Box<dyn AiProvider>,
+    ai_provider: &mut Arc<dyn AiProvider>,
     dim_style: &Style,
 ) -> CoreResult<()> {
     let current = ai_provider.model_id();
@@ -1076,7 +1134,7 @@ fn select_model(
     match choice.parse::<usize>() {
         Ok(n) if n >= 1 && n <= AVAILABLE_MODELS.len() => {
             let (id, desc) = AVAILABLE_MODELS[n - 1];
-            *ai_provider = build_ai_provider(layout, Some(id))?;
+            *ai_provider = Arc::from(build_ai_provider(layout, Some(id))?);
             let success_style = Style::new().green().bold();
             println!("  {} Switched to {desc} ({id})", success_style.apply_to("✓"));
         }
@@ -1210,7 +1268,7 @@ pub fn run_chat(
     driver: &dyn ConversationDriver,
     model: Option<&str>,
 ) -> CoreResult<()> {
-    let mut ai_provider = build_ai_provider(layout, model)?;
+    let mut ai_provider: Arc<dyn AiProvider> = Arc::from(build_ai_provider(layout, model)?);
 
     let heading_style = Style::new().bold().cyan();
     let dim_style = Style::new().dim();
@@ -1305,15 +1363,18 @@ pub fn run_chat(
     }
 
     let mut auto_followup = false;
+    let mut message_queue: VecDeque<String> = VecDeque::new();
 
-    // Set up rustyline editor with history for the chat REPL
+    // Set up rustyline editor with history and slash-command completion
     let rl_config = rustyline::Config::builder()
         .max_history_size(500)
         .expect("valid history size")
         .auto_add_history(true)
+        .completion_type(rustyline::CompletionType::List)
         .build();
-    let mut rl = rustyline::DefaultEditor::with_config(rl_config)
-        .unwrap_or_else(|_| rustyline::DefaultEditor::new().expect("rustyline editor"));
+    let mut rl = rustyline::Editor::with_config(rl_config)
+        .unwrap_or_else(|_| rustyline::Editor::new().expect("rustyline editor"));
+    rl.set_helper(Some(SlashCompleter));
 
     // Load history from a file in the .lexicon directory if it exists
     let history_path = layout.root.join(".lexicon").join("chat_history");
@@ -1322,31 +1383,54 @@ pub fn run_chat(
     'chat: loop {
         // If auto-following up after errors, skip user input
         if !auto_followup {
-            let input = match rl.readline("you> ") {
-                Ok(line) => line,
-                Err(rustyline::error::ReadlineError::Interrupted | rustyline::error::ReadlineError::Eof) => break,
-                Err(_) => break,
-            };
+            // Check message queue first (messages typed while AI was processing)
+            if let Some(queued_msg) = message_queue.pop_front() {
+                let remaining = message_queue.len();
+                if remaining > 0 {
+                    println!(
+                        "  {} {}",
+                        dim_style.apply_to("▸"),
+                        dim_style.apply_to(format!("Processing queued message ({remaining} more waiting)"))
+                    );
+                } else {
+                    println!(
+                        "  {} {}",
+                        dim_style.apply_to("▸"),
+                        dim_style.apply_to("Processing queued message")
+                    );
+                }
+                session.add_step(StepType::UserInput, queued_msg.clone());
+                ctx.history.push(ChatMessage {
+                    role: MessageRole::User,
+                    content: queued_msg,
+                });
+            } else {
+                let input = match rl.readline("you> ") {
+                    Ok(line) => line,
+                    Err(rustyline::error::ReadlineError::Interrupted | rustyline::error::ReadlineError::Eof) => break,
+                    Err(_) => break,
+                };
 
-            if is_exit(&input) {
-                break;
+                if is_exit(&input) {
+                    break;
+                }
+
+                if input.trim().is_empty() {
+                    continue;
+                }
+
+                // Intercept slash commands before adding to history/AI context
+                if let Some(cmd) = input.trim().strip_prefix('/') {
+                    handle_slash_command(cmd, layout, &mut ai_provider, &ctx, &dim_style)?;
+                    continue;
+                }
+
+                session.add_step(StepType::UserInput, input.clone());
+                ctx.history.push(ChatMessage {
+                    role: MessageRole::User,
+                    content: input.clone(),
+                });
             }
-
-            if input.trim().is_empty() {
-                continue;
-            }
-
-            // Intercept slash commands before adding to history/AI context
-            if let Some(cmd) = input.trim().strip_prefix('/') {
-                handle_slash_command(cmd, layout, &mut ai_provider, &ctx, &dim_style)?;
-                continue;
-            }
-
-            session.add_step(StepType::UserInput, input.clone());
-            ctx.history.push(ChatMessage {
-                role: MessageRole::User,
-                content: input.clone(),
-            });
         }
         auto_followup = false;
 
@@ -1434,66 +1518,99 @@ pub fn run_chat(
             );
         }
 
-        // Get AI response with spinner and retry on transient failures
+        // Get AI response in a background thread so the user can queue messages
         const MAX_RETRIES: u32 = 3;
-        let raw_response = 'retry: {
+        let provider_clone = Arc::clone(&ai_provider);
+        let system_owned = CHAT_SYSTEM.to_string();
+        let user_msg_owned = user_msg.clone();
+
+        let ai_handle = std::thread::spawn(move || -> Result<String, String> {
             let mut last_err = String::new();
             for attempt in 0..=MAX_RETRIES {
-                let spinner = ProgressBar::new_spinner();
-                spinner.set_style(
-                    ProgressStyle::with_template("{spinner:.cyan} {msg}")
-                        .unwrap()
-                        .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"),
-                );
-                if attempt == 0 {
-                    spinner.set_message("Thinking...");
-                } else {
-                    spinner.set_message(format!("Retrying ({attempt}/{MAX_RETRIES})..."));
-                }
-                spinner.enable_steady_tick(std::time::Duration::from_millis(80));
-
-                match ai_provider.complete(CHAT_SYSTEM, &user_msg) {
-                    Ok(r) => {
-                        spinner.finish_and_clear();
-                        break 'retry r;
-                    }
+                match provider_clone.complete(&system_owned, &user_msg_owned) {
+                    Ok(r) => return Ok(r),
                     Err(e) => {
-                        spinner.finish_and_clear();
                         last_err = format!("{e}");
                         if attempt < MAX_RETRIES {
-                            let (delay, label) = match &e {
+                            let delay = match &e {
                                 AiError::RateLimited { retry_after_secs, .. } => {
                                     let secs = retry_after_secs.unwrap_or(30);
-                                    (std::time::Duration::from_secs(secs), "Rate limited")
+                                    std::time::Duration::from_secs(secs)
                                 }
-                                _ => {
-                                    (std::time::Duration::from_secs(2u64.pow(attempt)), "Network error")
-                                }
+                                _ => std::time::Duration::from_secs(2u64.pow(attempt)),
                             };
-                            let warn_style = Style::new().yellow();
-                            println!(
-                                "  {} {label}, retrying in {}s...",
-                                warn_style.apply_to("⚠"),
-                                delay.as_secs()
-                            );
                             std::thread::sleep(delay);
                         }
                     }
                 }
             }
-            // All retries exhausted
-            let error_style = Style::new().red().bold();
-            println!(
-                "  {} AI error after {} retries: {last_err}",
-                error_style.apply_to("✗"),
-                MAX_RETRIES
-            );
-            // Remove the user message from history since we got no response
-            if ctx.history.last().is_some_and(|m| m.role == MessageRole::User) {
-                ctx.history.pop();
+            Err(last_err)
+        });
+
+        // Show spinner while AI is processing; accept queued input between ticks
+        let spinner = ProgressBar::new_spinner();
+        spinner.set_style(
+            ProgressStyle::with_template("{spinner:.cyan} {msg}")
+                .unwrap()
+                .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"),
+        );
+        spinner.set_message("Thinking... (type and Enter to queue messages)");
+        spinner.enable_steady_tick(std::time::Duration::from_millis(80));
+
+        // Collect queued messages while AI is working
+        while !ai_handle.is_finished() {
+            // Use a short readline timeout via a non-blocking check
+            // We poll stdin availability then read if data is waiting
+            if stdin_has_data(200) {
+                spinner.suspend(|| {
+                    match rl.readline("queue> ") {
+                        Ok(line) => {
+                            let trimmed = line.trim().to_string();
+                            if !trimmed.is_empty() && !is_exit(&trimmed) {
+                                if let Some(cmd) = trimmed.strip_prefix('/') {
+                                    let _ = handle_slash_command(
+                                        cmd, layout, &mut ai_provider, &ctx, &dim_style,
+                                    );
+                                } else {
+                                    message_queue.push_back(trimmed);
+                                    println!(
+                                        "  {} ({} queued)",
+                                        dim_style.apply_to("✓"),
+                                        message_queue.len()
+                                    );
+                                }
+                            }
+                        }
+                        Err(_) => {}
+                    }
+                });
             }
-            session.steps.pop(); // remove the UserInput step
-            continue 'chat;
+        }
+        spinner.finish_and_clear();
+
+        let raw_response = match ai_handle.join() {
+            Ok(Ok(r)) => r,
+            Ok(Err(e)) => {
+                let error_style = Style::new().red().bold();
+                println!(
+                    "  {} AI error after {MAX_RETRIES} retries: {e}",
+                    error_style.apply_to("✗"),
+                );
+                if ctx.history.last().is_some_and(|m| m.role == MessageRole::User) {
+                    ctx.history.pop();
+                }
+                session.steps.pop();
+                continue 'chat;
+            }
+            Err(_) => {
+                let error_style = Style::new().red().bold();
+                println!("  {} AI thread panicked", error_style.apply_to("✗"));
+                if ctx.history.last().is_some_and(|m| m.role == MessageRole::User) {
+                    ctx.history.pop();
+                }
+                session.steps.pop();
+                continue 'chat;
+            }
         };
 
         // Parse response for action directives
@@ -1501,6 +1618,30 @@ pub fn run_chat(
 
         // Execute any actions, collecting errors to feed back to the AI
         let mut action_errors: Vec<String> = Vec::new();
+        if parsed.actions.is_empty() {
+            let model = ai_provider.model_id();
+            let is_haiku = model.contains("haiku");
+            if is_haiku {
+                let warn_style = Style::new().yellow();
+                println!(
+                    "  {} No actions taken. Haiku may not reliably create artifacts.",
+                    warn_style.apply_to("⚠"),
+                );
+                println!(
+                    "  {} Try /models to switch to Sonnet or Opus, or be more explicit:",
+                    dim_style.apply_to("→"),
+                );
+                println!(
+                    "  {}",
+                    dim_style.apply_to("  e.g. \"Create conformance tests for <contract-id>\""),
+                );
+            } else {
+                println!(
+                    "  {}",
+                    dim_style.apply_to("(no actions taken — try being more specific, e.g. \"create tests for X\")"),
+                );
+            }
+        }
         for action in &parsed.actions {
             println!(
                 "  {} {}",
@@ -1610,6 +1751,36 @@ pub fn run_chat(
     session.complete(None);
     let _ = save_session(&layout.conversations_dir(), &session);
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Non-blocking stdin polling
+// ---------------------------------------------------------------------------
+
+/// Check if stdin has data available within `timeout_ms` milliseconds.
+///
+/// Uses platform-specific polling so the chat loop can check for queued input
+/// without blocking indefinitely on readline.
+#[cfg(unix)]
+fn stdin_has_data(timeout_ms: i32) -> bool {
+    use std::os::unix::io::AsRawFd;
+    let fd = std::io::stdin().as_raw_fd();
+    let mut pollfd = libc::pollfd {
+        fd,
+        events: libc::POLLIN,
+        revents: 0,
+    };
+    // SAFETY: pollfd is a valid stack-allocated struct, nfds=1, bounded timeout.
+    let ret = unsafe { libc::poll(&mut pollfd, 1, timeout_ms) };
+    ret > 0
+}
+
+#[cfg(not(unix))]
+fn stdin_has_data(timeout_ms: i32) -> bool {
+    // On non-Unix platforms, fall back to a short sleep and assume no data.
+    // The user can still type but won't see the queue prompt until AI finishes.
+    std::thread::sleep(std::time::Duration::from_millis(timeout_ms as u64));
+    false
 }
 
 // ---------------------------------------------------------------------------

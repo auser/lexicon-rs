@@ -1169,6 +1169,7 @@ dependencies = [
  "lexicon-scaffold",
  "lexicon-scoring",
  "lexicon-spec",
+ "libc",
  "miette",
  "open",
  "reqwest",

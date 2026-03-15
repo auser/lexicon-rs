@@ -3,7 +3,7 @@ use crate::error::AiResult;
 /// Trait for AI provider integration.
 ///
 /// This defines the boundary between lexicon and external AI services.
-pub trait AiProvider {
+pub trait AiProvider: Send + Sync {
     /// Generate an artifact or enhancement given a system prompt and user message.
     fn complete(&self, system: &str, user_message: &str) -> AiResult<String>;
 
