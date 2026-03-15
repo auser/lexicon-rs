@@ -63,6 +63,18 @@ impl ClaudeClient {
 
         if !resp.status().is_success() {
             let status = resp.status();
+            if status.as_u16() == 429 {
+                let retry_after = resp
+                    .headers()
+                    .get("retry-after")
+                    .and_then(|v| v.to_str().ok())
+                    .and_then(|s| s.parse::<u64>().ok());
+                let text = resp.text().unwrap_or_default();
+                return Err(AiError::RateLimited {
+                    message: format!("API returned {status}: {text}"),
+                    retry_after_secs: retry_after,
+                });
+            }
             let text = resp.text().unwrap_or_default();
             return Err(AiError::RequestFailed {
                 reason: format!("API returned {status}: {text}"),
@@ -108,6 +120,10 @@ impl crate::boundary::AiProvider for ClaudeClient {
             "## Repository State\n{context}\n\n## Verification Failure\n{failure}"
         );
         self.send(system, &user_msg)
+    }
+
+    fn model_id(&self) -> &str {
+        &self.model
     }
 }
 

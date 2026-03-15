@@ -5,8 +5,9 @@
 //! compiles everything into a constraint-aware implementation prompt.
 
 use lexicon_ai::boundary::AiProvider;
-use lexicon_ai::generate::load_context;
-use lexicon_ai::prompt::{build_chat_user_message, CHAT_SYSTEM};
+use lexicon_ai::error::AiError;
+use lexicon_ai::generate::load_context_selective;
+use lexicon_ai::prompt::{build_chat_user_message, estimate_tokens, CHAT_SCHEMAS, CHAT_SYSTEM};
 use lexicon_conversation::driver::ConversationDriver;
 use lexicon_conversation::session::{list_sessions, save_session};
 use lexicon_conversation::workflow::Question;
@@ -22,7 +23,7 @@ use crate::error::{CoreError, CoreResult};
 use crate::generate::build_ai_provider;
 
 /// Maximum conversation turns in history sent to the AI (to manage context window).
-const MAX_HISTORY_TURNS: usize = 15;
+const MAX_HISTORY_TURNS: usize = 3;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -97,6 +98,55 @@ impl ChatContext {
             history: Vec::new(),
         }
     }
+}
+
+/// Summarize an AI response for compact history storage.
+///
+/// Keeps the first 2-3 sentences, replaces code/TOML blocks with a short
+/// placeholder, and caps total length. The full text is still printed to
+/// the console and saved in the session file.
+fn summarize_for_history(text: &str) -> String {
+    const MAX_CHARS: usize = 300;
+
+    let mut result = String::new();
+    let mut in_code_block = false;
+    let mut code_block_replaced = false;
+
+    for line in text.lines() {
+        if line.trim_start().starts_with("```") || line.trim_start().starts_with(":::") {
+            if in_code_block {
+                in_code_block = false;
+                continue;
+            }
+            in_code_block = true;
+            if !code_block_replaced {
+                result.push_str("[code omitted] ");
+                code_block_replaced = true;
+            }
+            continue;
+        }
+        if in_code_block {
+            continue;
+        }
+        // Skip blank lines to keep it compact
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if !result.is_empty() {
+            result.push(' ');
+        }
+        result.push_str(trimmed);
+        if result.len() >= MAX_CHARS {
+            break;
+        }
+    }
+
+    if result.len() > MAX_CHARS {
+        result.truncate(MAX_CHARS);
+        result.push_str("...");
+    }
+    result
 }
 
 // ---------------------------------------------------------------------------
@@ -836,6 +886,208 @@ pub fn build_session_summary(ctx: &ChatContext) -> String {
 }
 
 // ---------------------------------------------------------------------------
+// Slash commands
+// ---------------------------------------------------------------------------
+
+/// Available AI models for the `/models` command.
+const AVAILABLE_MODELS: &[(&str, &str)] = &[
+    ("claude-haiku-4-5-20251001", "Haiku 4.5 (fast, cheapest)"),
+    ("claude-sonnet-4-20250514", "Sonnet 4 (balanced)"),
+    ("claude-opus-4-20250514", "Opus 4 (most capable)"),
+];
+
+/// Dispatch a slash command entered by the user.
+fn handle_slash_command(
+    cmd: &str,
+    layout: &RepoLayout,
+    ai_provider: &mut Box<dyn AiProvider>,
+    ctx: &ChatContext,
+    dim_style: &Style,
+) -> CoreResult<()> {
+    match cmd.trim().to_lowercase().as_str() {
+        "help" | "h" => show_help(dim_style),
+        "models" | "model" => select_model(layout, ai_provider, dim_style)?,
+        "status" | "s" => show_status(ai_provider, ctx, dim_style),
+        "artifacts" | "a" => show_artifacts(ctx, dim_style),
+        "verify" | "v" => run_verify_inline(layout, dim_style)?,
+        other => {
+            println!(
+                "  Unknown command: /{other}. Type /help for available commands."
+            );
+        }
+    }
+    Ok(())
+}
+
+/// Display available slash commands.
+fn show_help(dim_style: &Style) {
+    println!();
+    println!("  Available commands:");
+    println!("    {}       Show this help message", dim_style.apply_to("/help, /h"));
+    println!("    {}     Show session status (model, turns, artifacts)", dim_style.apply_to("/status, /s"));
+    println!("    {}  List artifacts created this session", dim_style.apply_to("/artifacts, /a"));
+    println!("    {}        List and select an AI model", dim_style.apply_to("/models"));
+    println!("    {}     Run verification (gates + scoring)", dim_style.apply_to("/verify, /v"));
+    println!("    {}   End the session", dim_style.apply_to("/exit, /quit"));
+    println!();
+}
+
+/// Show current session status.
+fn show_status(
+    ai_provider: &Box<dyn AiProvider>,
+    ctx: &ChatContext,
+    dim_style: &Style,
+) {
+    let model = ai_provider.model_id();
+    let user_turns = ctx.history.iter().filter(|m| m.role == MessageRole::User).count();
+    let artifact_count = ctx.artifacts.len();
+
+    println!();
+    println!("  Session status:");
+    println!("    Model:     {model}");
+    println!("    Turns:     {user_turns}");
+    println!("    Artifacts: {artifact_count}");
+    if artifact_count > 0 {
+        for a in &ctx.artifacts {
+            println!("      {} {} {}", dim_style.apply_to("•"), a.kind, dim_style.apply_to(&a.id));
+        }
+    }
+    println!();
+}
+
+/// List all artifacts created during this session.
+fn show_artifacts(ctx: &ChatContext, dim_style: &Style) {
+    println!();
+    if ctx.artifacts.is_empty() {
+        println!("  No artifacts created yet.");
+    } else {
+        println!("  Artifacts ({}):", ctx.artifacts.len());
+        for a in &ctx.artifacts {
+            println!(
+                "    {} {} {} {}",
+                dim_style.apply_to("•"),
+                a.kind,
+                a.id,
+                dim_style.apply_to(format!("({})", a.path)),
+            );
+            if !a.summary.is_empty() {
+                println!("      {}", dim_style.apply_to(&a.summary));
+            }
+        }
+    }
+    println!();
+}
+
+/// Run verification inline and display a summary.
+fn run_verify_inline(layout: &RepoLayout, dim_style: &Style) -> CoreResult<()> {
+    println!();
+    println!("  Running verification...");
+
+    let result = crate::verify::verify(layout)?;
+
+    // Gates
+    if result.gate_results.is_empty() {
+        println!("  {}", dim_style.apply_to("No gates configured."));
+    } else {
+        let passed = result.gate_results.iter().filter(|g| g.passed()).count();
+        let total = result.gate_results.len();
+        let gate_style = if passed == total {
+            Style::new().green().bold()
+        } else {
+            Style::new().red().bold()
+        };
+        println!("  Gates: {}", gate_style.apply_to(format!("{passed}/{total} passed")));
+        for g in &result.gate_results {
+            let icon = if g.passed() { "✓" } else { "✗" };
+            let style = if g.passed() {
+                Style::new().green()
+            } else {
+                Style::new().red()
+            };
+            println!("    {} {}", style.apply_to(icon), g.gate_id);
+        }
+    }
+
+    // Scoring
+    if let Some(ref score) = result.score_report {
+        let pct = (score.total_score * 100.0).round() as u32;
+        let verdict_style = match score.verdict {
+            lexicon_scoring::engine::Verdict::Pass => Style::new().green().bold(),
+            lexicon_scoring::engine::Verdict::Warn => Style::new().yellow().bold(),
+            lexicon_scoring::engine::Verdict::Fail => Style::new().red().bold(),
+        };
+        println!(
+            "  Score: {} ({:?})",
+            verdict_style.apply_to(format!("{pct}%")),
+            score.verdict,
+        );
+    }
+
+    // Coverage
+    if let Some(ref cov) = result.coverage_report {
+        if cov.total_clauses > 0 {
+            println!(
+                "  Coverage: {}/{} clauses covered",
+                cov.total_covered, cov.total_clauses,
+            );
+        }
+    }
+
+    // Prompt warnings
+    if !result.prompt_warnings.is_empty() {
+        println!("  Warnings: {}", result.prompt_warnings.len());
+    }
+
+    println!();
+    Ok(())
+}
+
+/// Present a model selection menu and swap the AI provider if the user picks one.
+fn select_model(
+    layout: &RepoLayout,
+    ai_provider: &mut Box<dyn AiProvider>,
+    dim_style: &Style,
+) -> CoreResult<()> {
+    let current = ai_provider.model_id();
+
+    println!();
+    println!("  Available models:");
+    for (i, (id, desc)) in AVAILABLE_MODELS.iter().enumerate() {
+        let marker = if *id == current { " (current)" } else { "" };
+        println!("    {}. {desc}{marker}", i + 1);
+    }
+    println!();
+    print!("  Select model [1-{}] or Enter to cancel: ", AVAILABLE_MODELS.len());
+    // Flush so the prompt appears before reading
+    use std::io::Write;
+    std::io::stdout().flush().ok();
+
+    let mut choice = String::new();
+    std::io::stdin()
+        .read_line(&mut choice)
+        .map_err(|e| CoreError::Other(format!("Failed to read input: {e}")))?;
+
+    let choice = choice.trim();
+    if choice.is_empty() {
+        println!("  {}", dim_style.apply_to("Cancelled."));
+        return Ok(());
+    }
+
+    match choice.parse::<usize>() {
+        Ok(n) if n >= 1 && n <= AVAILABLE_MODELS.len() => {
+            let (id, desc) = AVAILABLE_MODELS[n - 1];
+            *ai_provider = build_ai_provider(layout, Some(id))?;
+            let success_style = Style::new().green().bold();
+            println!("  {} Switched to {desc} ({id})", success_style.apply_to("✓"));
+        }
+        _ => {
+            println!("  Invalid selection.");
+        }
+    }
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
 // REPL loop
 // ---------------------------------------------------------------------------
 
@@ -893,7 +1145,7 @@ fn restore_context_from_session(session: &ConversationSession) -> ChatContext {
             StepType::Info => {
                 ctx.history.push(ChatMessage {
                     role: MessageRole::Assistant,
-                    content: step.content.clone(),
+                    content: summarize_for_history(&step.content),
                 });
             }
             StepType::Write => {
@@ -958,8 +1210,7 @@ pub fn run_chat(
     driver: &dyn ConversationDriver,
     model: Option<&str>,
 ) -> CoreResult<()> {
-    let ai_provider = build_ai_provider(layout, model)?;
-    let (repo_context, _warnings) = load_context(layout);
+    let mut ai_provider = build_ai_provider(layout, model)?;
 
     let heading_style = Style::new().bold().cyan();
     let dim_style = Style::new().dim();
@@ -1025,7 +1276,11 @@ pub fn run_chat(
             if !ctx.artifacts.is_empty() {
                 println!("  {} artifact(s) in session.", dim_style.apply_to(format!("{}", ctx.artifacts.len())));
             }
-            println!("  Type {} to end the session.\n", dim_style.apply_to("'exit'"));
+            println!(
+                "  Type {} for commands or {} to end.\n",
+                dim_style.apply_to("/help"),
+                dim_style.apply_to("'exit'"),
+            );
 
             (ctx, session)
         } else {
@@ -1042,7 +1297,11 @@ pub fn run_chat(
         println!("  Describe what you want to build. I'll help you design the");
         println!("  contracts, gates, and constraints, then generate an");
         println!("  implementation prompt.");
-        println!("  Type {} to end the session.\n", dim_style.apply_to("'exit'"));
+        println!(
+            "  Type {} for commands or {} to end.\n",
+            dim_style.apply_to("/help"),
+            dim_style.apply_to("'exit'"),
+        );
     }
 
     let mut auto_followup = false;
@@ -1077,6 +1336,12 @@ pub fn run_chat(
                 continue;
             }
 
+            // Intercept slash commands before adding to history/AI context
+            if let Some(cmd) = input.trim().strip_prefix('/') {
+                handle_slash_command(cmd, layout, &mut ai_provider, &ctx, &dim_style)?;
+                continue;
+            }
+
             session.add_step(StepType::UserInput, input.clone());
             ctx.history.push(ChatMessage {
                 role: MessageRole::User,
@@ -1087,18 +1352,8 @@ pub fn run_chat(
 
         // Build AI message with full context
         let session_summary = build_session_summary(&ctx);
-        let history_pairs: Vec<(String, String)> = ctx
-            .history
-            .iter()
-            .rev()
-            .take(MAX_HISTORY_TURNS * 2) // pairs of user+assistant
-            .collect::<Vec<_>>()
-            .into_iter()
-            .rev()
-            .map(|m| (m.role.to_string(), m.content.clone()))
-            .collect();
 
-        // Use the most recent user message (either typed input or injected error feedback)
+        // Extract current user message (the last one) — sent separately, not in history
         let current_input = ctx
             .history
             .iter()
@@ -1106,8 +1361,78 @@ pub fn run_chat(
             .find(|m| m.role == MessageRole::User)
             .map(|m| m.content.clone())
             .unwrap_or_default();
-        let user_msg =
-            build_chat_user_message(&repo_context, &session_summary, &history_pairs, &current_input);
+
+        // Build history excluding the current user message.
+        // Count actual turns (user+assistant pairs), not individual messages.
+        let history_without_current: Vec<_> = {
+            let len = ctx.history.len();
+            // Skip the trailing user message (it's the current input)
+            let end = if ctx.history.last().is_some_and(|m| m.role == MessageRole::User) {
+                len.saturating_sub(1)
+            } else {
+                len
+            };
+            let msgs = &ctx.history[..end];
+            // Count turns by counting user messages, take last MAX_HISTORY_TURNS turns
+            let mut turn_count = 0;
+            let mut start = msgs.len();
+            for (i, m) in msgs.iter().enumerate().rev() {
+                if m.role == MessageRole::User {
+                    turn_count += 1;
+                    if turn_count > MAX_HISTORY_TURNS {
+                        break;
+                    }
+                    start = i;
+                }
+            }
+            msgs[start..].to_vec()
+        };
+
+        let history_pairs: Vec<(String, String)> = history_without_current
+            .iter()
+            .map(|m| (m.role.to_string(), m.content.clone()))
+            .collect();
+
+        // Include TOML schemas on first turn or when user mentions creating/updating artifacts
+        let is_first_turn = history_without_current.is_empty();
+        let input_lower = current_input.to_lowercase();
+        let mentions_artifact = input_lower.contains("contract")
+            || input_lower.contains("gate")
+            || input_lower.contains("create")
+            || input_lower.contains("update");
+        let include_schemas = is_first_turn || mentions_artifact;
+
+        // Build repo context with only active contract IDs for full detail
+        let active_ids: Vec<&str> = ctx
+            .artifacts
+            .iter()
+            .filter(|a| a.kind == ArtifactCategory::Contract)
+            .map(|a| a.id.as_str())
+            .collect();
+        let (repo_context, _warnings) = load_context_selective(layout, &active_ids);
+
+        let user_msg = build_chat_user_message(
+            &repo_context,
+            &session_summary,
+            &history_pairs,
+            &current_input,
+            include_schemas,
+        );
+
+        // Estimate token usage and warn if high
+        let system_tokens = estimate_tokens(CHAT_SYSTEM);
+        let user_tokens = estimate_tokens(&user_msg);
+        let total_tokens = system_tokens + user_tokens;
+        if total_tokens > 15_000 {
+            let warn_style = Style::new().yellow();
+            eprintln!(
+                "  {} High token estimate: ~{} (system: ~{}, user: ~{})",
+                warn_style.apply_to("⚠"),
+                total_tokens,
+                system_tokens,
+                user_tokens
+            );
+        }
 
         // Get AI response with spinner and retry on transient failures
         const MAX_RETRIES: u32 = 3;
@@ -1136,10 +1461,18 @@ pub fn run_chat(
                         spinner.finish_and_clear();
                         last_err = format!("{e}");
                         if attempt < MAX_RETRIES {
-                            let delay = std::time::Duration::from_secs(2u64.pow(attempt));
+                            let (delay, label) = match &e {
+                                AiError::RateLimited { retry_after_secs, .. } => {
+                                    let secs = retry_after_secs.unwrap_or(30);
+                                    (std::time::Duration::from_secs(secs), "Rate limited")
+                                }
+                                _ => {
+                                    (std::time::Duration::from_secs(2u64.pow(attempt)), "Network error")
+                                }
+                            };
                             let warn_style = Style::new().yellow();
                             println!(
-                                "  {} Network error, retrying in {}s...",
+                                "  {} {label}, retrying in {}s...",
                                 warn_style.apply_to("⚠"),
                                 delay.as_secs()
                             );
@@ -1201,12 +1534,30 @@ pub fn run_chat(
                     let contract_path = layout.contracts_dir().join(format!("{candidate}.toml"));
                     if contract_path.is_file() {
                         if let Ok(content) = std::fs::read_to_string(&contract_path) {
+                            // Truncate to first 20 lines to avoid bloating token usage
+                            let truncated: String = content
+                                .lines()
+                                .take(20)
+                                .collect::<Vec<_>>()
+                                .join("\n");
+                            let suffix = if content.lines().count() > 20 {
+                                let remaining = content.lines().count() - 20;
+                                format!("\n[truncated — {remaining} more lines]")
+                            } else {
+                                String::new()
+                            };
                             contract_contents.push_str(&format!(
-                                "\n--- Content of {candidate}.toml ---\n{content}\n"
+                                "\n--- Content of {candidate}.toml (truncated) ---\n{truncated}{suffix}\n"
                             ));
                         }
                     }
                 }
+            }
+            // Cap total error feedback to prevent token blowup
+            const MAX_ERROR_FEEDBACK_CHARS: usize = 2000;
+            if contract_contents.len() > MAX_ERROR_FEEDBACK_CHARS {
+                contract_contents.truncate(MAX_ERROR_FEEDBACK_CHARS);
+                contract_contents.push_str("\n[contract content truncated for brevity]");
             }
 
             let error_feedback = format!(
@@ -1217,7 +1568,10 @@ pub fn run_chat(
                 (e.g., UPDATE_CONTRACT <id> with corrected TOML to fix malformed contracts). \
                 Do NOT just describe what you would do — actually emit the directives. \
                 Do NOT claim any files were created unless you emit the directive in this \
-                response.]\n\n{}\n{contract_contents}",
+                response.\n\
+                \n\
+                IMPORTANT: All top-level fields are required. Use the schema below.]\n\n\
+                {}\n{contract_contents}\n\n{CHAT_SCHEMAS}",
                 action_errors.join("\n")
             );
             ctx.history.push(ChatMessage {
@@ -1237,7 +1591,7 @@ pub fn run_chat(
             if !parsed.display_text.is_empty() {
                 ctx.history.push(ChatMessage {
                     role: MessageRole::Assistant,
-                    content: parsed.display_text.clone(),
+                    content: summarize_for_history(&parsed.display_text),
                 });
                 session.add_step(StepType::Info, parsed.display_text.clone());
                 println!();

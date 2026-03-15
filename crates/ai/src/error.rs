@@ -8,6 +8,12 @@ pub enum AiError {
     #[error("AI request failed: {reason}")]
     RequestFailed { reason: String },
 
+    #[error("rate limited: {message}")]
+    RateLimited {
+        message: String,
+        retry_after_secs: Option<u64>,
+    },
+
     #[error("policy violation: {message}")]
     PolicyViolation { message: String },
 }

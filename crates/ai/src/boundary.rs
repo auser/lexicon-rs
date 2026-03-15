@@ -9,6 +9,11 @@ pub trait AiProvider {
 
     /// Generate an improvement suggestion for a failing verification.
     fn suggest_improvement(&self, context: &str, failure: &str) -> AiResult<String>;
+
+    /// Return the model identifier currently in use.
+    fn model_id(&self) -> &str {
+        "unknown"
+    }
 }
 
 /// A no-op AI provider that always returns the input unchanged.

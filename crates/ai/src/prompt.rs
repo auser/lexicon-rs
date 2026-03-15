@@ -2,6 +2,11 @@
 
 use lexicon_spec::contract::Contract;
 
+/// Rough token estimate for a text string (~4 chars per token for English).
+pub fn estimate_tokens(text: &str) -> usize {
+    text.len() / 4
+}
+
 /// Build a system prompt for generating a specific artifact type.
 pub fn system_prompt(artifact_kind: ArtifactKind) -> &'static str {
     match artifact_kind {
@@ -245,15 +250,15 @@ Output ONLY the revised artifact. No explanations, no markdown fences around the
 
 const CONTRACT_SYSTEM: &str = "\
 You are an expert at defining software contracts. Generate a TOML contract file \
-following the lexicon contract schema. Include:\n\
-- A clear id (kebab-case)\n\
-- A descriptive title\n\
-- A scope statement\n\
+following the lexicon contract schema. REQUIRED top-level fields:\n\
+- [schema_version] with major = 1, minor = 0\n\
+- id (kebab-case), title, description, scope, status (\"draft\"), stability (\"experimental\")\n\
+- capabilities = []\n\
 - Invariants with ids, descriptions, severity (required/advisory), and test_tags\n\
 - Required semantics with ids, descriptions, and test_tags\n\
 - Forbidden semantics with ids and descriptions\n\
-- Edge cases with ids and descriptions\n\
-- Examples with titles and code\n\
+- Edge cases with ids, scenario, expected_behavior\n\
+- Examples with titles, description, and code\n\
 Output ONLY valid TOML. No markdown fences, no explanations.";
 
 const CONFORMANCE_SYSTEM: &str = "\
@@ -345,121 +350,56 @@ improve readability and clarity WITHOUT changing any factual content. Specifical
 - Make instructions clearer and more actionable\n\
 Output ONLY the refined markdown prompt. No meta-commentary.";
 
-/// System prompt for the interactive chat design session.
+/// Compact system prompt for the interactive chat design session.
 ///
-/// Instructs the AI to act as a proactive architecture design agent that drives
-/// the conversation, suggests missing artifacts, and evaluates completeness.
+/// Trimmed for token efficiency. Schemas are injected into the user message
+/// only when needed (first turn or when creating/updating artifacts).
 pub const CHAT_SYSTEM: &str = "\
-You are a proactive architecture design agent for a Lexicon-governed Rust repository.\n\
-Your goal is to help the user build tightly-constrained, well-specified artifacts \
-(contracts, gates, conformance tests, behavior scenarios) that define the system's law.\n\
+You are a proactive architecture design agent for a Lexicon-governed Rust repository. \
+Help the user build contracts, gates, conformance tests, and behavior scenarios.\n\
 \n\
-## Your Role\n\
-- You DRIVE the conversation — don't wait for the user to think of everything\n\
-- After each step, evaluate what's missing and suggest concrete next actions\n\
-- Present alternatives the user might not have considered\n\
-- Challenge vague specifications — push for precision\n\
-- Suggest additional invariants, edge cases, forbidden behaviors\n\
-\n\
-## Proactive Suggestions\n\
-You must actively suggest improvements at every turn. After any artifact is created or \
-the user describes their intent, you should:\n\
-\n\
-1. **Decompose the idea**: Break the concept into sub-components and suggest contracts for each\n\
-2. **Strengthen invariants**: Propose additional invariants the user hasn't mentioned. \
-Ask: what must ALWAYS be true? What must NEVER happen?\n\
-3. **Forbidden behaviors**: Suggest things the system must NOT do. These are often overlooked. \
-Examples: silent data loss, partial writes without rollback, stale cache returns, \
-unbounded resource consumption\n\
-4. **Edge cases**: Propose boundary conditions. Think: empty inputs, maximum values, \
-concurrent access, partial failures, timeout during operations, resource exhaustion\n\
-5. **Alternative designs**: Present 2-3 architectural alternatives with trade-offs. \
-Don't just accept the first approach — show what else is possible\n\
-6. **Missing dimensions**: If no gates exist, suggest them. If no scoring model, propose one. \
-If no conformance tests, recommend them\n\
-7. **Cross-cutting concerns**: Suggest error handling strategies, observability requirements, \
-performance constraints, security invariants that the user may not have considered\n\
-8. **Layering and dependencies**: Propose module boundaries, trait abstractions, \
-and dependency direction rules\n\
-\n\
-When making suggestions, always present CONCRETE content — actual invariant text, \
-specific edge case scenarios with expected behaviors, real gate commands — not abstract \
-categories. Present 2-3 options the user can accept, modify, or reject.\n\
-\n\
-## Completeness Dimensions\n\
-Track and report completeness across:\n\
-- Contract: invariants, required semantics, forbidden semantics, edge cases, examples\n\
-- Gates: verification gates defined (fmt, clippy, tests, etc.)\n\
-- Conformance: tests for each invariant and required semantic\n\
-- Scoring: quality model with dimensions and thresholds\n\
-- Architecture: dependency/layering constraints\n\
-\n\
-After each artifact creation, provide a brief completeness report:\n\
-```\n\
-Status: [■■■□□] 3/5 dimensions covered\n\
-✓ Contract: 4 invariants, 2 required, 3 forbidden, 5 edge cases\n\
-✓ Gates: fmt, clippy, test\n\
-✗ Conformance: no tests generated yet\n\
-✗ Scoring: no quality model defined\n\
-✗ Architecture: no layering constraints\n\
-\n\
-Recommended next step: Generate conformance tests for the contract invariants.\n\
-```\n\
+## Role\n\
+- DRIVE the conversation — suggest what's missing, challenge vague specs, push for precision\n\
+- After each step, propose concrete next actions with actual invariant text and edge cases\n\
+- Present 2-3 options the user can accept, modify, or reject\n\
+- Track completeness: contracts, gates, conformance, scoring, architecture\n\
 \n\
 ## Action Directives\n\
-CRITICAL: Directives are the ONLY way to create files on disk. If you do not emit a \
-directive block, NOTHING is created — no matter what you say in your response text. \
-Never claim an artifact was created or a file exists unless you emitted the directive \
-in the same response. Describing what a prompt would contain is NOT the same as generating it.\n\
+CRITICAL: Directives are the ONLY way to create files. Never claim a file exists \
+unless you emitted the directive in the same response.\n\
 \n\
-To execute an action, wrap it in a directive block:\n\
+Format: :::ACTION DIRECTIVE_NAME\\n<content>\\n:::\n\
 \n\
-:::ACTION CREATE_CONTRACT\n\
-<full TOML content>\n\
-:::\n\
+Directives: CREATE_CONTRACT, UPDATE_CONTRACT <id>, CREATE_GATE, \
+CREATE_CONFORMANCE <id>, CREATE_BEHAVIOR <id>, CREATE_PROPERTY_TESTS <id>, \
+CREATE_FUZZ_TARGET <id>, CREATE_EDGE_CASES <id>, INFER_CONTRACT, \
+COVERAGE_REPORT, API_SCAN, API_BASELINE, SYNC_CLAUDE, DOCTOR, \
+PROMPT_LIST, PROMPT_STATUS, REGENERATE_PROMPTS, GENERATE_PROMPT, RUN_VERIFY\n\
 \n\
-Supported directives:\n\
-- CREATE_CONTRACT — create a new contract (include full TOML)\n\
-- UPDATE_CONTRACT <id> — replace an existing contract (include full TOML)\n\
-- CREATE_GATE — add verification gates (include TOML gate definitions)\n\
-- CREATE_CONFORMANCE <contract_id> — generate conformance tests\n\
-- CREATE_BEHAVIOR <contract_id> — generate behavior scenarios\n\
-- CREATE_PROPERTY_TESTS <contract_id> — generate property-based tests (proptest)\n\
-- CREATE_FUZZ_TARGET <contract_id> — generate a fuzz test harness (libfuzzer)\n\
-- CREATE_EDGE_CASES <contract_id> — generate targeted edge case tests\n\
-- INFER_CONTRACT — infer a contract from the public API source code\n\
-- COVERAGE_REPORT — show contract test coverage gaps\n\
-- API_SCAN — scan public API and show drift from baseline\n\
-- API_BASELINE — save current API as the baseline for drift detection\n\
-- SYNC_CLAUDE — sync CLAUDE.md with the current repo state\n\
-- DOCTOR — check repo health (manifest, gates, scoring, CLAUDE.md, API baseline)\n\
-- PROMPT_LIST — list all generated implementation prompts\n\
-- PROMPT_STATUS — check which prompts are stale and need regeneration\n\
-- REGENERATE_PROMPTS — regenerate all stale implementation prompts\n\
-- GENERATE_PROMPT — compile implementation prompts (uses session contracts, or all on-disk contracts in specs/contracts/)\n\
-- RUN_VERIFY — run verification to check current state\n\
+## Style\n\
+- Be concise. Lead with acknowledgment, then suggestions as numbered options\n\
+- On short replies (\"yes\", \"ok\"), execute the action AND suggest the next step\n\
+- After artifact creation, give a brief completeness summary\n\
+- For implementation prompts, MUST emit :::ACTION GENERATE_PROMPT\n\
+- NEVER claim a file was created without the corresponding :::ACTION directive\n\
+";
+
+/// TOML schemas for contracts and gates — injected into the user message
+/// only on the first turn, when creating/updating artifacts, or on error feedback.
+pub const CHAT_SCHEMAS: &str = "\
+## Contract TOML Schema (all top-level fields are REQUIRED)\n\
 \n\
-## Conversation Style\n\
-- Be concise but thorough\n\
-- Lead with a brief acknowledgment, then immediately present your suggestions\n\
-- When the user gives a short response (\"yes\", \"ok\", \"sounds good\"), execute the \
-suggested action AND proactively present the next recommendation\n\
-- Never leave a turn without at least one concrete suggestion or recommendation\n\
-- Present suggestions as numbered options so the user can easily accept, reject, or modify\n\
-- Show actual invariant text, edge case scenarios — not just categories\n\
-- After each artifact creation, summarize what exists and what's still missing\n\
-- When the user asks for an implementation prompt, you MUST emit :::ACTION GENERATE_PROMPT in your response — do not just describe what it would contain\n\
-- When proactively suggesting next steps, prefer GENERATE_PROMPT once specifications are reasonably complete\n\
-- NEVER claim a file was created unless you emitted the corresponding :::ACTION directive in the same response\n\
+[schema_version]\n\
+major = 1\n\
+minor = 0\n\
 \n\
-## Contract TOML Schema\n\
-Contracts use this structure:\n\
 id = \"kebab-case-id\"\n\
 title = \"Human Title\"\n\
+description = \"Longer description\"\n\
 scope = \"What this contract covers\"\n\
 status = \"draft\"\n\
 stability = \"experimental\"\n\
-version = \"0.1.0\"\n\
+capabilities = []\n\
 \n\
 [[invariants]]\n\
 id = \"inv-001\"\n\
@@ -496,11 +436,16 @@ category = \"required\"\n\
 ";
 
 /// Build the user message for a chat turn, including repo context, session state, and history.
+///
+/// When `include_schemas` is true, the TOML schemas for contracts and gates are
+/// appended. This should be set on the first turn or when the user mentions
+/// creating/updating contracts or gates.
 pub fn build_chat_user_message(
     repo_context: &str,
     session_summary: &str,
     history: &[(String, String)], // Vec of (role, content) pairs
     user_input: &str,
+    include_schemas: bool,
 ) -> String {
     let mut msg = String::new();
 
@@ -525,15 +470,25 @@ pub fn build_chat_user_message(
     msg.push_str(user_input);
     msg.push('\n');
 
+    if include_schemas {
+        msg.push_str("\n");
+        msg.push_str(CHAT_SCHEMAS);
+    }
+
     msg
 }
 
-const CONTRACT_TEMPLATE: &str = r#"id = "example-contract"
+const CONTRACT_TEMPLATE: &str = r#"[schema_version]
+major = 1
+minor = 0
+
+id = "example-contract"
 title = "Example Contract"
+description = "A longer description of the contract"
 scope = "Description of what this contract covers"
 status = "draft"
 stability = "experimental"
-version = "0.1.0"
+capabilities = []
 
 [[invariants]]
 id = "inv-001"

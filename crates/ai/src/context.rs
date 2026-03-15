@@ -7,9 +7,27 @@ use lexicon_spec::scoring::ScoreModel;
 ///
 /// This creates a structured text summary that can be included
 /// in prompts or in the managed CLAUDE.md blocks.
+///
+/// For token-efficient chat context, use [`assemble_context_selective`] instead.
 pub fn assemble_context(
     manifest: &Manifest,
     contracts: &[Contract],
+    score_model: Option<&ScoreModel>,
+    gates_model: Option<&GatesModel>,
+) -> String {
+    // Full detail for all contracts (used by non-chat generation paths)
+    assemble_context_selective(manifest, contracts, None, score_model, gates_model)
+}
+
+/// Assemble AI-readable context with selective contract detail.
+///
+/// - If `active_ids` is `None`, all contracts get full detail (same as `assemble_context`).
+/// - If `active_ids` is `Some(&[])` (empty), all contracts get summary-only (id + title + scope).
+/// - If `active_ids` is `Some(&["foo", "bar"])`, those get full detail; others get summary.
+pub fn assemble_context_selective(
+    manifest: &Manifest,
+    contracts: &[Contract],
+    active_ids: Option<&[&str]>,
     score_model: Option<&ScoreModel>,
     gates_model: Option<&GatesModel>,
 ) -> String {
@@ -32,24 +50,32 @@ pub fn assemble_context(
                 contract.stability
             ));
 
-            if !contract.invariants.is_empty() {
-                lines.push("  Invariants:".to_string());
-                for inv in &contract.invariants {
-                    lines.push(format!("  - {}: {}", inv.id, inv.description));
-                }
-            }
+            // Only include full detail if this contract is active (or all are active)
+            let show_detail = match active_ids {
+                None => true,
+                Some(ids) => ids.iter().any(|id| *id == contract.id),
+            };
 
-            if !contract.required_semantics.is_empty() {
-                lines.push("  Required semantics:".to_string());
-                for sem in &contract.required_semantics {
-                    lines.push(format!("  - {}: {}", sem.id, sem.description));
+            if show_detail {
+                if !contract.invariants.is_empty() {
+                    lines.push("  Invariants:".to_string());
+                    for inv in &contract.invariants {
+                        lines.push(format!("  - {}: {}", inv.id, inv.description));
+                    }
                 }
-            }
 
-            if !contract.forbidden_semantics.is_empty() {
-                lines.push("  Forbidden:".to_string());
-                for sem in &contract.forbidden_semantics {
-                    lines.push(format!("  - {}: {}", sem.id, sem.description));
+                if !contract.required_semantics.is_empty() {
+                    lines.push("  Required semantics:".to_string());
+                    for sem in &contract.required_semantics {
+                        lines.push(format!("  - {}: {}", sem.id, sem.description));
+                    }
+                }
+
+                if !contract.forbidden_semantics.is_empty() {
+                    lines.push("  Forbidden:".to_string());
+                    for sem in &contract.forbidden_semantics {
+                        lines.push(format!("  - {}: {}", sem.id, sem.description));
+                    }
                 }
             }
         }

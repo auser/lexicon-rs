@@ -7,7 +7,7 @@ use lexicon_repo::layout::RepoLayout;
 use lexicon_spec::contract::Contract;
 
 use crate::boundary::AiProvider;
-use crate::context::assemble_context;
+use crate::context::{assemble_context, assemble_context_selective};
 use crate::error::AiResult;
 use crate::prompt::{
     ArtifactKind, REFINE_SYSTEM, contract_based_prompt, coverage_improve_prompt,
@@ -297,6 +297,52 @@ pub fn load_context(layout: &RepoLayout) -> (String, Vec<String>) {
         .and_then(|t| toml::from_str(&t).ok());
 
     let ctx = assemble_context(&manifest, &contracts, score_model.as_ref(), gates_model.as_ref());
+    (ctx, warnings)
+}
+
+/// Load repo context with selective contract detail for chat sessions.
+///
+/// Only contracts whose IDs are in `active_ids` get full detail (invariants, semantics).
+/// All others get a one-line summary (id + title + scope). Pass an empty slice for
+/// summary-only mode.
+pub fn load_context_selective(layout: &RepoLayout, active_ids: &[&str]) -> (String, Vec<String>) {
+    let mut warnings = Vec::new();
+
+    let manifest_path = layout.manifest_path();
+    let manifest = match std::fs::read_to_string(&manifest_path) {
+        Ok(text) => match toml::from_str(&text) {
+            Ok(m) => m,
+            Err(e) => {
+                warnings.push(format!("Failed to parse manifest: {e}"));
+                return (String::new(), warnings);
+            }
+        },
+        Err(_) => {
+            warnings.push("No manifest found — AI will have limited context".to_string());
+            return (String::new(), warnings);
+        }
+    };
+
+    let contracts_dir = layout.contracts_dir();
+    let contracts = load_contracts(&contracts_dir);
+
+    let score_path = layout.scoring_model_path();
+    let score_model = std::fs::read_to_string(&score_path)
+        .ok()
+        .and_then(|t| toml::from_str(&t).ok());
+
+    let gates_path = layout.gates_path();
+    let gates_model = std::fs::read_to_string(&gates_path)
+        .ok()
+        .and_then(|t| toml::from_str(&t).ok());
+
+    let ctx = assemble_context_selective(
+        &manifest,
+        &contracts,
+        Some(active_ids),
+        score_model.as_ref(),
+        gates_model.as_ref(),
+    );
     (ctx, warnings)
 }
 
