@@ -100,6 +100,10 @@ release-auto:
     set -euo pipefail
     next=$(git cliff --bumped-version)
     echo "Next version: ${next}"
+    if git rev-parse "${next}" >/dev/null 2>&1; then
+        echo "Tag ${next} already exists. Push with: git push && git push --tags"
+        exit 0
+    fi
     git cliff --tag "${next}" -o CHANGELOG.md
     git add CHANGELOG.md
     git commit -m "chore: update changelog for ${next}"
