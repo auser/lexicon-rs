@@ -66,17 +66,17 @@ tempfile = "3"
 insta = { version = "1", features = ["toml", "json"] }
 
 # Workspace internal
-lexicon-core = { path = "crates/core" }
-lexicon-spec = { path = "crates/spec" }
-lexicon-scaffold = { path = "crates/scaffold" }
-lexicon-conversation = { path = "crates/conversation" }
-lexicon-conformance = { path = "crates/conformance" }
-lexicon-gates = { path = "crates/gates" }
-lexicon-scoring = { path = "crates/scoring" }
-lexicon-ai = { path = "crates/ai" }
-lexicon-fs = { path = "crates/fs" }
-lexicon-repo = { path = "crates/repo" }
-lexicon-audit = { path = "crates/audit" }
-lexicon-tui = { path = "crates/tui" }
-lexicon-coverage = { path = "crates/coverage" }
-lexicon-api = { path = "crates/api" }
+lexicon-core = { path = "crates/core", version = "0.1.0" }
+lexicon-spec = { path = "crates/spec", version = "0.1.0" }
+lexicon-scaffold = { path = "crates/scaffold", version = "0.1.0" }
+lexicon-conversation = { path = "crates/conversation", version = "0.1.0" }
+lexicon-conformance = { path = "crates/conformance", version = "0.1.0" }
+lexicon-gates = { path = "crates/gates", version = "0.1.0" }
+lexicon-scoring = { path = "crates/scoring", version = "0.1.0" }
+lexicon-ai = { path = "crates/ai", version = "0.1.0" }
+lexicon-fs = { path = "crates/fs", version = "0.1.0" }
+lexicon-repo = { path = "crates/repo", version = "0.1.0" }
+lexicon-audit = { path = "crates/audit", version = "0.1.0" }
+lexicon-tui = { path = "crates/tui", version = "0.1.0" }
+lexicon-coverage = { path = "crates/coverage", version = "0.1.0" }
+lexicon-api = { path = "crates/api", version = "0.1.0" }
