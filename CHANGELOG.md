@@ -5,6 +5,10 @@
 ### Bug Fixes
 
 - Correct GitHub link, release permissions, and publish error handling ([d63a89c](https://github.com/auser/lexicon-rs/commit/d63a89c96fe28b5d5cdedf2a1c3b133aa72b0109))
+
+### Miscellaneous
+
+- Update changelog for v0.1.2 ([205f607](https://github.com/auser/lexicon-rs/commit/205f60730960bd494b25304b01472a072ec8b929))
 ## [0.1.1] - 2026-03-16
 
 ### Miscellaneous
