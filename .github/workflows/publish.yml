@@ -39,12 +39,22 @@ jobs:
                 echo "  ${crate} already published, skipping"
                 return 0
               elif echo "${output}" | grep -q "429\|Too Many Requests"; then
-                if [ "${attempts}" -ge 5 ]; then
+                if [ "${attempts}" -ge 10 ]; then
                   echo "${output}" >&2
                   return 1
                 fi
-                echo "  Rate limited, waiting 65 seconds before retry..."
-                sleep 65
+                # Parse the exact retry-after time from the error message and sleep until then
+                retry_time=$(echo "${output}" | grep -oP "after \K\w+, \d+ \w+ \d+ \d+:\d+:\d+ GMT" || true)
+                if [ -n "${retry_time}" ]; then
+                  retry_epoch=$(date -d "${retry_time}" +%s)
+                  now_epoch=$(date +%s)
+                  wait_secs=$((retry_epoch - now_epoch + 15))
+                  echo "  Rate limited. Sleeping ${wait_secs}s until ${retry_time}..."
+                  [ "${wait_secs}" -gt 0 ] && sleep "${wait_secs}"
+                else
+                  echo "  Rate limited, waiting 90 seconds..."
+                  sleep 90
+                fi
               else
                 echo "${output}" >&2
                 return 1
@@ -79,5 +89,4 @@ jobs:
           publish lexicon-core
 
           # Tier 6: CLI binary
-          echo "Publishing lexicon-rs..."
-          cargo publish -p lexicon-rs
+          publish lexicon-rs
