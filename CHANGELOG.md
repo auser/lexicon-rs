@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.3] - 2026-03-16
+
+### Miscellaneous
+
+- Update changelog for v0.1.2 ([c147445](https://github.com/auser/lexicon-rs/commit/c147445082e95cc3b9b4682987250816c4410e9f))
 ## [0.1.2] - 2026-03-16
 
 ### Bug Fixes
