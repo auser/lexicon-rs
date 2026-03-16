@@ -1,31 +1,22 @@
 [workspace]
-resolver = "3"
-members = [
-    "crates/cli",
-    "crates/tui",
-    "crates/core",
-    "crates/spec",
-    "crates/scaffold",
-    "crates/conversation",
-    "crates/conformance",
-    "crates/gates",
-    "crates/scoring",
-    "crates/ai",
-    "crates/fs",
-    "crates/repo",
-    "crates/audit",
-    "crates/coverage",
-    "crates/api",
-]
-default-members = ["crates/cli"]
 
-[workspace.package]
+[package]
+name = "lexicon-rs"
 version = "0.1.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 rust-version = "1.85"
+description = "Contract-driven verification and governance for software systems"
 
-[workspace.dependencies]
+[[bin]]
+name = "lexicon"
+path = "src/main.rs"
+
+[lib]
+name = "lexicon_rs"
+path = "src/lib.rs"
+
+[dependencies]
 # Serialization
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -42,7 +33,6 @@ crossterm = "0.28"
 # Error handling
 thiserror = "2"
 miette = { version = "7", features = ["fancy"] }
-
 
 # HTTP / Auth
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
@@ -61,22 +51,15 @@ indicatif = "0.17"
 rustyline = "15"
 libc = "0.2"
 
-# Testing
+# API extraction
+syn = { version = "2", features = ["full", "parsing", "visit"] }
+quote = "1"
+proc-macro2 = { version = "1", features = ["span-locations"] }
+
+# File operations
+tempfile = "3"
+
+[dev-dependencies]
 tempfile = "3"
 insta = { version = "1", features = ["toml", "json"] }
-
-# Workspace internal
-lexicon-core = { path = "crates/core", version = "0.1.0" }
-lexicon-spec = { path = "crates/spec", version = "0.1.0" }
-lexicon-scaffold = { path = "crates/scaffold", version = "0.1.0" }
-lexicon-conversation = { path = "crates/conversation", version = "0.1.0" }
-lexicon-conformance = { path = "crates/conformance", version = "0.1.0" }
-lexicon-gates = { path = "crates/gates", version = "0.1.0" }
-lexicon-scoring = { path = "crates/scoring", version = "0.1.0" }
-lexicon-ai = { path = "crates/ai", version = "0.1.0" }
-lexicon-fs = { path = "crates/fs", version = "0.1.0" }
-lexicon-repo = { path = "crates/repo", version = "0.1.0" }
-lexicon-audit = { path = "crates/audit", version = "0.1.0" }
-lexicon-tui = { path = "crates/tui", version = "0.1.0" }
-lexicon-coverage = { path = "crates/coverage", version = "0.1.0" }
-lexicon-api = { path = "crates/api", version = "0.1.0" }
+chrono = { version = "0.4", features = ["serde"] }

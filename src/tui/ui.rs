@@ -1,0 +1,663 @@
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::style::{Color, Modifier, Style};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::{Block, Borders, Cell, List, ListItem, Paragraph, Row, Table, Tabs};
+use ratatui::Frame;
+
+use crate::gates::result::GateOutcome;
+use crate::scoring::engine::Verdict;
+
+use super::app::{AppState, Tab};
+
+pub fn draw(f: &mut Frame, state: &AppState) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3), // tab bar
+            Constraint::Min(0),   // main content
+            Constraint::Length(1), // status bar
+        ])
+        .split(f.area());
+
+    draw_tabs(f, state, chunks[0]);
+
+    match state.tab {
+        Tab::Dashboard => draw_dashboard(f, state, chunks[1]),
+        Tab::Contracts => draw_contracts(f, state, chunks[1]),
+        Tab::Gates => draw_gates(f, state, chunks[1]),
+        Tab::Score => draw_score(f, state, chunks[1]),
+        Tab::Api => draw_api_tab(f, state, chunks[1]),
+        Tab::Coverage => draw_coverage_tab(f, state, chunks[1]),
+        Tab::Architecture => draw_architecture_tab(f, state, chunks[1]),
+        Tab::Prompts => draw_prompts_tab(f, state, chunks[1]),
+        Tab::Help => draw_help(f, chunks[1]),
+    }
+
+    draw_status_bar(f, state, chunks[2]);
+}
+
+fn draw_tabs(f: &mut Frame, state: &AppState, area: Rect) {
+    let titles: Vec<Line> = state.tabs
+        .iter()
+        .map(|t| {
+            let style = if *t == state.tab {
+                Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(Color::DarkGray)
+            };
+            Line::from(Span::styled(t.label(), style))
+        })
+        .collect();
+
+    let idx = state.tabs.iter().position(|t| *t == state.tab).unwrap_or(0);
+    let mode_label = match state.mode {
+        crate::spec::mode::OperatingMode::Repo => " lexicon [Repo] ",
+        crate::spec::mode::OperatingMode::Workspace => " lexicon [Workspace] ",
+        crate::spec::mode::OperatingMode::Ecosystem => " lexicon [Ecosystem] ",
+    };
+    let tabs = Tabs::new(titles)
+        .block(Block::default().borders(Borders::ALL).title(mode_label))
+        .select(idx)
+        .highlight_style(Style::default().fg(Color::Cyan));
+
+    f.render_widget(tabs, area);
+}
+
+fn draw_dashboard(f: &mut Frame, state: &AppState, area: Rect) {
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(area);
+
+    // Left: summary
+    let mut lines = vec![
+        Line::from(Span::styled(
+            "Repository Health",
+            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+        )),
+        Line::from(""),
+        Line::from(format!("  Root: {}", state.layout.root.display())),
+        Line::from(format!("  Contracts: {}", state.contracts.len())),
+        Line::from(format!("  Gates: {}", state.gate_results.len())),
+    ];
+
+    if let Some(ref report) = state.score_report {
+        let (color, label) = match report.verdict {
+            Verdict::Pass => (Color::Green, "PASS"),
+            Verdict::Warn => (Color::Yellow, "WARN"),
+            Verdict::Fail => (Color::Red, "FAIL"),
+        };
+        lines.push(Line::from(""));
+        lines.push(Line::from(vec![
+            Span::raw("  Score: "),
+            Span::styled(
+                format!("{:.1}% {label}", report.total_score * 100.0),
+                Style::default().fg(color).add_modifier(Modifier::BOLD),
+            ),
+        ]));
+    }
+
+    // API summary
+    lines.push(Line::from(""));
+    match state.api_snapshot {
+        Some(ref snap) => {
+            lines.push(Line::from(format!("  API: {} items extracted", snap.items.len())));
+        }
+        None => {
+            lines.push(Line::from(Span::styled(
+                "  API: Not scanned",
+                Style::default().fg(Color::DarkGray),
+            )));
+        }
+    }
+
+    // Coverage summary
+    match state.coverage_report {
+        Some(ref report) => {
+            let color = if report.overall_coverage_pct >= 80.0 {
+                Color::Green
+            } else if report.overall_coverage_pct >= 50.0 {
+                Color::Yellow
+            } else {
+                Color::Red
+            };
+            lines.push(Line::from(vec![
+                Span::raw("  Coverage: "),
+                Span::styled(
+                    format!("{:.1}%", report.overall_coverage_pct),
+                    Style::default().fg(color),
+                ),
+            ]));
+        }
+        None => {
+            lines.push(Line::from(Span::styled(
+                "  Coverage: Not analyzed",
+                Style::default().fg(Color::DarkGray),
+            )));
+        }
+    }
+
+    let summary = Paragraph::new(lines)
+        .block(Block::default().borders(Borders::ALL).title(" Summary "));
+    f.render_widget(summary, chunks[0]);
+
+    // Right: recent gates
+    let gate_items: Vec<ListItem> = state
+        .gate_results
+        .iter()
+        .map(|gr| {
+            let (icon, color) = match gr.outcome {
+                GateOutcome::Pass => ("✓", Color::Green),
+                GateOutcome::Fail => ("✗", Color::Red),
+                GateOutcome::Skip => ("⊘", Color::Yellow),
+                GateOutcome::Error => ("!", Color::Red),
+            };
+            ListItem::new(Line::from(vec![
+                Span::styled(format!("{icon} "), Style::default().fg(color)),
+                Span::raw(format!("{} ({}ms)", gr.gate_id, gr.duration_ms)),
+            ]))
+        })
+        .collect();
+
+    let gates_list = List::new(gate_items)
+        .block(Block::default().borders(Borders::ALL).title(" Gates "));
+    f.render_widget(gates_list, chunks[1]);
+}
+
+fn draw_contracts(f: &mut Frame, state: &AppState, area: Rect) {
+    if state.contracts.is_empty() {
+        let msg = Paragraph::new("No contracts found. Run `lexicon contract new` to create one.")
+            .block(Block::default().borders(Borders::ALL).title(" Contracts "));
+        f.render_widget(msg, area);
+        return;
+    }
+
+    let items: Vec<ListItem> = state
+        .contracts
+        .iter()
+        .map(|id| ListItem::new(format!("  {id}")))
+        .collect();
+
+    let list = List::new(items)
+        .block(Block::default().borders(Borders::ALL).title(" Contracts "));
+    f.render_widget(list, area);
+}
+
+fn draw_gates(f: &mut Frame, state: &AppState, area: Rect) {
+    if state.gate_results.is_empty() {
+        let msg = Paragraph::new("No gate results. Run `lexicon verify` first.")
+            .block(Block::default().borders(Borders::ALL).title(" Gates "));
+        f.render_widget(msg, area);
+        return;
+    }
+
+    let items: Vec<ListItem> = state
+        .gate_results
+        .iter()
+        .map(|gr| {
+            let (icon, color) = match gr.outcome {
+                GateOutcome::Pass => ("✓", Color::Green),
+                GateOutcome::Fail => ("✗", Color::Red),
+                GateOutcome::Skip => ("⊘", Color::Yellow),
+                GateOutcome::Error => ("!", Color::Red),
+            };
+            let detail = if !gr.stderr.is_empty() {
+                format!(" — {}", gr.stderr.lines().next().unwrap_or(""))
+            } else {
+                String::new()
+            };
+            ListItem::new(Line::from(vec![
+                Span::styled(format!("{icon} "), Style::default().fg(color)),
+                Span::raw(format!(
+                    "{} ({}ms){}",
+                    gr.gate_id, gr.duration_ms, detail
+                )),
+            ]))
+        })
+        .collect();
+
+    let list = List::new(items)
+        .block(Block::default().borders(Borders::ALL).title(" Gates "));
+    f.render_widget(list, area);
+}
+
+fn draw_score(f: &mut Frame, state: &AppState, area: Rect) {
+    let report = match state.score_report {
+        Some(ref r) => r,
+        None => {
+            let msg = Paragraph::new("No score data. Run `lexicon score init` and `lexicon verify`.")
+                .block(Block::default().borders(Borders::ALL).title(" Score "));
+            f.render_widget(msg, area);
+            return;
+        }
+    };
+
+    let (color, label) = match report.verdict {
+        Verdict::Pass => (Color::Green, "PASS"),
+        Verdict::Warn => (Color::Yellow, "WARN"),
+        Verdict::Fail => (Color::Red, "FAIL"),
+    };
+
+    let mut lines = vec![
+        Line::from(vec![
+            Span::raw("Total Score: "),
+            Span::styled(
+                format!("{:.1}% ({label})", report.total_score * 100.0),
+                Style::default().fg(color).add_modifier(Modifier::BOLD),
+            ),
+        ]),
+        Line::from(""),
+        Line::from(Span::styled(
+            "Dimensions:",
+            Style::default().add_modifier(Modifier::BOLD),
+        )),
+    ];
+
+    for dim in &report.dimensions {
+        let dim_color = if dim.passed { Color::Green } else { Color::Red };
+        lines.push(Line::from(vec![
+            Span::styled(
+                format!("  {:.0}% ", dim.value * 100.0),
+                Style::default().fg(dim_color),
+            ),
+            Span::raw(&dim.dimension_id),
+            Span::styled(
+                format!(" — {}", dim.explanation),
+                Style::default().fg(Color::DarkGray),
+            ),
+        ]));
+    }
+
+    let paragraph = Paragraph::new(lines)
+        .block(Block::default().borders(Borders::ALL).title(" Score Breakdown "));
+    f.render_widget(paragraph, area);
+}
+
+fn draw_api_tab(f: &mut Frame, state: &AppState, area: Rect) {
+    let snapshot = match state.api_snapshot {
+        Some(ref s) => s,
+        None => {
+            let msg = Paragraph::new("No API scan found. Run `lexicon api scan`.")
+                .block(Block::default().borders(Borders::ALL).title(" API "));
+            f.render_widget(msg, area);
+            return;
+        }
+    };
+
+    // Split vertically: table on top, diff summary on bottom (if diff exists)
+    let has_diff = state.api_diff.is_some();
+    let constraints = if has_diff {
+        vec![Constraint::Percentage(65), Constraint::Percentage(35)]
+    } else {
+        vec![Constraint::Percentage(100)]
+    };
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(constraints)
+        .split(area);
+
+    // API items table
+    let header = Row::new(vec![
+        Cell::from("Kind"),
+        Cell::from("Name"),
+        Cell::from("Module"),
+        Cell::from("Visibility"),
+    ])
+    .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD));
+
+    let rows: Vec<Row> = snapshot
+        .items
+        .iter()
+        .map(|item| {
+            let module = item.module_path.join("::");
+            Row::new(vec![
+                Cell::from(item.kind.to_string()),
+                Cell::from(item.name.as_str()),
+                Cell::from(module),
+                Cell::from(item.visibility.to_string()),
+            ])
+        })
+        .collect();
+
+    let table = Table::new(
+        rows,
+        [
+            Constraint::Length(12),
+            Constraint::Percentage(30),
+            Constraint::Percentage(40),
+            Constraint::Length(15),
+        ],
+    )
+    .header(header)
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title(format!(" API — {} items ({}) ", snapshot.items.len(), snapshot.crate_name)),
+    );
+    f.render_widget(table, chunks[0]);
+
+    // Diff summary
+    if let Some(ref diff) = state.api_diff {
+        let mut lines = vec![
+            Line::from(Span::styled(
+                "API Diff (vs baseline)",
+                Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+            )),
+            Line::from(""),
+        ];
+
+        if diff.is_empty() {
+            lines.push(Line::from(Span::styled(
+                "  No API changes detected",
+                Style::default().fg(Color::Green),
+            )));
+        } else {
+            lines.push(Line::from(format!("  {}", diff.summary())));
+            lines.push(Line::from(""));
+
+            if !diff.added.is_empty() {
+                lines.push(Line::from(Span::styled(
+                    format!("  + {} added", diff.added.len()),
+                    Style::default().fg(Color::Green),
+                )));
+            }
+            if !diff.removed.is_empty() {
+                lines.push(Line::from(Span::styled(
+                    format!("  - {} removed", diff.removed.len()),
+                    Style::default().fg(Color::Red),
+                )));
+            }
+            if !diff.changed.is_empty() {
+                lines.push(Line::from(Span::styled(
+                    format!("  ~ {} changed", diff.changed.len()),
+                    Style::default().fg(Color::Yellow),
+                )));
+            }
+
+            if diff.has_breaking() {
+                lines.push(Line::from(""));
+                lines.push(Line::from(Span::styled(
+                    format!("  !! {} breaking change(s)", diff.breaking_count()),
+                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                )));
+            }
+        }
+
+        let diff_paragraph = Paragraph::new(lines)
+            .block(Block::default().borders(Borders::ALL).title(" Diff Summary "));
+        f.render_widget(diff_paragraph, chunks[1]);
+    }
+}
+
+fn draw_coverage_tab(f: &mut Frame, state: &AppState, area: Rect) {
+    let report = match state.coverage_report {
+        Some(ref r) => r,
+        None => {
+            let msg = Paragraph::new("No coverage data. Run `lexicon coverage report`.")
+                .block(Block::default().borders(Borders::ALL).title(" Coverage "));
+            f.render_widget(msg, area);
+            return;
+        }
+    };
+
+    // Split: overall summary on top, per-contract breakdown and uncovered on bottom
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(5),  // overall summary
+            Constraint::Min(0),    // details
+        ])
+        .split(area);
+
+    // Overall coverage
+    let cov_color = if report.overall_coverage_pct >= 80.0 {
+        Color::Green
+    } else if report.overall_coverage_pct >= 50.0 {
+        Color::Yellow
+    } else {
+        Color::Red
+    };
+
+    let overview_lines = vec![
+        Line::from(vec![
+            Span::raw("  Overall Coverage: "),
+            Span::styled(
+                format!("{:.1}%", report.overall_coverage_pct),
+                Style::default().fg(cov_color).add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(format!("  ({}/{})", report.total_covered, report.total_clauses)),
+        ]),
+    ];
+
+    let overview = Paragraph::new(overview_lines)
+        .block(Block::default().borders(Borders::ALL).title(" Coverage Summary "));
+    f.render_widget(overview, chunks[0]);
+
+    // Bottom area: contracts on left, uncovered on right
+    let detail_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(chunks[1]);
+
+    // Per-contract breakdown
+    let contract_items: Vec<ListItem> = report
+        .contracts
+        .iter()
+        .map(|c| {
+            let color = if c.coverage_pct >= 80.0 {
+                Color::Green
+            } else if c.coverage_pct >= 50.0 {
+                Color::Yellow
+            } else {
+                Color::Red
+            };
+            ListItem::new(Line::from(vec![
+                Span::styled(
+                    format!("{:.0}% ", c.coverage_pct),
+                    Style::default().fg(color),
+                ),
+                Span::raw(&c.contract_id),
+                Span::styled(
+                    format!(" ({}/{})", c.covered_count, c.total_count),
+                    Style::default().fg(Color::DarkGray),
+                ),
+            ]))
+        })
+        .collect();
+
+    let contracts_list = List::new(contract_items)
+        .block(Block::default().borders(Borders::ALL).title(" Per-Contract "));
+    f.render_widget(contracts_list, detail_chunks[0]);
+
+    // Uncovered clauses
+    if report.uncovered_clauses.is_empty() {
+        let msg = Paragraph::new("  All clauses covered!")
+            .style(Style::default().fg(Color::Green))
+            .block(Block::default().borders(Borders::ALL).title(" Uncovered Clauses "));
+        f.render_widget(msg, detail_chunks[1]);
+    } else {
+        let uncovered_items: Vec<ListItem> = report
+            .uncovered_clauses
+            .iter()
+            .map(|uc| {
+                ListItem::new(Line::from(vec![
+                    Span::styled("  x ", Style::default().fg(Color::Red)),
+                    Span::raw(format!("{}/{}", uc.contract_id, uc.clause_id)),
+                    Span::styled(
+                        format!(" ({})", uc.clause_type),
+                        Style::default().fg(Color::DarkGray),
+                    ),
+                ]))
+            })
+            .collect();
+
+        let uncovered_list = List::new(uncovered_items)
+            .block(Block::default().borders(Borders::ALL).title(" Uncovered Clauses "));
+        f.render_widget(uncovered_list, detail_chunks[1]);
+    }
+}
+
+fn draw_architecture_tab(f: &mut Frame, state: &AppState, area: Rect) {
+    let arch_rules_path = state.layout.architecture_rules_path();
+    let graph_path = state.layout.architecture_graph_path();
+
+    let has_rules = arch_rules_path.is_file();
+    let has_graph = graph_path.is_file();
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(6), Constraint::Min(0)])
+        .split(area);
+
+    // Status summary
+    let mode_info = match state.mode {
+        crate::spec::mode::OperatingMode::Workspace => "Workspace Mode — architecture governance active",
+        crate::spec::mode::OperatingMode::Ecosystem => "Ecosystem Mode — full governance active",
+        _ => "Repo Mode — run `lexicon workspace init` to enable",
+    };
+
+    let lines = vec![
+        Line::from(Span::styled(
+            mode_info,
+            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+        )),
+        Line::from(""),
+        Line::from(format!(
+            "  Architecture rules: {}",
+            if has_rules { "✓ loaded" } else { "✗ not found" }
+        )),
+        Line::from(format!(
+            "  Architecture graph: {}",
+            if has_graph { "✓ loaded" } else { "✗ not generated" }
+        )),
+    ];
+
+    let summary = Paragraph::new(lines)
+        .block(Block::default().borders(Borders::ALL).title(" Architecture "));
+    f.render_widget(summary, chunks[0]);
+
+    // Crate roles / dependency info (if workspace manifest exists)
+    let ws_path = state.layout.workspace_manifest_path();
+    let info = if let Ok(text) = std::fs::read_to_string(&ws_path) {
+        if let Ok(ws) = toml::from_str::<crate::spec::workspace::WorkspaceManifest>(&text) {
+            let mut role_lines: Vec<Line> = Vec::new();
+            for cr in &ws.crate_roles {
+                role_lines.push(Line::from(format!(
+                    "  {:20} {:?}  {}",
+                    cr.name, cr.role, cr.description
+                )));
+            }
+            if role_lines.is_empty() {
+                role_lines.push(Line::from("  No crate roles assigned"));
+            }
+            role_lines
+        } else {
+            vec![Line::from("  Could not parse workspace manifest")]
+        }
+    } else {
+        vec![Line::from("  No workspace manifest found. Run `lexicon workspace init`.")]
+    };
+
+    let roles_para = Paragraph::new(info)
+        .block(Block::default().borders(Borders::ALL).title(" Crate Roles "));
+    f.render_widget(roles_para, chunks[1]);
+}
+
+fn draw_prompts_tab(f: &mut Frame, state: &AppState, area: Rect) {
+    if state.prompt_statuses.is_empty() {
+        let msg = Paragraph::new("No prompts found. Run `lexicon prompt generate <contract-id>` to create one.")
+            .block(Block::default().borders(Borders::ALL).title(" Prompts "));
+        f.render_widget(msg, area);
+        return;
+    }
+
+    let items: Vec<ListItem> = state
+        .prompt_statuses
+        .iter()
+        .map(|(filename, is_stale, reasons)| {
+            if *is_stale {
+                let reason_text = if reasons.is_empty() {
+                    String::new()
+                } else {
+                    format!(" — {}", reasons.join(", "))
+                };
+                ListItem::new(Line::from(vec![
+                    Span::styled("STALE ", Style::default().fg(Color::Red)),
+                    Span::raw(filename.as_str()),
+                    Span::styled(reason_text, Style::default().fg(Color::DarkGray)),
+                ]))
+            } else {
+                ListItem::new(Line::from(vec![
+                    Span::styled("  OK  ", Style::default().fg(Color::Green)),
+                    Span::raw(filename.as_str()),
+                ]))
+            }
+        })
+        .collect();
+
+    let stale_count = state.prompt_statuses.iter().filter(|(_, s, _)| *s).count();
+    let title = if stale_count > 0 {
+        format!(" Prompts — {} stale ", stale_count)
+    } else {
+        format!(" Prompts — {} total, all up to date ", state.prompt_statuses.len())
+    };
+
+    let list = List::new(items)
+        .block(Block::default().borders(Borders::ALL).title(title));
+    f.render_widget(list, area);
+}
+
+fn draw_help(f: &mut Frame, area: Rect) {
+    let lines = vec![
+        Line::from(Span::styled(
+            "Keybindings",
+            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+        )),
+        Line::from(""),
+        Line::from("  Tab / → / ←    Switch tabs"),
+        Line::from("  1-8            Jump to tab"),
+        Line::from("  r              Refresh data"),
+        Line::from("  q / Esc        Quit"),
+        Line::from("  Ctrl+C         Force quit"),
+        Line::from(""),
+        Line::from(Span::styled(
+            "Commands",
+            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+        )),
+        Line::from(""),
+        Line::from("  lexicon init              Initialize lexicon"),
+        Line::from("  lexicon contract new      Create a contract"),
+        Line::from("  lexicon score init        Initialize scoring"),
+        Line::from("  lexicon gate init         Initialize gates"),
+        Line::from("  lexicon verify            Run verification"),
+        Line::from("  lexicon api scan          Scan public API"),
+        Line::from("  lexicon coverage report   Generate coverage report"),
+        Line::from("  lexicon prompt generate   Generate implementation prompt"),
+        Line::from("  lexicon prompt status     Show prompt sync status"),
+        Line::from("  lexicon prompt regenerate Regenerate stale prompts"),
+        Line::from("  lexicon prompt explain    Explain prompt dependencies"),
+        Line::from("  lexicon coach             Interactive AI coaching (open-ended)"),
+        Line::from("  lexicon coach contract    Coach a new contract"),
+        Line::from("  lexicon coach conformance Coach conformance tests"),
+        Line::from("  lexicon coach prompt      Coach implementation prompts"),
+        Line::from("  lexicon coach improve     Coach improvements"),
+        Line::from("  lexicon sync claude       Sync CLAUDE.md"),
+        Line::from("  lexicon doctor            Check repo health"),
+    ];
+
+    let help = Paragraph::new(lines)
+        .block(Block::default().borders(Borders::ALL).title(" Help "));
+    f.render_widget(help, area);
+}
+
+fn draw_status_bar(f: &mut Frame, state: &AppState, area: Rect) {
+    let status = Paragraph::new(Line::from(vec![
+        Span::styled(" lexicon ", Style::default().fg(Color::Black).bg(Color::Cyan)),
+        Span::raw(format!(" {} ", state.status_message)),
+        Span::styled(
+            " q:quit  r:refresh  Tab:switch ",
+            Style::default().fg(Color::DarkGray),
+        ),
+    ]));
+    f.render_widget(status, area);
+}
