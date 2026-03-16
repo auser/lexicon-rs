@@ -1,5 +1,3 @@
-[workspace]
-
 [package]
 name = "lexicon-rs"
 version = "0.1.0"
