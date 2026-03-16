@@ -21,6 +21,7 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
+          set -euo pipefail
           # Publish in dependency order with delays for index updates
           publish() {
             echo "Publishing $1..."

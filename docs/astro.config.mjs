@@ -10,7 +10,7 @@ export default defineConfig({
 		starlight({
 			title: 'Lexicon',
 			description: 'Contract-driven verification and governance for software systems',
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/anthropics/lexicon' }],
+			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/auser/lexicon-rs' }],
 			sidebar: [
 				{
 					label: 'Getting Started',
