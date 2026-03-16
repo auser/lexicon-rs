@@ -24,10 +24,18 @@ jobs:
           set -euo pipefail
           # Publish in dependency order with delays for index updates
           publish() {
-            echo "Publishing $1..."
-            cargo publish -p "$1"
-            echo "Waiting for crates.io index update..."
-            sleep 30
+            local crate="$1"
+            echo "Publishing ${crate}..."
+            local output
+            if output=$(cargo publish -p "${crate}" 2>&1); then
+              echo "Waiting for crates.io index update..."
+              sleep 30
+            elif echo "${output}" | grep -q "already exists"; then
+              echo "  ${crate} already published, skipping"
+            else
+              echo "${output}" >&2
+              return 1
+            fi
           }
 
           # Tier 0: Foundation
