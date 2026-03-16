@@ -25,17 +25,30 @@ jobs:
           # Publish in dependency order with delays for index updates
           publish() {
             local crate="$1"
-            echo "Publishing ${crate}..."
-            local output
-            if output=$(cargo publish -p "${crate}" 2>&1); then
-              echo "Waiting for crates.io index update..."
-              sleep 30
-            elif echo "${output}" | grep -q "already exists"; then
-              echo "  ${crate} already published, skipping"
-            else
-              echo "${output}" >&2
-              return 1
-            fi
+            local attempts=0
+            while true; do
+              attempts=$((attempts + 1))
+              echo "Publishing ${crate} (attempt ${attempts})..."
+              local output
+              if output=$(cargo publish -p "${crate}" 2>&1); then
+                echo "  Published ${crate}, waiting for index update..."
+                sleep 65
+                return 0
+              elif echo "${output}" | grep -q "already exists"; then
+                echo "  ${crate} already published, skipping"
+                return 0
+              elif echo "${output}" | grep -q "429\|Too Many Requests"; then
+                if [ "${attempts}" -ge 5 ]; then
+                  echo "${output}" >&2
+                  return 1
+                fi
+                echo "  Rate limited, waiting 65 seconds before retry..."
+                sleep 65
+              else
+                echo "${output}" >&2
+                return 1
+              fi
+            done
           }
 
           # Tier 0: Foundation
